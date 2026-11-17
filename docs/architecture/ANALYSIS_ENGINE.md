@@ -214,7 +214,7 @@ grammars, native binaries for all RIDs, robustness against hostile input, timeou
 ## 3. Analyzer contract
 
 ```csharp
-// Analysis/Pipeline (internal) — illustrative, finalized in ANALYSIS-001
+// Analysis/Pipeline (internal) — implemented in ANALYSIS-001
 internal interface IProjectSystemAnalyzer
 {
     AnalyzerDescriptor Descriptor { get; }               // id, version, ecosystem
@@ -236,13 +236,31 @@ Rules:
    analyzer's output directly. Cross-analyzer information flows only through the linker.
 2. Analyzers are **pure** with respect to the repository: they read through
    `IRepositoryFileReader` (path containment + size limits) and never write.
-3. Analyzers return **fragments** (natural-key-based elements, relationships with evidence,
-   diagnostics), never Domain objects with IDs and never persistence entities.
+3. Analyzers return **fragments** (`AnalyzerFragment`: projects, modules, entities, external
+   dependencies, relationships with evidence, diagnostics), never persistence entities. Fragment
+   elements are Domain objects: since CORE-001 every Domain element derives its id from its natural
+   key inside its factory, so a Domain object *is* a natural-key fragment and analyzers cannot
+   assign ids inconsistently. (This replaces the original wording "never Domain objects with IDs",
+   written before ids became key-derived.) Analyzers reference elements of other analyzers only by
+   computing their key-derived ids, never by calling each other.
 4. Every relationship in a fragment carries at least one evidence item with rule id and location.
 5. Failures are isolated: an exception in an analyzer for one project becomes an `Error`
    diagnostic; the run becomes `PartiallySucceeded`.
 6. Analyzers are registered in DI as `IEnumerable<…>`; adding a language = adding an analyzer
    class + registration + fixtures.
+
+**Pipeline implementation (ANALYSIS-001):** `AnalysisPipeline` implements the Application port
+`IRepositoryAnalyzer.AnalyzeAsync(AnalysisRequest, IProgress<AnalysisProgress>?, CancellationToken)`
+and returns `Result<RepositoryAnalysis>` (model, diagnostics, statistics, analyzer versions); the
+calling use case owns the `AnalysisRun`. Project-system analyzers run in parallel, language
+analyzers per (analyzer, project) with bounded parallelism; each call is isolated — an exception
+becomes an `analysis.analyzer-failed` `Error` diagnostic, cancellation propagates. Analyzers are
+ordered by id, so the merge order is deterministic. `ModelLinker` merges elements with the same id
+and key, merges relationships with the same id into one relationship with all evidence
+(`CodeRelationship.WithEvidence`), keeps elements with the same id but different keys so that
+validation reports the collision, and attaches every file to the innermost project root
+(placeholder projects for missing references never own files). If `ArchitectureModel.Validate()`
+reports violations, the result is the error `analysis.model-invalid`.
 
 ## 4. Progress, cancellation and concurrency
 
