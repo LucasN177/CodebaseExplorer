@@ -115,7 +115,7 @@ enforced by architecture tests. Details: [docs/architecture/SYSTEM_ARCHITECTURE.
 What exists today: 10 source projects and 6 test projects, central package management, module
 registration seams, a composition root, the Avalonia shell, and the language-independent domain
 model (stable IDs, projects, modules, entities, evidence-backed relationships, analysis runs and
-model validation; tasks CORE-001 … CORE-004). 279 tests pass. The domain model is not yet filled
+model validation; tasks CORE-001 … CORE-004) and the application result, error and progress types (CORE-005). 312 tests pass. The domain model is not yet filled
 by any analyzer.
 
 ## Roadmap

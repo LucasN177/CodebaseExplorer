@@ -10,7 +10,8 @@ repositories (C#, TypeScript, JavaScript, Python) into a language-independent, e
 architecture model and visualizes it as an interactive, hierarchical graph (Cytoscape.js in a
 WebView). Local-first, never executes repository code, optional local AI with citations.
 **Current state:** M0 done; M1 in progress — the language-independent domain model is implemented
-(CORE-001 … CORE-004: stable IDs, all model elements, `ArchitectureModel` validation). No
+(CORE-001 … CORE-004: stable IDs, all model elements, `ArchitectureModel` validation), plus the
+application `Result`/`ApplicationError`/`AnalysisProgress` conventions (CORE-005). No
 scanning, analysis, persistence, graph, Git or AI functionality exists yet. Next: the remaining M1
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 

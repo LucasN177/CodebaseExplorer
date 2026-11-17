@@ -38,8 +38,22 @@
 
 - Use cases are small classes with one public `ExecuteAsync`/`…Async` entry point (or a few
   closely related ones), depending only on ports.
-- Expected failures return `Result<T>` / typed errors (CORE-005); exceptions are for programming
-  errors and unexpected infrastructure faults.
+- Expected failures return `Result` / `Result<T>` with an `ApplicationError`
+  (`Application/Common`); exceptions are for programming errors (invalid arguments, violated
+  invariants) and unexpected infrastructure faults. "Expected" means the user or the environment
+  can cause it in normal operation: a path that does not exist, an unknown repository id, an
+  analysis that is already running, a rejected token.
+- `ApplicationError` has a `Kind` (`Validation`, `NotFound`, `Conflict`, `Failure`), a stable
+  `Code` (lowercase dot-separated segments: `<area>.<problem>`, e.g. `repository.path-not-found`),
+  a human-readable `Message` and optional `Details` (paths, ids — never secrets or source code).
+  Callers branch on `Kind`/`Code`, never on `Message`.
+- **Cancellation is not a failure result.** Operations observe their `CancellationToken` and let
+  `OperationCanceledException` propagate; ViewModels catch it to show "cancelled".
+- Use cases that report progress take an `IProgress<T>`; analysis progress uses
+  `AnalysisProgress(stage, processed, total?, currentItem?)` (`Application/Analysis`).
+  `CurrentItem` is a path or project name, never file content.
+- From CORE-006 and ANALYSIS-001 on, every use case and port with an expected-failure path uses
+  these types in its signature.
 - Ports are defined next to the feature that needs them (`Application/<Feature>/I….cs`);
   cross-cutting ports live in `Application/Abstractions`.
 

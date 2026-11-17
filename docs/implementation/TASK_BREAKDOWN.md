@@ -21,7 +21,7 @@ Status overview (keep in sync):
 | Milestone | Tasks | Done |
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
-| M1 Vertical slice | 22 | 4 |
+| M1 Vertical slice | 22 | 5 |
 | M2 Persistence | 10 | 0 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
@@ -77,13 +77,16 @@ Status overview (keep in sync):
   - Tests cover each violation type.
 
 ### CORE-005 — Application: results, errors, progress, cancellation conventions
-- **Priority:** P0 · **Milestone:** M1 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M1 · **Status:** done
 - **Prerequisites:** —
 - **Projects:** Application, IntegrationTests
 - **Description:** Introduce `Result<T>`/`ApplicationError` (code, message, details) for expected failures, `AnalysisProgress` (stage, processed, total, current item), and document the conventions in CODING_STANDARDS.md if they deviate.
 - **Acceptance criteria:**
   - Types are small, immutable and used by at least the M1 use case signatures.
   - No exceptions used for expected validation failures in new use cases.
+- **Note (done 2026-11-17):** types and conventions are implemented and tested; no use case or port
+  existed yet, so "used by the M1 use case signatures" is enforced through CODING_STANDARDS.md §4
+  and checked in CORE-006 and ANALYSIS-001.
 
 ### CORE-006 — Use cases: ImportLocalRepository and GetGraphView (session model cache)
 - **Priority:** P0 · **Milestone:** M1 · **Status:** todo

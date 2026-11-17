@@ -85,7 +85,7 @@ Test project references:
 |---|---|
 | Domain | **exists:** `Repositories/`, `Projects/`, `Modules/`, `Files/`, `Entities/`, `Relationships/`, `Evidence/`, `Dependencies/`, `Runs/` (analysis runs, diagnostics, statistics), `Model/` (`ArchitectureModel` snapshot and validation), `Common/` (IDs, natural keys, value objects, kind tokens). One aggregate concept per folder. The run folder is named `Runs` rather than `Analysis` so that `CodebaseExplorer.Domain.Analysis` cannot be confused with the `CodebaseExplorer.Analysis` module. |
 | Contracts | `Graph/` (graph DTOs + message envelopes), `Queries/` (read-model DTOs for ViewModels), `Export/`. |
-| Application | `Abstractions/` (cross-cutting ports — **exists**: `IApplicationPaths`), `Repositories/`, `Analysis/`, `Graph/`, `Inspector/`, `Git/`, `AI/`, `Export/`, `Common/` (results, errors, progress). Each feature folder contains its use cases and the ports it needs. |
+| Application | `Abstractions/` (cross-cutting ports — **exists**: `IApplicationPaths`), `Common/` (**exists**: `Result`, `Result<T>`, `ApplicationError`, `ErrorKind`), `Analysis/` (**exists**: `AnalysisProgress`, `AnalysisStage`), `Repositories/`, `Graph/`, `Inspector/`, `Git/`, `AI/`, `Export/`. Each feature folder contains its use cases and the ports it needs. |
 | Analysis | `Pipeline/`, `Scanning/`, `ProjectSystems/DotNet`, `ProjectSystems/Node`, `ProjectSystems/Python`, `Languages/CSharp`, `Languages/TreeSitter`, `Languages/TypeScript`, `Languages/Python`, `Linking/`, `Safety/`. |
 | Graph | `Projection/`, `Aggregation/`, `Queries/`, `Budget/`. |
 | Git | `LibGit2/` (adapter), `Cloning/`, `History/`. |
