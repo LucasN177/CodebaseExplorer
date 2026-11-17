@@ -131,7 +131,32 @@ public sealed class RepositoryScannerTests : IDisposable
         Assert.True(byPath["src/Api.cs"].HasGeneratedHeader);
         Assert.Equal(FileClassification.Generated, byPath["src/Api.cs"].Classification);
         Assert.Equal(FileClassification.Test, byPath["src/Billing.Tests/T.cs"].Classification);
-        Assert.Equal(FileClassification.Other, byPath["src/A.cs"].Classification);
+        Assert.Equal(FileClassification.Source, byPath["src/A.cs"].Classification);
+    }
+
+    [Fact]
+    public async Task Scan_DetectsLanguagesAndProjectMarkers()
+    {
+        _repo.WriteText("Shop.slnx", "<Solution />");
+        _repo.WriteText("src/Billing/Billing.csproj", "<Project />");
+        _repo.WriteText("src/Billing/Invoice.cs", "class Invoice {}");
+        _repo.WriteText("web/package.json", "{}");
+        _repo.WriteText("tools/run", "#!/usr/bin/env python3\nprint(1)\n");
+        _repo.WriteText("LICENSE", "MIT");
+
+        var byPath = (await ScanAsync()).Files.ToDictionary(f => f.Path.Value);
+
+        Assert.Equal(ProjectMarker.DotNetSolutionXml, byPath["Shop.slnx"].Marker);
+        Assert.Equal(FileClassification.SolutionFile, byPath["Shop.slnx"].Classification);
+        Assert.Equal(ProjectMarker.DotNetProject, byPath["src/Billing/Billing.csproj"].Marker);
+        Assert.Equal("xml", byPath["src/Billing/Billing.csproj"].Language.Value);
+        Assert.Equal("csharp", byPath["src/Billing/Invoice.cs"].Language.Value);
+        Assert.Null(byPath["src/Billing/Invoice.cs"].Marker);
+        Assert.Equal(ProjectMarker.NodePackage, byPath["web/package.json"].Marker);
+        Assert.Equal("python", byPath["tools/run"].Language.Value);
+        Assert.Equal(FileClassification.Source, byPath["tools/run"].Classification);
+        Assert.Equal("unknown", byPath["LICENSE"].Language.Value);
+        Assert.Equal(FileClassification.Other, byPath["LICENSE"].Classification);
     }
 
     [Fact]

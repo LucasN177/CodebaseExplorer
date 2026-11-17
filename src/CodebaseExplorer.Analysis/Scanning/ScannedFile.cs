@@ -10,7 +10,9 @@ namespace CodebaseExplorer.Analysis.Scanning;
 /// <param name="LineCount">Number of lines for text files; <see langword="null"/> for binary files.</param>
 /// <param name="IsBinary">True if a NUL byte occurs in the first 8 KB.</param>
 /// <param name="HasGeneratedHeader">True if an <c>&lt;auto-generated</c> marker occurs in the first 8 KB.</param>
-/// <param name="Classification">Location- and name-based classification.</param>
+/// <param name="Language">Detected language; <c>unknown</c> if not recognized.</param>
+/// <param name="Marker">Project or solution marker, if the file is one.</param>
+/// <param name="Classification">Resulting classification.</param>
 internal sealed record ScannedFile(
     RelativePath Path,
     long SizeBytes,
@@ -18,4 +20,6 @@ internal sealed record ScannedFile(
     int? LineCount,
     bool IsBinary,
     bool HasGeneratedHeader,
+    LanguageId Language,
+    ProjectMarker? Marker,
     FileClassification Classification);

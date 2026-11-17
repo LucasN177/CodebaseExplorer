@@ -4,9 +4,8 @@ using CodebaseExplorer.Domain.Files;
 namespace CodebaseExplorer.Analysis.Scanning;
 
 /// <summary>
-/// Name- and location-based file classification of the scan stage. Language-dependent classes
-/// (source, documentation, configuration, project manifest, solution file) are assigned by
-/// language and marker detection (REPO-003).
+/// File classification of the scan stage. Precedence: binary, generated, solution file / project
+/// manifest, test, then by language (source, documentation, configuration), otherwise other.
 /// </summary>
 internal static class FileClassifier
 {
@@ -15,8 +14,12 @@ internal static class FileClassifier
     private static readonly string[] TestFileInfixes = [".spec.", ".test."];
     private static readonly string[] GeneratedSuffixes = [".g.cs", ".g.i.cs", ".designer.cs", ".generated.cs"];
 
-    /// <summary>Order: binary, generated, test, other.</summary>
-    public static FileClassification Classify(RelativePath path, bool isBinary, bool hasGeneratedHeader)
+    public static FileClassification Classify(
+        RelativePath path,
+        bool isBinary,
+        bool hasGeneratedHeader,
+        LanguageId language,
+        ProjectMarker? marker)
     {
         if (isBinary)
         {
@@ -28,7 +31,23 @@ internal static class FileClassifier
             return FileClassification.Generated;
         }
 
-        return IsTest(path) ? FileClassification.Test : FileClassification.Other;
+        if (marker is { } projectMarker)
+        {
+            return projectMarker.IsSolution() ? FileClassification.SolutionFile : FileClassification.ProjectManifest;
+        }
+
+        if (IsTest(path))
+        {
+            return FileClassification.Test;
+        }
+
+        return language.Value switch
+        {
+            var l when LanguageDetector.SourceLanguages.Contains(l) => FileClassification.Source,
+            var l when LanguageDetector.DocumentationLanguages.Contains(l) => FileClassification.Documentation,
+            var l when LanguageDetector.ConfigurationLanguages.Contains(l) => FileClassification.Configuration,
+            _ => FileClassification.Other,
+        };
     }
 
     public static bool IsGeneratedName(string fileName) =>

@@ -94,8 +94,18 @@ the result is independent of parallelism. Built-in exclude names match case-inse
 `.gitignore` files inside the repository are honored — `.git/info/exclude` and the user's global
 excludes are intentionally not read (they are machine-specific, and the analysis must be
 reproducible). An unreadable or oversized `.gitignore` produces a warning and its rules are not
-applied. The scan stage classifies only `Binary`, `Generated`, `Test` and `Other`; language and
-project-marker based classes are added by REPO-003. Measured: 10,000 small files in 2.7 s (Debug
+applied.
+
+**Languages and markers (REPO-003):** `LanguageDetector` maps well-known file names (e.g.
+`Dockerfile`, `.gitignore`), then extensions (case-insensitive), then — only for files without an
+extension — the shebang interpreter (`python*`, `node`, `deno`, `sh`/`bash`/`zsh`, `pwsh`) to a
+`LanguageId`; anything else is `unknown`, content is never guessed. MSBuild files
+(`.csproj`, `.props`, `.slnx` …) are `xml`, `.sln` is `sln`, `.jsx` is `javascript` (the JS
+grammar covers JSX). `ProjectMarkerDetector` recognizes `*.sln`, `*.slnx`, `*.csproj`/`*.fsproj`/
+`*.vbproj` (case-insensitive) and `package.json`, `pyproject.toml`, `requirements*.txt`,
+`setup.cfg`, `setup.py` (exact names). Classification precedence: `Binary` › `Generated` ›
+`SolutionFile`/`ProjectManifest` (markers, also inside test folders) › `Test` › by language
+(`Source`, `Documentation`, `Configuration`) › `Other`. Measured: 10,000 small files in 2.7 s (Debug
 build, Windows, TEST_STRATEGY.md §8).
 
 ### Stage 2 — Project-system analyzers

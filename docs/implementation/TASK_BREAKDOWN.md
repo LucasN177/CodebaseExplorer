@@ -21,7 +21,7 @@ Status overview (keep in sync):
 | Milestone | Tasks | Done |
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
-| M1 Vertical slice | 22 | 7 |
+| M1 Vertical slice | 22 | 8 |
 | M2 Persistence | 10 | 0 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
@@ -122,7 +122,7 @@ Status overview (keep in sync):
 - **Note:** Two-phase scan (sequential enumeration, parallel inspection); benchmark 2.7 s for 10,000 files (Debug, Windows). Language and marker-based classification follows in REPO-003.
 
 ### REPO-003 — Language and project-marker detection
-- **Priority:** P0 · **Milestone:** M1 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M1 · **Status:** done
 - **Prerequisites:** REPO-002
 - **Projects:** Analysis, Analysis.Tests
 - **Description:** Map extensions/file names/shebangs to `LanguageId`; detect project markers (`*.sln`, `*.slnx`, `*.csproj`, `*.fsproj`, `*.vbproj`, `package.json`, `pyproject.toml`, `requirements*.txt`, `setup.cfg`, `setup.py`).

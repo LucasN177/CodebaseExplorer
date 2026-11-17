@@ -227,6 +227,8 @@ internal sealed class RepositoryScanner(IRepositoryFileReader fileReader, TimePr
         var isBinary = head.Contains((byte)0);
         var hasGeneratedHeader = !isBinary && ContainsIgnoreAsciiCase(head, GeneratedMarker);
         int? lineCount = isBinary ? null : size == 0 ? 0 : newlines + (lastByte == '\n' ? 0 : 1);
+        var language = isBinary ? LanguageId.Unknown : LanguageDetector.Detect(path.FileName, head);
+        var marker = ProjectMarkerDetector.Detect(path.FileName);
 
         return new ScannedFile(
             path,
@@ -235,7 +237,9 @@ internal sealed class RepositoryScanner(IRepositoryFileReader fileReader, TimePr
             lineCount,
             isBinary,
             hasGeneratedHeader,
-            FileClassifier.Classify(path, isBinary, hasGeneratedHeader));
+            language,
+            marker,
+            FileClassifier.Classify(path, isBinary, hasGeneratedHeader, language, marker));
     }
 
     private static bool ContainsIgnoreAsciiCase(ReadOnlySpan<byte> haystack, ReadOnlySpan<byte> needle)
