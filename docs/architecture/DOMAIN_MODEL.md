@@ -147,9 +147,13 @@ detection.
   `src/billing/invoice.ts#InvoiceService.create`; non-exported top-level symbols use `~` prefix.
 - **Python:** `{dottedModulePath}:{qualname}`, e.g. `billing.invoices:InvoiceService.create`.
 
-**Normalization rules:** relative paths use `/`, no leading `./`, case preserved; NuGet and PyPI
-names are lower-cased (PyPI additionally normalized per PEP 503: runs of `-`, `_`, `.` → `-`);
-npm names are kept as published (they are lowercase by registry rule).
+**Normalization rules** (implemented in `Domain/Common/NaturalKey.cs`): relative paths use `/`,
+no leading `./`, no empty segments, case preserved; `%` and `:` inside paths are escaped as `%25` and
+`%3A`, because a project key (ending in a path) is embedded in module and entity keys and must not be
+confused with the `:` separator. Kind tokens (ecosystem, module kind, language, relationship kind,
+analyzer id) must match `[a-z0-9.+-]+`; rule ids must not contain `:` or whitespace; no component may
+contain line breaks. Package names: `nuget` and `dotnet-framework` lower-cased, `pypi` normalized per
+PEP 503 (runs of `-`, `_`, `.` → `-`, lower-cased), `npm` and others kept as published (trimmed).
 
 **Consequences:** renaming/moving a file or symbol produces a new ID (by design — it *is* a
 different natural key). Rename detection is a post-MVP concern of incremental analysis/history

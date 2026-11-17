@@ -21,7 +21,7 @@ Status overview (keep in sync):
 | Milestone | Tasks | Done |
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
-| M1 Vertical slice | 22 | 0 |
+| M1 Vertical slice | 22 | 1 |
 | M2 Persistence | 10 | 0 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
@@ -36,7 +36,7 @@ Status overview (keep in sync):
 ## M1 — Vertical slice: local repository → .NET projects → project graph
 
 ### CORE-001 — Stable identifier types and natural-key hashing
-- **Priority:** P0 · **Milestone:** M1 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M1 · **Status:** done
 - **Prerequisites:** —
 - **Projects:** Domain, Domain.Tests
 - **Description:** Implement `RepositoryId`, `AnalysisRunId` (Guid v7) and `ElementId` (first 16 bytes of SHA-256 of the UTF-8 natural key) as `readonly record struct`s, plus `NaturalKey` builders for files, projects, modules, entities, external dependencies, relationships and evidence (DOMAIN_MODEL.md §3).

@@ -21,7 +21,7 @@ fixed; progress is tracked by task status in [TASK_BREAKDOWN.md](../implementati
 | Milestone | Theme | User-visible result | Status |
 |---|---|---|---|
 | **M0** | Foundation | Repository documentation, architecture, buildable solution, startable app shell with navigation and placeholder explorer. | ✅ done |
-| **M1** | Vertical slice: .NET project graph | Import a local folder → detect .NET solutions/projects → project and NuGet package references → interactive graph in the explorer. In-memory only. | ⏳ planned |
+| **M1** | Vertical slice: .NET project graph | Import a local folder → detect .NET solutions/projects → project and NuGet package references → interactive graph in the explorer. In-memory only. | 🚧 in progress |
 | **M2** | Persistence & analysis runs | Results stored in SQLite; recent repositories; reopen without re-analysis; analysis run history; repository overview page. | ⏳ planned |
 | **M3** | Deep C# analysis & Component Inspector | Namespaces/types/relationships via Roslyn (no build); evidence levels; inspector with evidence and source snippets; .NET hostile fixtures. | ⏳ planned |
 | **M4** | Polyglot & large repositories | TS/JS/Python via Tree-sitter and manifests; hierarchical aggregation; filters; search; node budget; performance fixtures. | ⏳ planned |

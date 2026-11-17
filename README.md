@@ -108,7 +108,7 @@ enforced by architecture tests. Details: [docs/architecture/SYSTEM_ARCHITECTURE.
 | Milestone | Status |
 |---|---|
 | M0 Foundation — docs, solution, app shell | ✅ done |
-| M1 Vertical slice — local repo → .NET projects → project graph | ⏳ next |
+| M1 Vertical slice — local repo → .NET projects → project graph | 🚧 in progress |
 | M2 Persistence · M3 Deep C# & Inspector · M4 Polyglot & scale | ⏳ planned |
 | M5 Git · M6 Export · M7 Local AI · M8 Release | ⏳ planned |
 

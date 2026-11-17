@@ -5,7 +5,7 @@
 | Milestone | Name | Status | Exit criteria (summary) |
 |---|---|---|---|
 | M0 | Foundation | ✅ done (2026-11-17) | Docs, buildable solution, dependency tests, startable shell. |
-| M1 | Vertical slice: .NET project graph | ⏳ planned | Local folder → .NET projects → project graph in the explorer on 3 OSes. |
+| M1 | Vertical slice: .NET project graph | 🚧 in progress | Local folder → .NET projects → project graph in the explorer on 3 OSes. |
 | M2 | Persistence & analysis runs | ⏳ planned | SQLite persistence, reopen, run history, migrations. |
 | M3 | Deep C# & Component Inspector | ⏳ planned | Namespaces/types with evidence levels, inspector, hostile fixtures. |
 | M4 | Polyglot & large repositories | ⏳ planned | TS/JS/Python, filters/search/budget, performance targets. |
