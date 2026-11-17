@@ -11,8 +11,10 @@ architecture model and visualizes it as an interactive, hierarchical graph (Cyto
 WebView). Local-first, never executes repository code, optional local AI with citations.
 **Current state:** M0 done; M1 in progress — the language-independent domain model is implemented
 (CORE-001 … CORE-004: stable IDs, all model elements, `ArchitectureModel` validation), plus the
-application `Result`/`ApplicationError`/`AnalysisProgress` conventions (CORE-005). No
-scanning, analysis, persistence, graph, Git or AI functionality exists yet. Next: the remaining M1
+application `Result`/`ApplicationError`/`AnalysisProgress` conventions (CORE-005), safe file access,
+the repository scanner and language/marker detection (REPO-001 … REPO-003) and the
+`dotnet-layered` fixture (REPO-004). No project-system or language analyzer, persistence, graph,
+Git or AI functionality exists yet, and nothing is wired to the UI. Next: the remaining M1
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 
 ## Commands

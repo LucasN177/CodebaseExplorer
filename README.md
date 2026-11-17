@@ -115,8 +115,11 @@ enforced by architecture tests. Details: [docs/architecture/SYSTEM_ARCHITECTURE.
 What exists today: 10 source projects and 6 test projects, central package management, module
 registration seams, a composition root, the Avalonia shell, and the language-independent domain
 model (stable IDs, projects, modules, entities, evidence-backed relationships, analysis runs and
-model validation; tasks CORE-001 … CORE-004) and the application result, error and progress types (CORE-005). 312 tests pass. The domain model is not yet filled
-by any analyzer.
+model validation; tasks CORE-001 … CORE-004), the application result, error and progress types
+(CORE-005), and the first analysis building blocks: safe repository file access, a repository
+scanner with `.gitignore` support, and language/project-marker detection (REPO-001 … REPO-004,
+including the `dotnet-layered` test fixture). These are not yet reachable from the UI, and no
+analyzer fills the domain model yet.
 
 ## Roadmap
 

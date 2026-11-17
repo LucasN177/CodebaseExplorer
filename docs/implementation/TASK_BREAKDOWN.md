@@ -21,7 +21,7 @@ Status overview (keep in sync):
 | Milestone | Tasks | Done |
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
-| M1 Vertical slice | 22 | 8 |
+| M1 Vertical slice | 22 | 9 |
 | M2 Persistence | 10 | 0 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
@@ -131,13 +131,14 @@ Status overview (keep in sync):
   - Unknown files are `unknown`, never guessed.
 
 ### REPO-004 — Fixture repository `dotnet-layered`
-- **Priority:** P0 · **Milestone:** M1 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M1 · **Status:** done
 - **Prerequisites:** —
 - **Projects:** TestRepositories
 - **Description:** Create the first fixture: `.slnx` + `.sln`, 5 projects (Domain, Application, Infrastructure, Web, Tests) with `ProjectReference`s, central package management, one `Directory.Build.props`, one simple `'$(Prop)' == 'literal'` condition, one `ProjectReference` to a non-existent project file (negative case for ANALYSIS-004), a few types per project. Add `EXPECTED.md` listing projects, project references (with file/line) and package references.
 - **Acceptance criteria:**
   - Fixture files are excluded from compilation (verified by a clean solution build).
   - `EXPECTED.md` is complete and is the oracle for ANALYSIS-002…004 tests.
+- **Note:** EXPECTED.md positions were taken from the files with grep; a test asserts the fixture contains no CR bytes. How ANALYSIS-004 represents the missing Shop.Legacy target is left to that task (the observable outcome is fixed in EXPECTED.md §4).
 
 ### ANALYSIS-001 — Analyzer contracts, pipeline orchestrator and linker skeleton
 - **Priority:** P0 · **Milestone:** M1 · **Status:** todo

@@ -4,7 +4,9 @@
 > Implemented so far: test infrastructure (xunit.v3 on Microsoft.Testing.Platform, NSubstitute),
 > architecture rule tests, composition root tests, application paths tests, and Domain unit tests
 > for IDs, natural keys, value objects, all model elements and `ArchitectureModel` validation —
-> Application result/error/progress tests — 312 tests in total.
+> Application result/error/progress tests, file-reader/root-validation, gitignore, scanner,
+> language/marker detection and `dotnet-layered` fixture tests — 550 tests in total (4 skipped on
+> this Windows machine: 3 symbolic-link tests without link permission, 1 explicit benchmark).
 
 ## 1. Goals
 
@@ -66,7 +68,7 @@ Planned fixtures:
 
 | Fixture | Task | Purpose |
 |---|---|---|
-| `dotnet-layered` | REPO-004 | 5-project clean-architecture solution; M1 oracle. |
+| `dotnet-layered` | REPO-004 (**exists**) | 5-project clean-architecture solution; M1 oracle. |
 | `dotnet-advanced` | REPO-006 | Partial types, generics, multi-targeting, conditions, CPM overrides, missing references. |
 | `ts-monorepo-workspaces` | REPO-007 | npm/pnpm workspaces, tsconfig paths and project references. |
 | `js-commonjs` | REPO-007 | `require`, `module.exports`, index resolution. |

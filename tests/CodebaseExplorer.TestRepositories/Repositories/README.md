@@ -20,4 +20,11 @@ and integration tests (see `docs/implementation/TEST_STRATEGY.md`, section "Test
 6. **Git history fixtures** are created at test time by a builder (task `GIT-002`), not committed
    as nested `.git` folders.
 
-No fixtures exist yet. The first one (`dotnet-layered`) is created by task `REPO-004`.
+## Fixtures
+
+| Fixture | Task | Purpose |
+|---|---|---|
+| `dotnet-layered` | REPO-004 | 5-project layered .NET solution (`.sln` + `.slnx`), central package management with a `VersionOverride`, a false MSBuild condition, a reference to a missing project, a `FrameworkReference`, multi-targeting. Oracle for ANALYSIS-002 … ANALYSIS-004. |
+
+Fixture files use LF line endings and are stored byte-exact (`.gitattributes`), because
+`EXPECTED.md` documents exact line/column positions.
