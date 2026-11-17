@@ -1,4 +1,5 @@
 using CodebaseExplorer.Analysis.FileSystem;
+using CodebaseExplorer.Analysis.Scanning;
 using CodebaseExplorer.Application.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -17,6 +18,8 @@ public static class DependencyInjection
 
         services.AddSingleton<IRepositoryRootValidator, RepositoryRootValidator>();
         services.AddSingleton<IRepositoryFileReader>(_ => new RepositoryFileReader(SymbolicLinkPolicy.DoNotFollow));
+
+        services.AddSingleton<RepositoryScanner>();
 
         return services;
     }

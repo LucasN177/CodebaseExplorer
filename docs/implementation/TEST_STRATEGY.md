@@ -115,7 +115,7 @@ Planned fixtures:
 
 | Date | Benchmark | Result | Notes |
 |---|---|---|---|
-| — | — | No benchmarks yet (QA-002). | |
+| 2026-11-17 | Scanner, 10,000 small files in 100 directories (`RepositoryScannerTests.Scan_TenThousandFiles_CompletesWithinFiveSeconds`, explicit test) | 2.7 s | Debug build, Windows 11, local SSD; target < 5 s (REPO-002). Run: `dotnet test --project tests/CodebaseExplorer.Analysis.Tests --filter-method "*Scan_TenThousandFiles*" --explicit only --output Detailed` |
 
 ## 9. Accessibility checklist (QA-005)
 

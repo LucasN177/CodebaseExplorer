@@ -21,7 +21,7 @@ Status overview (keep in sync):
 | Milestone | Tasks | Done |
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
-| M1 Vertical slice | 22 | 6 |
+| M1 Vertical slice | 22 | 7 |
 | M2 Persistence | 10 | 0 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
@@ -110,7 +110,7 @@ Status overview (keep in sync):
 - **Note:** Symbolic-link tests skip with a reason where the account may not create links (Windows without developer mode); Windows junction tests cover the same link logic without privileges.
 
 ### REPO-002 — Repository scanner
-- **Priority:** P0 · **Milestone:** M1 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M1 · **Status:** done
 - **Prerequisites:** REPO-001
 - **Projects:** Analysis, Analysis.Tests
 - **Description:** Enumerate files with built-in excludes and `.gitignore` semantics (in-process), classify files, detect binaries, compute SHA-256 and line counts, report progress and honor cancellation (ANALYSIS_ENGINE.md Stage 1).
@@ -119,6 +119,7 @@ Status overview (keep in sync):
   - `.gitignore` negation (`!`) and directory patterns behave as in Git for the fixture cases.
   - Output is sorted and deterministic.
   - Scanning 10,000 synthetic files completes in < 5 s on a developer machine (smoke benchmark, not a CI gate).
+- **Note:** Two-phase scan (sequential enumeration, parallel inspection); benchmark 2.7 s for 10,000 files (Debug, Windows). Language and marker-based classification follows in REPO-003.
 
 ### REPO-003 — Language and project-marker detection
 - **Priority:** P0 · **Milestone:** M1 · **Status:** todo
