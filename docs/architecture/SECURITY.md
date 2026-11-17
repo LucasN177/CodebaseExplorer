@@ -64,7 +64,10 @@
 
 ### Desktop / Graph
 - WebView loads bundled assets only; navigation and new windows blocked; CSP enforced;
-  messages schema-validated.
+  messages schema-validated. Verified in spike GRAPH-001 (Windows): CSP blocks `fetch` and remote
+  images, `NavigationStarted.Cancel` and `NewWindowRequested.Handled` block navigation and new
+  windows. The WebView2 user data folder lives under the app data directory; DevTools are disabled
+  in release builds; the legacy WebView1/EdgeHTML engine is never used.
 - "Open in editor" uses a user-configured command template with the file path passed as a single
   argument (no shell interpolation); only paths inside the repository are allowed.
 

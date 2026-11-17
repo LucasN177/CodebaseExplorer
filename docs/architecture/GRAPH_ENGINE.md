@@ -123,8 +123,18 @@ GRAPH-006 and the theme tokens with GRAPH-003.
 | web → .NET | `node/openInspector` | `{ elementId }` |
 | web → .NET | `error` | `{ message }` |
 
-The concrete WebView interop API (script invocation and message callbacks) is determined in spike
-**GRAPH-001**.
+**Concrete interop (spike GRAPH-001, verified on Windows/WebView2; ADR-006 "Spike result"):**
+
+| Direction | Mechanism |
+|---|---|
+| .NET → web | `NativeWebView.InvokeScript("window.<entry>(" + JSON string literal of the envelope + ")")` → `Task<string?>` (JSON-encoded return value, `null` if the script threw — treat as failure). 110 KB payloads take ~120 ms round trip. |
+| web → .NET | injected global `invokeCSharpAction(envelopeJson)` → `NativeWebView.WebMessageReceived` (`e.Body`); the host validates with `GraphMessageSerializer.TryParse`. |
+| Loading | `Navigate(file://…/index.html)` with scripts as separate local files; CSP `default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'`. |
+| Navigation | `NavigationStarted`: `Cancel = true` for everything except the page file; `NewWindowRequested`: `Handled = true`. |
+| Engine setup | Windows: `AdapterPreference = [WebView2]`, `UserDataFolder` under the app data directory via `EnvironmentRequested`, wait for `AdapterCreated`, check `AdapterInfo` and show an error instead of falling back to WebView1. DevTools off in release builds. |
+
+The page must not use implicit globals for element ids (an element `id="cy"` is `window.cy`).
+macOS and Linux behavior is not verified yet (GRAPH-001 remainder).
 
 ## 7. Web view rules
 
@@ -142,7 +152,7 @@ The concrete WebView interop API (script invocation and message callbacks) is de
 | Layout | Use | Candidate implementation |
 |---|---|---|
 | Hierarchical (layered) | Project/module dependency graphs | cytoscape-dagre (MIT) — or ELK via cytoscape-elk **after license review of elkjs (EPL-2.0 OR GPL-3.0)** |
-| Force-directed | Exploration, neighborhood views | Cytoscape built-in `cose`; fcose (MIT, last release 2023) if maintenance is acceptable |
+| Force-directed | Exploration, neighborhood views | Cytoscape built-in `cose` measured **12.5–13.9 s** for 500 nodes / 2,000 edges (GRAPH-001) — too slow as default; fcose (MIT, last release 2023) or a web-worker layout to be measured in GRAPH-005 |
 | Concentric | Neighborhood around a focus node | Cytoscape built-in |
 | Grid | Fallback for huge flat sets | Cytoscape built-in |
 

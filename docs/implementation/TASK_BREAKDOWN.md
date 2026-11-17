@@ -186,7 +186,7 @@ Status overview (keep in sync):
 - **Note:** Missing project files become placeholder projects (kind Unknown, resolution=missing) so the Syntactic reference stays visible; documented in EXPECTED.md §4, ANALYSIS_ENGINE.md and DOMAIN_MODEL.md.
 
 ### GRAPH-001 — Spike: Avalonia WebView + Cytoscape.js on Windows, macOS, Linux
-- **Priority:** P0 · **Milestone:** M1 · **Status:** todo · **Spike (time-box 2 days)**
+- **Priority:** P0 · **Milestone:** M1 · **Status:** in progress · **Spike (time-box 2 days)**
 - **Prerequisites:** —
 - **Projects:** Desktop (spike branch), docs
 - **Description:** Verify `Avalonia.Controls.WebView` (12.1.x) with a bundled static page running Cytoscape.js: local asset loading, .NET→JS and JS→.NET messages, navigation blocking, CSP, runtime prerequisites per OS.
@@ -194,6 +194,7 @@ Status overview (keep in sync):
   - Written result in ADR-006 (update status) and GRAPH_ENGINE.md §6 (concrete interop API).
   - If a platform fails: documented mitigation or fallback proposal for OPD-04.
   - Package added to `Directory.Packages.props` only if adopted.
+- **Note (2026-11-17):** Windows verified — all checks pass after setting `AdapterPreference` and `UserDataFolder` (ADR-006 "Spike result"; code on branch `spike/GRAPH-001-webview`). **Remaining:** run the spike app on macOS and Linux and record the results; decide OPD-04 if Linux embedding fails. GRAPH-003/004 may start on Windows meanwhile.
 
 ### GRAPH-002 — Graph DTOs and project-level projection
 - **Priority:** P0 · **Milestone:** M1 · **Status:** done
@@ -383,7 +384,7 @@ Status overview (keep in sync):
 - **Priority:** P0 · **Milestone:** M3 · **Status:** todo
 - **Prerequisites:** GRAPH-004
 - **Projects:** GraphView.Web, Desktop
-- **Description:** Hierarchical and force layouts, layout switcher, visual encoding from GRAPH_ENGINE.md §9; license review for layout extensions (elkjs EPL-2.0).
+- **Description:** Hierarchical and force layouts, layout switcher, visual encoding from GRAPH_ENGINE.md §9; license review for layout extensions (elkjs EPL-2.0). Spike GRAPH-001 measured Cytoscape's built-in `cose` at 12.5–13.9 s for 500 nodes / 2,000 edges, so the default layout must be faster (measure dagre/fcose/web-worker options).
 - **Acceptance criteria:** Layout choice persisted; license review documented in SOLUTION_STRUCTURE.md §6.2.
 
 ### GRAPH-006 — Module and entity levels with expand/collapse
