@@ -1,0 +1,68 @@
+# ---------------------------------------------------------------
+# .NET build output
+# ---------------------------------------------------------------
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+artifacts/
+*.nupkg
+*.snupkg
+
+# Test results / coverage
+[Tt]est[Rr]esult*/
+*.trx
+coverage*.json
+coverage*.xml
+coverage*.info
+*.coverage
+*.coveragexml
+
+# ---------------------------------------------------------------
+# IDEs and editors
+# ---------------------------------------------------------------
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userprefs
+
+# VS Code (keep shared settings if they are added deliberately)
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------------------------------------------------------------
+# Graph frontend (TypeScript / Vite) - planned, see GRAPH_ENGINE.md
+# ---------------------------------------------------------------
+node_modules/
+dist/
+*.tsbuildinfo
+.vite/
+
+# ---------------------------------------------------------------
+# Local runtime data - never commit
+# ---------------------------------------------------------------
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+# Local secrets / provider keys (cloud AI keys must never be committed)
+*.secrets.json
+.env
+.env.*
+
+# Exception: fixture repositories used by tests are committed on purpose.
+!tests/CodebaseExplorer.TestRepositories/Repositories/**

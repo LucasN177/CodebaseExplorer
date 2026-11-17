@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Serializable DTOs shared across module boundaries and with the graph web view
+    (graph DTOs, query results). Dependency-free by design: no project or package references.
+  -->
+
+</Project>

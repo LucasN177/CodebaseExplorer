@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CodebaseExplorer.Analysis\CodebaseExplorer.Analysis.csproj" />
+    <ProjectReference Include="..\CodebaseExplorer.TestRepositories\CodebaseExplorer.TestRepositories.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Not a test project. Holds fixture repositories (input data for analyzer and integration tests)
+    and a helper to locate them. Fixture files are DATA: they are never compiled, restored, built
+    or executed - neither by this project nor by Codebase Explorer (see docs/architecture/SECURITY.md).
+  -->
+  <ItemGroup>
+    <Compile Remove="Repositories/**" />
+    <None Remove="Repositories/**" />
+    <EmbeddedResource Remove="Repositories/**" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pages="using:CodebaseExplorer.Desktop.ViewModels.Pages"
+             x:Class="CodebaseExplorer.Desktop.Views.Pages.ArchitectureExplorerPageView"
+             x:DataType="pages:ArchitectureExplorerPageViewModel">
+  <DockPanel>
+    <TextBlock DockPanel.Dock="Top" Text="{Binding Title}"
+               FontSize="24" FontWeight="SemiBold" Margin="0,0,0,16" />
+    <!-- Placeholder: the Cytoscape.js graph host (WebView) and the Component Inspector replace this border. -->
+    <Border BorderThickness="1" CornerRadius="6"
+            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
+        <TextBlock Text="Architecture graph" FontSize="18" HorizontalAlignment="Center" />
+        <TextBlock Opacity="0.7" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="420"
+                   Text="No repository has been analyzed. The interactive graph will appear here once repository import and analysis are implemented." />
+      </StackPanel>
+    </Border>
+  </DockPanel>
+</UserControl>

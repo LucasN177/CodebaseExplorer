@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CodebaseExplorer.AI/CodebaseExplorer.AI.csproj" />
+    <Project Path="src/CodebaseExplorer.Analysis/CodebaseExplorer.Analysis.csproj" />
+    <Project Path="src/CodebaseExplorer.Application/CodebaseExplorer.Application.csproj" />
+    <Project Path="src/CodebaseExplorer.Contracts/CodebaseExplorer.Contracts.csproj" />
+    <Project Path="src/CodebaseExplorer.Desktop/CodebaseExplorer.Desktop.csproj" />
+    <Project Path="src/CodebaseExplorer.Domain/CodebaseExplorer.Domain.csproj" />
+    <Project Path="src/CodebaseExplorer.Git/CodebaseExplorer.Git.csproj" />
+    <Project Path="src/CodebaseExplorer.Graph/CodebaseExplorer.Graph.csproj" />
+    <Project Path="src/CodebaseExplorer.Infrastructure/CodebaseExplorer.Infrastructure.csproj" />
+    <Project Path="src/CodebaseExplorer.Storage/CodebaseExplorer.Storage.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CodebaseExplorer.Analysis.Tests/CodebaseExplorer.Analysis.Tests.csproj" />
+    <Project Path="tests/CodebaseExplorer.Domain.Tests/CodebaseExplorer.Domain.Tests.csproj" />
+    <Project Path="tests/CodebaseExplorer.Graph.Tests/CodebaseExplorer.Graph.Tests.csproj" />
+    <Project Path="tests/CodebaseExplorer.IntegrationTests/CodebaseExplorer.IntegrationTests.csproj" />
+    <Project Path="tests/CodebaseExplorer.Storage.Tests/CodebaseExplorer.Storage.Tests.csproj" />
+    <Project Path="tests/CodebaseExplorer.TestRepositories/CodebaseExplorer.TestRepositories.csproj" />
+  </Folder>
+</Solution>

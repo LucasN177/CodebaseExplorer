@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pages="using:CodebaseExplorer.Desktop.ViewModels.Pages"
+             x:Class="CodebaseExplorer.Desktop.Views.Pages.StartPageView"
+             x:DataType="pages:StartPageViewModel">
+  <StackPanel Spacing="12" MaxWidth="720" HorizontalAlignment="Left">
+    <TextBlock Text="Welcome to Codebase Explorer" FontSize="28" FontWeight="SemiBold" />
+    <TextBlock TextWrapping="Wrap" Opacity="0.8"
+               Text="Codebase Explorer analyzes software repositories locally and turns their structure, dependencies and history into an interactive architecture model." />
+    <Border BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,16,0,0"
+            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+      <StackPanel Spacing="6">
+        <TextBlock Text="Project status: foundation" FontWeight="SemiBold" />
+        <TextBlock TextWrapping="Wrap"
+                   Text="Repository import and analysis are not implemented yet. See docs/implementation/IMPLEMENTATION_PLAN.md for the roadmap." />
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

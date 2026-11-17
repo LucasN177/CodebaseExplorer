@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Innermost layer. MUST NOT reference any other project or any infrastructure package
+    (UI, EF Core, Roslyn, Tree-sitter, LibGit2Sharp, AI SDKs). Enforced by
+    tests/CodebaseExplorer.IntegrationTests/Architecture/ProjectReferenceRulesTests.cs.
+  -->
+
+</Project>

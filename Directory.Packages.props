@@ -1,0 +1,40 @@
+<Project>
+  <!--
+    Central Package Management. Every PackageReference in the repository gets its version here.
+
+    Verification rule (see docs/development/DEVELOPMENT_GUIDE.md, "Dependency policy"):
+    every version below was checked against nuget.org on 2026-11-17 (latest stable at that date,
+    target framework compatible with net10.0). Packages that are planned but not yet referenced by
+    any project are listed in docs/architecture/SOLUTION_STRUCTURE.md ("Planned dependencies")
+    together with their open verification items. Add them here only when a task actually needs them.
+
+    Version line: runtime-aligned Microsoft.Extensions.* packages and EF Core are pinned to the 10.0.x
+    servicing line because the solution targets net10.0 (EF Core 11 targets net11.0 only).
+    Microsoft.Extensions.AI* is versioned independently (10.x) and is exempt (DEVELOPMENT_GUIDE.md §4).
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup Label="Desktop / UI">
+    <PackageVersion Include="Avalonia" Version="12.1.6" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.1.6" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.6" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.1.6" />
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup Label="Hosting / composition">
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.15" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.15" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.15" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.15" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.15" />
+  </ItemGroup>
+
+  <ItemGroup Label="Testing">
+    <PackageVersion Include="xunit.v3" Version="4.0.3" />
+    <PackageVersion Include="NSubstitute" Version="6.2.0" />
+  </ItemGroup>
+</Project>

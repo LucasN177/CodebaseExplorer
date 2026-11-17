@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\CodebaseExplorer.Application\CodebaseExplorer.Application.csproj" />
+    <ProjectReference Include="..\CodebaseExplorer.Domain\CodebaseExplorer.Domain.csproj" />
+    <ProjectReference Include="..\CodebaseExplorer.Contracts\CodebaseExplorer.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+</Project>

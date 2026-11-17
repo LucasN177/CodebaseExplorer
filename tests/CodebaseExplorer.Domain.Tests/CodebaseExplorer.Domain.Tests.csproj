@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CodebaseExplorer.Domain\CodebaseExplorer.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Composition root and Avalonia UI. Views contain no business logic (MVVM, see CLAUDE.md).
+    ViewModels talk to the Application layer and Contracts DTOs only; the module project
+    references below exist solely so that the composition root can register the modules.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>CodebaseExplorer</AssemblyName>
+    <RootNamespace>CodebaseExplorer.Desktop</RootNamespace>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CodebaseExplorer.Application\CodebaseExplorer.Application.csproj" />
+    <ProjectReference Include="..\CodebaseExplorer.Contracts\CodebaseExplorer.Contracts.csproj" />
+    <ProjectReference Include="..\CodebaseExplorer.Domain\CodebaseExplorer.Domain.csproj" />
+    <ProjectReference Include="..\CodebaseExplorer.Infrastructure\CodebaseExplorer.Infrastructure.csproj" />
+    <ProjectReference Include="..\CodebaseExplorer.Storage\CodebaseExplorer.Storage.csproj" />
+    <ProjectReference Include="..\CodebaseExplorer.Analysis\CodebaseExplorer.Analysis.csproj" />
+    <ProjectReference Include="..\CodebaseExplorer.Graph\CodebaseExplorer.Graph.csproj" />
+    <ProjectReference Include="..\CodebaseExplorer.Git\CodebaseExplorer.Git.csproj" />
+    <ProjectReference Include="..\CodebaseExplorer.AI\CodebaseExplorer.AI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" />
+  </ItemGroup>
+
+</Project>
