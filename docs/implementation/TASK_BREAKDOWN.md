@@ -21,7 +21,7 @@ Status overview (keep in sync):
 | Milestone | Tasks | Done |
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
-| M1 Vertical slice | 22 | 2 |
+| M1 Vertical slice | 22 | 3 |
 | M2 Persistence | 10 | 0 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
@@ -57,7 +57,7 @@ Status overview (keep in sync):
   - Unit tests for every invariant (first tests in `Domain.Tests`).
 
 ### CORE-003 — Domain: entities, relationships, evidence, external dependencies, runs
-- **Priority:** P0 · **Milestone:** M1 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M1 · **Status:** done
 - **Prerequisites:** CORE-002
 - **Projects:** Domain, Domain.Tests
 - **Description:** Implement `CodeEntity`, `CodeRelationship`, `AnalysisEvidence`, `ExternalDependency`, `AnalysisRun` (incl. status state machine), `AnalysisDiagnostic`, `EvidenceLevel`, `RelationshipKind`, `ElementReference`.

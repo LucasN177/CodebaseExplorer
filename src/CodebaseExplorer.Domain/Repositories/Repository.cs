@@ -1,4 +1,5 @@
 using CodebaseExplorer.Domain.Common;
+using CodebaseExplorer.Domain.Runs;
 
 namespace CodebaseExplorer.Domain.Repositories;
 
@@ -41,6 +42,25 @@ public sealed class Repository
 
     /// <summary>The run whose model is current; <see langword="null"/> until the first successful run.</summary>
     public AnalysisRunId? LastAnalysisRunId { get; private set; }
+
+    /// <summary>Makes the model of <paramref name="run"/> the current one.</summary>
+    /// <exception cref="ArgumentException">The run belongs to another repository or produced no model.</exception>
+    public void MarkAnalyzed(AnalysisRun run)
+    {
+        ArgumentNullException.ThrowIfNull(run);
+
+        if (run.RepositoryId != Id)
+        {
+            throw new ArgumentException("The run belongs to another repository.", nameof(run));
+        }
+
+        if (!run.ProducedModel)
+        {
+            throw new ArgumentException($"A {run.Status} run has no model to make current.", nameof(run));
+        }
+
+        LastAnalysisRunId = run.Id;
+    }
 
     /// <summary>Registers a new repository with a fresh time-ordered id.</summary>
     public static Repository Register(string name, RepositoryLocation location, DateTimeOffset addedAt) =>

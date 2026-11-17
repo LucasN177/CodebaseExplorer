@@ -162,9 +162,14 @@ independent of enum member names, because changing a token changes element ids:
 |---|---|
 | `Ecosystem` | `dotnet`, `node`, `python`, `other` |
 | `ModuleKind` | `namespace`, `directory`, `package`, `file` (for `FileModule`) |
+| `PackageEcosystem` | `nuget`, `npm`, `pypi`, `dotnet-framework`, `unknown` |
+| `RelationshipKind` | `project-reference`, `package-reference`, `framework-reference`, `imports`, `inherits`, `implements`, `uses-type`, `instantiates`, `calls`, `registers-service`, `depends-on` |
 
 Domain elements derive `Id` and `NaturalKey` themselves in their factory methods; callers never
-pass ids for files, projects or modules, so an id cannot drift from its key.
+pass ids for files, projects, modules, entities, external dependencies, relationships or evidence,
+so an id cannot drift from its key. Because evidence keys contain the relationship id, evidence is
+created against `CodeRelationship.IdFor(source, kind, target)` and then passed to
+`CodeRelationship.Create`, which rejects evidence that belongs to another relationship.
 
 **Consequences:** renaming/moving a file or symbol produces a new ID (by design — it *is* a
 different natural key). Rename detection is a post-MVP concern of incremental analysis/history
@@ -198,12 +203,16 @@ One execution of the analysis pipeline.
 | `Trigger` | `AnalysisTrigger` | `Initial`, `Manual`, `Incremental` (post-MVP) |
 | `StartedAt`, `CompletedAt` | `DateTimeOffset` | |
 | `CommitSha`, `Branch` | `string?` | From Git metadata if available. |
-| `AnalyzerVersions` | `IReadOnlyDictionary<AnalyzerId, string>` | Reproducibility. |
+| `AnalyzerVersions` | `IReadOnlyDictionary<string, string>` | Analyzer id → version, for reproducibility. |
 | `Statistics` | `AnalysisStatistics` | Files scanned/skipped, projects, entities, relationships by level, duration per stage. |
 | `Diagnostics` | `IReadOnlyList<AnalysisDiagnostic>` | Severity (`Info`/`Warning`/`Error`), code, message, optional location, analyzer. |
 
-State machine: `Pending → Running → (Succeeded | PartiallySucceeded | Failed | Cancelled)`;
-terminal states are final.
+State machine: `Pending → Running → (Succeeded | PartiallySucceeded | Failed | Cancelled)`; a
+pending run may also fail or be cancelled; terminal states are final. `StartedAt` is the request
+time. Completing a running run yields `PartiallySucceeded` exactly when an `Error` diagnostic was
+reported, otherwise `Succeeded`; `Failed` requires at least one `Error` diagnostic. Only runs that
+produced a model (`Succeeded`, `PartiallySucceeded`) can become `Repository.LastAnalysisRunId`
+(`Repository.MarkAnalyzed`). `CommitSha` must be a full SHA-1 or SHA-256 id.
 
 ### 4.3 RepositoryFile
 
@@ -289,7 +298,8 @@ A directed dependency between two elements.
 | `Origin` | `AnalyzerId` | Analyzer that first produced it; all analyzers are listed in evidence. |
 | `Attributes` | `IReadOnlyDictionary<string,string>` | Kind-specific facts with camelCase keys: `versionSpec`, `devOnly`, `transitive`, `resolvedVersion`, `alias` (see §4.9). |
 
-**Invariants:** at least one evidence; source ≠ target unless kind permits self-reference
+**Invariants:** endpoint kinds must match the table in §5.2; at least one evidence, all belonging to
+this relationship (duplicates by id are dropped); source ≠ target unless kind permits self-reference
 (`Calls` for recursion is stored but hidden by default); both endpoints exist in the same repository
 model; `Level` = max(evidence levels).
 
@@ -306,7 +316,7 @@ Why a relationship exists.
 | `Level` | `EvidenceLevel` | |
 | `Rule` | `string` | Machine-readable rule id, e.g. `csproj.ProjectReference`, `csharp.semantic.BaseType`, `ts.import.relative`, `heuristic.di.AddScoped`. |
 | `Location` | `SourceLocation?` | File + 1-based line/column range. Absent only for evidence derived from non-file sources (e.g. Git). |
-| `Excerpt` | `string?` | Up to 240 characters of the source line(s), for display; stored locally only. |
+| `Excerpt` | `string?` | Up to 240 characters of the source line(s), for display (longer excerpts are truncated); stored locally only. |
 | `AnalysisRunId` | `AnalysisRunId` | Run that produced it. |
 
 ### 4.9 ExternalDependency
