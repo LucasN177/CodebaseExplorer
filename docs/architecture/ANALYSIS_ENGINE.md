@@ -130,6 +130,19 @@ Run in parallel, one per ecosystem, each over the scanned file list.
   that resolve to literal values. Conditions are evaluated only for a small, safe subset
   (`'$(Prop)' == 'literal'`); anything else is treated as "unknown" and reported as a diagnostic.
   **No MSBuild evaluation, no targets, no property functions, no tasks.**
+  **Implemented (ANALYSIS-003, `ProjectSystems/DotNet/ProjectFileParser`):** the *nearest*
+  `Directory.Build.props` and `Directory.Packages.props` inside the repository are applied in the
+  order props → packages props → project (chained imports via `GetPathOfFileAbove` are property
+  functions and therefore not followed); properties are evaluated in a first pass and items in a
+  second pass with the final property values, as in MSBuild. Undefined properties are **unknown**,
+  not empty (MSBuild would use `""`, but SDK-defined properties are simply not known here); an
+  unknown property value is dropped with an `Info` diagnostic, an item whose `Include` or version
+  is unknown is skipped with a `Warning`. Conditions support only `'…' == '…'` and `'…' != '…'`
+  (case-insensitive); anything else (`and`/`or`, `Exists()`, …) skips the element with a
+  `Warning`. Other `<Import>` elements produce `dotnet.msbuild.import-not-evaluated` (`Info`);
+  `PackageReference Update` items are ignored. Package versions: `VersionOverride` › central
+  `PackageVersion` (when `ManagePackageVersionsCentrally` is true) › `Version` on the reference ›
+  unknown (`dotnet.package.version-missing` warning). The legacy MSBuild XML namespace is supported.
 - Evidence: `ProjectReference` → `Confirmed` if the referenced file exists, else `Syntactic`
   + warning. `PackageReference` → `Confirmed` (declaration is authoritative for the dependency
   edge; the *version* may be unresolved).

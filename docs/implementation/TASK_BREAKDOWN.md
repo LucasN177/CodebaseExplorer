@@ -21,7 +21,7 @@ Status overview (keep in sync):
 | Milestone | Tasks | Done |
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
-| M1 Vertical slice | 22 | 11 |
+| M1 Vertical slice | 22 | 12 |
 | M2 Persistence | 10 | 0 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
@@ -162,7 +162,7 @@ Status overview (keep in sync):
   - XML parsing uses the hardened reader settings (SECURITY.md).
 
 ### ANALYSIS-003 — Static .csproj parser with props resolution
-- **Priority:** P0 · **Milestone:** M1 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M1 · **Status:** done
 - **Prerequisites:** ANALYSIS-001
 - **Projects:** Analysis, Analysis.Tests
 - **Description:** Parse SDK-style project files and resolve `Directory.Build.props`/`Directory.Packages.props` statically (ANALYSIS_ENGINE.md Stage 2): properties, `ProjectReference`, `PackageReference` + central versions, `FrameworkReference`, simple conditions.
@@ -171,6 +171,7 @@ Status overview (keep in sync):
   - Unsupported conditions/property functions are reported as diagnostics and treated as unknown.
   - Each extracted reference has file + line/column of its XML element.
   - Tests include an XML bomb / DTD file that is rejected safely.
+- **Note:** Undefined properties are treated as unknown (not empty, unlike MSBuild); only the nearest Directory.*.props are applied. Both documented in ANALYSIS_ENGINE.md Stage 2.
 
 ### ANALYSIS-004 — .NET project dependency extraction with evidence
 - **Priority:** P0 · **Milestone:** M1 · **Status:** todo

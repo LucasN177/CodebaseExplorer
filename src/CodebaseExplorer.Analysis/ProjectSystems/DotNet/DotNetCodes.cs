@@ -16,6 +16,7 @@ internal static class DotNetCodes
     public const string PathOutsideRepository = "dotnet.path-outside-repository";
     public const string UnsupportedCondition = "dotnet.msbuild.unsupported-condition";
     public const string UnresolvedProperty = "dotnet.msbuild.unresolved-property";
+    public const string ImportNotEvaluated = "dotnet.msbuild.import-not-evaluated";
     public const string MissingProject = "dotnet.project.missing";
     public const string MissingPackageVersion = "dotnet.package.version-missing";
 
