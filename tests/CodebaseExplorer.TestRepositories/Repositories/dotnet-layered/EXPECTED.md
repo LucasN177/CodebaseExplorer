@@ -68,9 +68,13 @@ Rule id for all: `csproj.ProjectReference`; analyzer `dotnet.msbuild-static`.
 references `../Shop.Legacy/Shop.Legacy.csproj`, which does not exist. Expected: the reference is
 kept as `Syntactic` (target resolved by path only; no `CodeProject` for `Shop.Legacy` exists, so the
 graph shows it as an unresolved target) **and** a `Warning` diagnostic naming the missing file and
-the evidence location. ANALYSIS-004 decides how the unresolved target is represented (an
-`ExternalDependency` with ecosystem `Unknown` is *not* acceptable — it is not a package) and records
-that decision in ANALYSIS_ENGINE.md; this fixture only fixes the observable outcome above.
+the evidence location.
+
+Representation (decided in ANALYSIS-004): the target is a **placeholder project** named
+`Shop.Legacy`, kind `Unknown`, ecosystem `DotNet`, root directory `src/Shop.Legacy`, no project file,
+properties `resolution=missing` and `referencedPath=src/Shop.Legacy/Shop.Legacy.csproj`. Placeholders
+never own files. The model therefore contains **6** projects (5 real + 1 placeholder) and **13**
+relationships (8 project references, 4 package references, 1 framework reference).
 
 ## 5. Package references (`PackageReference`) with central package management
 

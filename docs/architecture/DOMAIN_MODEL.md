@@ -242,6 +242,11 @@ A unit of build/packaging: .NET project, npm package, Python project/distributio
 | `Properties` | `IReadOnlyDictionary<string,string>` | Ecosystem-specific facts: target frameworks, output type, SDK, package version, Python requires … |
 | `SolutionMemberships` | `IReadOnlyList<SolutionMembership>` | For .NET: `(SolutionFileId, SolutionFolderPath?)` for every `.sln`/`.slnx` that includes the project. |
 
+**Placeholder projects:** a reference to a project file that does not exist is kept visible as a
+`CodeProject` with `Kind = Unknown`, no manifest, `RootDirectory` = the referenced directory and
+properties `resolution=missing` / `referencedPath` (ANALYSIS_ENGINE.md Stage 2). Placeholders never
+own files.
+
 **Identity:** the natural key uses the manifest path (`ProjectFilePath`) if present, otherwise the
 root directory. A project at the repository root therefore needs a manifest; the manifest must lie
 within `RootDirectory`. `ProjectFileId` is derived from `ProjectFilePath` (same rule as

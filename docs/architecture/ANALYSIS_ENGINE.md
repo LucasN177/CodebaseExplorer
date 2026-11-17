@@ -146,6 +146,18 @@ Run in parallel, one per ecosystem, each over the scanned file list.
 - Evidence: `ProjectReference` → `Confirmed` if the referenced file exists, else `Syntactic`
   + warning. `PackageReference` → `Confirmed` (declaration is authoritative for the dependency
   edge; the *version* may be unresolved).
+- **Implemented (ANALYSIS-004, `DotNetProjectSystemAnalyzer`):** one `CodeProject` per
+  `.csproj`/`.fsproj`/`.vbproj` (name = file name without extension; properties = all statically
+  resolved properties plus `Sdk`; also for unparseable project files, which get a diagnostic);
+  solution memberships from all `.sln`/`.slnx` files (listed but missing projects → warning).
+  A `ProjectReference` to a missing file is kept as `Syntactic` and points to a **placeholder
+  project** (kind `Unknown`, identified by the referenced directory, properties
+  `resolution=missing` and `referencedPath`) so the unresolved dependency stays visible; a
+  placeholder never owns files; at the repository root no placeholder can be identified, so only the
+  warning remains. `PackageReference` → NuGet `ExternalDependency` with attribute `versionSpec`;
+  `FrameworkReference` → `DotNetFramework` dependency. Evidence points to the declaring element, also
+  when it is declared in a `Directory.Build.props`. The fixture `dotnet-layered` is reproduced
+  exactly (`DotNetProjectSystemAnalyzerTests`).
 
 **Node (`node.manifest`)**
 

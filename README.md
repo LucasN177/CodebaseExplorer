@@ -118,8 +118,10 @@ model (stable IDs, projects, modules, entities, evidence-backed relationships, a
 model validation; tasks CORE-001 … CORE-004), the application result, error and progress types
 (CORE-005), and the first analysis building blocks: safe repository file access, a repository
 scanner with `.gitignore` support, and language/project-marker detection (REPO-001 … REPO-004,
-including the `dotnet-layered` test fixture). These are not yet reachable from the UI, and no
-analyzer fills the domain model yet.
+including the `dotnet-layered` test fixture), and the analysis pipeline with a static .NET
+project-system analyzer that builds the model of .NET repositories — projects, solution folders,
+project/package/framework references with evidence — without running MSBuild (ANALYSIS-001 …
+ANALYSIS-004). None of this is reachable from the UI yet; the graph comes next.
 
 ## Roadmap
 

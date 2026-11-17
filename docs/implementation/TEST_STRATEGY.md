@@ -5,7 +5,8 @@
 > architecture rule tests, composition root tests, application paths tests, and Domain unit tests
 > for IDs, natural keys, value objects, all model elements and `ArchitectureModel` validation —
 > Application result/error/progress tests, file-reader/root-validation, gitignore, scanner,
-> language/marker detection and `dotnet-layered` fixture tests — 550 tests in total (4 skipped on
+> language/marker detection, `dotnet-layered` fixture tests, analysis pipeline, solution and
+> project-file parsers and the .NET project-system analyzer — 650 tests in total (4 skipped on
 > this Windows machine: 3 symbolic-link tests without link permission, 1 explicit benchmark).
 
 ## 1. Goals

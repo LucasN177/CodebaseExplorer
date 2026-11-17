@@ -21,7 +21,7 @@ Status overview (keep in sync):
 | Milestone | Tasks | Done |
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
-| M1 Vertical slice | 22 | 12 |
+| M1 Vertical slice | 22 | 13 |
 | M2 Persistence | 10 | 0 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
@@ -174,7 +174,7 @@ Status overview (keep in sync):
 - **Note:** Undefined properties are treated as unknown (not empty, unlike MSBuild); only the nearest Directory.*.props are applied. Both documented in ANALYSIS_ENGINE.md Stage 2.
 
 ### ANALYSIS-004 — .NET project dependency extraction with evidence
-- **Priority:** P0 · **Milestone:** M1 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M1 · **Status:** done
 - **Prerequisites:** ANALYSIS-002, ANALYSIS-003
 - **Projects:** Analysis, Analysis.Tests
 - **Description:** `DotNetProjectSystemAnalyzer` produces `CodeProject`s, `ProjectReference` and `PackageReference`/`FrameworkReference` relationships with evidence (`dotnet.msbuild-static`, rules `csproj.ProjectReference` etc.).
@@ -182,6 +182,7 @@ Status overview (keep in sync):
   - Output for `dotnet-layered` equals `EXPECTED.md` (projects, edges, evidence locations).
   - Missing referenced project file → `Syntactic` relationship + warning.
   - Analysis twice yields identical models (determinism test).
+- **Note:** Missing project files become placeholder projects (kind Unknown, resolution=missing) so the Syntactic reference stays visible; documented in EXPECTED.md §4, ANALYSIS_ENGINE.md and DOMAIN_MODEL.md.
 
 ### GRAPH-001 — Spike: Avalonia WebView + Cytoscape.js on Windows, macOS, Linux
 - **Priority:** P0 · **Milestone:** M1 · **Status:** todo · **Spike (time-box 2 days)**
