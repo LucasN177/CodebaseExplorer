@@ -21,7 +21,7 @@ Status overview (keep in sync):
 | Milestone | Tasks | Done |
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
-| M1 Vertical slice | 22 | 14 |
+| M1 Vertical slice | 22 | 15 |
 | M2 Persistence | 10 | 0 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
@@ -89,7 +89,7 @@ Status overview (keep in sync):
   and checked in CORE-006 and ANALYSIS-001.
 
 ### CORE-006 — Use cases: ImportLocalRepository and GetGraphView (session model cache)
-- **Priority:** P0 · **Milestone:** M1 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M1 · **Status:** done
 - **Prerequisites:** CORE-004, CORE-005, ANALYSIS-001, GRAPH-002
 - **Projects:** Application, IntegrationTests
 - **Description:** `ImportLocalRepository` validates the path, runs `IRepositoryAnalyzer`, and keeps the resulting `ArchitectureModel` in a session-scoped `IArchitectureModelCache` (Application, in memory, replaced by the SQLite-backed store in STORE-004). `GetGraphView` reads from the cache and calls `IGraphProjector`. One run per repository at a time.
@@ -97,6 +97,7 @@ Status overview (keep in sync):
   - End-to-end test: fixture `dotnet-layered` → import → project-level `GraphViewDto` matching `EXPECTED.md`.
   - Cancellation stops the run and leaves no model in the cache.
   - Concurrent import of the same repository is rejected with a typed error.
+- **Note:** Use cases return Contracts DTOs (RepositoryImportSummaryDto, GraphViewDto). The session cache is replaced by the SQLite store in STORE-004; GetGraphView is already async for that.
 
 ### REPO-001 — Repository location validation and safe file reader
 - **Priority:** P0 · **Milestone:** M1 · **Status:** done

@@ -7,7 +7,8 @@
 > Application result/error/progress tests, file-reader/root-validation, gitignore, scanner,
 > language/marker detection, `dotnet-layered` fixture tests, analysis pipeline, solution and
 > project-file parsers, the .NET project-system analyzer, graph projection and graph JSON
-> round-trips — 678 tests in total (4 skipped on
+> round-trips, and the import/graph use cases including an end-to-end test over `dotnet-layered`
+> — 693 tests in total (4 skipped on
 > this Windows machine: 3 symbolic-link tests without link permission, 1 explicit benchmark).
 
 ## 1. Goals

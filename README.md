@@ -121,8 +121,10 @@ scanner with `.gitignore` support, and language/project-marker detection (REPO-0
 including the `dotnet-layered` test fixture), and the analysis pipeline with a static .NET
 project-system analyzer that builds the model of .NET repositories — projects, solution folders,
 project/package/framework references with evidence — without running MSBuild (ANALYSIS-001 …
-ANALYSIS-004), and the project-level graph projection with its JSON wire format (GRAPH-002).
-None of this is reachable from the UI yet; the graph web view comes next.
+ANALYSIS-004), the project-level graph projection with its JSON wire format (GRAPH-002), and the
+use cases that tie them together — import a local folder, then query its project graph (CORE-006;
+models are kept in memory for the session until persistence arrives in M2). None of this is
+reachable from the UI yet; the graph web view comes next.
 
 ## Roadmap
 

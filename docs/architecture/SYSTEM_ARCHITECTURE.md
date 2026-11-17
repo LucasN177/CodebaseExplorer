@@ -174,6 +174,14 @@ sequenceDiagram
     VM->>UC: GetComponentDetailsAsync(elementId, ct)
 ```
 
+**Implemented in M1 (CORE-006):** `ImportLocalRepository` (validate → `AnalysisRun` Pending →
+Running → analyze → complete or fail/cancel → store in the session `IArchitectureModelCache`) and
+`GetGraphView` (cache → `IGraphProjector`). Until STORE-004 the "Storage" participant above is the
+in-memory session cache; models are lost when the app exits. One import per folder at a time
+(`repository.import-in-progress`); cancellation leaves the cache unchanged and propagates
+`OperationCanceledException`; re-importing a folder keeps its `RepositoryId`. The use cases return
+Contracts DTOs (`RepositoryImportSummaryDto`, `GraphViewDto`), so ViewModels never see Domain types.
+
 Principles:
 
 - **Async all the way** for I/O; every long-running call accepts a `CancellationToken` and an

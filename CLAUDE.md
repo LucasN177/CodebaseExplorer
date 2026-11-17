@@ -15,7 +15,8 @@ application `Result`/`ApplicationError`/`AnalysisProgress` conventions (CORE-005
 the repository scanner and language/marker detection (REPO-001 … REPO-003) and the
 `dotnet-layered` fixture (REPO-004), and the analysis pipeline with the static .NET project-system
 analyzer (ANALYSIS-001 … ANALYSIS-004), and the project-level graph projection plus graph DTOs and
-message envelope (GRAPH-002). No language analyzer, persistence, graph rendering, Git or AI
+message envelope (GRAPH-002), and the use cases `ImportLocalRepository` / `GetGraphView` with an
+in-memory session cache (CORE-006). No language analyzer, persistence, graph rendering, Git or AI
 functionality exists yet, and nothing is wired to the UI. Next: the remaining M1
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 
