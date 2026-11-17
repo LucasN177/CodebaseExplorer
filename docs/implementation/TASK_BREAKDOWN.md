@@ -21,7 +21,7 @@ Status overview (keep in sync):
 | Milestone | Tasks | Done |
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
-| M1 Vertical slice | 22 | 3 |
+| M1 Vertical slice | 22 | 4 |
 | M2 Persistence | 10 | 0 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
@@ -67,7 +67,7 @@ Status overview (keep in sync):
   - Unit tests for invariants and state machine.
 
 ### CORE-004 — Domain: ArchitectureModel snapshot and validation
-- **Priority:** P0 · **Milestone:** M1 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M1 · **Status:** done
 - **Prerequisites:** CORE-003
 - **Projects:** Domain, Domain.Tests
 - **Description:** Read-only `ArchitectureModel` aggregating all elements of one repository/run with lookup by ID and cross-element validation (endpoints exist, containment resolves, natural-key collisions).

@@ -113,8 +113,10 @@ enforced by architecture tests. Details: [docs/architecture/SYSTEM_ARCHITECTURE.
 | M5 Git · M6 Export · M7 Local AI · M8 Release | ⏳ planned |
 
 What exists today: 10 source projects and 6 test projects, central package management, module
-registration seams, a composition root, the Avalonia shell, and 21 passing tests (architecture
-rules, composition root, application paths).
+registration seams, a composition root, the Avalonia shell, and the language-independent domain
+model (stable IDs, projects, modules, entities, evidence-backed relationships, analysis runs and
+model validation; tasks CORE-001 … CORE-004). 279 tests pass. The domain model is not yet filled
+by any analyzer.
 
 ## Roadmap
 

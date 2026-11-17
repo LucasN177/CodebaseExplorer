@@ -9,9 +9,10 @@ Codebase Explorer is a cross-platform Avalonia desktop app (.NET 10) that static
 repositories (C#, TypeScript, JavaScript, Python) into a language-independent, evidence-backed
 architecture model and visualizes it as an interactive, hierarchical graph (Cytoscape.js in a
 WebView). Local-first, never executes repository code, optional local AI with citations.
-**Current state:** milestone M0 (foundation) — docs, solution skeleton, DI seams, app shell. No
-analysis/graph/Git/AI functionality exists yet. Next: M1 tasks in
-[TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
+**Current state:** M0 done; M1 in progress — the language-independent domain model is implemented
+(CORE-001 … CORE-004: stable IDs, all model elements, `ArchitectureModel` validation). No
+scanning, analysis, persistence, graph, Git or AI functionality exists yet. Next: the remaining M1
+tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 
 ## Commands
 

@@ -1,8 +1,8 @@
 # Domain Model — Codebase Explorer
 
 > Status: **accepted (specification)** · Last reviewed: 2026-11-17
-> Implementation status: **not implemented**. Tasks CORE-001 … CORE-004 implement this model in
-> `src/CodebaseExplorer.Domain`.
+> Implementation status: **implemented** in `src/CodebaseExplorer.Domain` (CORE-001 … CORE-004),
+> covered by `tests/CodebaseExplorer.Domain.Tests`. No analyzer produces the model yet.
 
 The domain model is the **language-independent architecture model** that every analyzer produces
 and every consumer (graph, inspector, export, AI) reads
@@ -389,10 +389,18 @@ so reordering is harmless but renaming requires a migration.
 ## 6. Aggregate boundaries and the architecture model
 
 - **Repository** is the aggregate root for registration data and runs.
-- The analysis result is represented by an `ArchitectureModel` (read-only snapshot object produced
-  by the linker): files, projects, modules, entities, relationships, evidence and external
-  dependencies of one repository for one run. It validates cross-element invariants (all
-  relationship endpoints exist, every relationship has evidence, containment references resolve).
+- The analysis result is represented by an `ArchitectureModel` (`Domain/Model`, read-only snapshot
+  produced by the linker): files, projects, modules, entities, relationships, evidence and external
+  dependencies of one repository for one run, ordered by natural key (ordinal) for deterministic
+  output, with lookups by id. Construction never fails on inconsistent data; `Validate()` returns
+  **all** violations and `EnsureValid()` throws `ModelValidationException` with all of them.
+  Violation codes: `WrongRepository`, `DuplicateElement`, `NaturalKeyCollision` (also across
+  element kinds and evidence), `MissingProject`, `MissingModule`, `MissingContainingEntity`,
+  `MissingFile` (manifest, solution file, declaration, evidence location),
+  `MissingRelationshipEndpoint` (id and kind must match), `ContainmentCycle` (module parents,
+  containing entities) and `FileOutsideProject`. "Every relationship has evidence" and "an entity's
+  module belongs to the entity's project" are already guaranteed by the element factories (module
+  and entity ids derive from their project's key) and therefore not re-checked.
 - Large models are not required to fit into memory at once for *reading* (Storage serves slices);
   for *writing* the MVP materializes the model per run; streaming persistence is a scaling task
   (ANALYSIS_ENGINE.md §7).

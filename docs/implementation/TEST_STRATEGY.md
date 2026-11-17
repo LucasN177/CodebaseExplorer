@@ -2,7 +2,9 @@
 
 > Status: **accepted** · Last reviewed: 2026-11-17
 > Implemented so far: test infrastructure (xunit.v3 on Microsoft.Testing.Platform, NSubstitute),
-> architecture rule tests, composition root tests, application paths tests — 21 tests.
+> architecture rule tests, composition root tests, application paths tests, and Domain unit tests
+> for IDs, natural keys, value objects, all model elements and `ArchitectureModel` validation —
+> 279 tests in total.
 
 ## 1. Goals
 
