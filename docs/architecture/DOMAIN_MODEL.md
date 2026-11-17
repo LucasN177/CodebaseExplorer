@@ -155,6 +155,17 @@ analyzer id) must match `[a-z0-9.+-]+`; rule ids must not contain `:` or whitesp
 contain line breaks. Package names: `nuget` and `dotnet-framework` lower-cased, `pypi` normalized per
 PEP 503 (runs of `-`, `_`, `.` → `-`, lower-cased), `npm` and others kept as published (trimmed).
 
+**Kind tokens** used inside keys are fixed per enum value (`Domain/Common/KindTokens.cs`) and are
+independent of enum member names, because changing a token changes element ids:
+
+| Enum | Tokens |
+|---|---|
+| `Ecosystem` | `dotnet`, `node`, `python`, `other` |
+| `ModuleKind` | `namespace`, `directory`, `package`, `file` (for `FileModule`) |
+
+Domain elements derive `Id` and `NaturalKey` themselves in their factory methods; callers never
+pass ids for files, projects or modules, so an id cannot drift from its key.
+
 **Consequences:** renaming/moving a file or symbol produces a new ID (by design — it *is* a
 different natural key). Rename detection is a post-MVP concern of incremental analysis/history
 (ADR-009). Hash collisions are detected when persisting (same ID, different natural key) and fail
@@ -221,6 +232,11 @@ A unit of build/packaging: .NET project, npm package, Python project/distributio
 | `RootDirectory` | `RelativePath` | |
 | `Properties` | `IReadOnlyDictionary<string,string>` | Ecosystem-specific facts: target frameworks, output type, SDK, package version, Python requires … |
 | `SolutionMemberships` | `IReadOnlyList<SolutionMembership>` | For .NET: `(SolutionFileId, SolutionFolderPath?)` for every `.sln`/`.slnx` that includes the project. |
+
+**Identity:** the natural key uses the manifest path (`ProjectFilePath`) if present, otherwise the
+root directory. A project at the repository root therefore needs a manifest; the manifest must lie
+within `RootDirectory`. `ProjectFileId` is derived from `ProjectFilePath` (same rule as
+`RepositoryFile` ids), so it always matches the manifest's file id.
 
 **Decision:** solutions are *not* modeled as projects and solution membership is *not* a
 relationship. A solution is a grouping, not a dependency; modeling it as an edge would pollute
@@ -312,7 +328,7 @@ relationship `Project --PackageReference--> ExternalDependency`, stored as relat
 | Value object | Fields | Rules |
 |---|---|---|
 | `SourceLocation` | `FileId`, `StartLine`, `StartColumn`, `EndLine`, `EndColumn` | 1-based; start ≤ end. |
-| `RelativePath` | `Value` | Normalized, no `..` segments, no rooted paths. |
+| `RelativePath` | `Value` | Normalized, no `..` segments, no rooted paths (`/…`, `\\…`, `C:…`). `RelativePath.Root` (`Value` empty, rendered `.`) denotes the repository root; files can never have the root path. |
 | `ContentHash` | `Bytes` (32) | SHA-256. |
 | `LanguageId`, `AnalyzerId` | `Value` | Lowercase, `[a-z0-9.+-]`. |
 | `ElementReference` | `Kind`, `Id` | |

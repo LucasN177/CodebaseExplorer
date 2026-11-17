@@ -170,20 +170,7 @@ public readonly record struct NaturalKey
         return projectKey.Value;
     }
 
-    private static string Token(string token, string parameterName)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(token, parameterName);
-
-        foreach (var character in token)
-        {
-            if (character is not ((>= 'a' and <= 'z') or (>= '0' and <= '9') or '.' or '+' or '-'))
-            {
-                throw new ArgumentException($"'{token}' is not a valid key token; expected [a-z0-9.+-]+.", parameterName);
-            }
-        }
-
-        return token;
-    }
+    private static string Token(string token, string parameterName) => KeyToken.Validate(token, parameterName);
 
     private static string Text(string value, string parameterName)
     {
