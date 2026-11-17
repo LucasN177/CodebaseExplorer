@@ -244,8 +244,9 @@ A unit of build/packaging: .NET project, npm package, Python project/distributio
 
 **Placeholder projects:** a reference to a project file that does not exist is kept visible as a
 `CodeProject` with `Kind = Unknown`, no manifest, `RootDirectory` = the referenced directory and
-properties `resolution=missing` / `referencedPath` (ANALYSIS_ENGINE.md Stage 2). Placeholders never
-own files.
+properties `resolution=missing` / `referencedPath` (ANALYSIS_ENGINE.md Stage 2; keys and the
+`IsPlaceholder()` extension in `Domain/Projects/ProjectPropertyKeys`, shared by all modules).
+Placeholders never own files.
 
 **Identity:** the natural key uses the manifest path (`ProjectFilePath`) if present, otherwise the
 root directory. A project at the repository root therefore needs a manifest; the manifest must lie

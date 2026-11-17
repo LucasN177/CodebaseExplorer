@@ -21,7 +21,7 @@ Status overview (keep in sync):
 | Milestone | Tasks | Done |
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
-| M1 Vertical slice | 22 | 13 |
+| M1 Vertical slice | 22 | 14 |
 | M2 Persistence | 10 | 0 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
@@ -195,7 +195,7 @@ Status overview (keep in sync):
   - Package added to `Directory.Packages.props` only if adopted.
 
 ### GRAPH-002 — Graph DTOs and project-level projection
-- **Priority:** P0 · **Milestone:** M1 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M1 · **Status:** done
 - **Prerequisites:** CORE-004
 - **Projects:** Contracts, Application (port `IGraphProjector`), Graph, Graph.Tests
 - **Description:** Implement `GraphViewDto`, `GraphNodeDto`, `GraphEdgeDto`, `TruncationDto`, message envelope types, System.Text.Json source-generated context; implement L1 projection (projects + aggregated project edges).
@@ -203,6 +203,7 @@ Status overview (keep in sync):
   - Projection is a pure function of model slice + query; tested with hand-built models.
   - Aggregated edge contains count, kinds histogram, max/min level, `isDeclared`.
   - JSON round-trip tests for all DTOs.
+- **Note:** GraphQuery holds only the fields L1 uses; expansion, focus, filters and node budget arrive with GRAPH-006…008. The placeholder convention moved to Domain ProjectPropertyKeys so Analysis and Graph share it without referencing each other.
 
 ### GRAPH-003 — Graph web view project scaffold
 - **Priority:** P0 · **Milestone:** M1 · **Status:** todo

@@ -134,7 +134,7 @@ public sealed class DotNetProjectSystemAnalyzerTests
         Assert.Equal(ProjectKind.Unknown, placeholder.Kind);
         Assert.Equal("src/Shop.Legacy", placeholder.RootDirectory.Value);
         Assert.Null(placeholder.ProjectFileId);
-        Assert.Equal("src/Shop.Legacy/Shop.Legacy.csproj", placeholder.Properties[ProjectProperties.ReferencedPath]);
+        Assert.Equal("src/Shop.Legacy/Shop.Legacy.csproj", placeholder.Properties[ProjectPropertyKeys.ReferencedPath]);
         Assert.DoesNotContain(analysis.Model.Files, f => f.ProjectId == placeholder.Id);
 
         var warning = Assert.Single(analysis.Diagnostics, d => d.Severity >= DiagnosticSeverity.Warning);

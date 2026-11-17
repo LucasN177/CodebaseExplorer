@@ -1,7 +1,9 @@
 # Graph Engine — Codebase Explorer
 
 > Status: **accepted (specification)** · Last reviewed: 2026-11-17
-> Implementation status: **not implemented**. The Architecture Explorer page exists as a placeholder.
+> Implementation status: **project level (L1) projection, DTOs and message envelope implemented**
+> (GRAPH-002); web view, host control and the other levels are not. The Architecture Explorer page
+> is still a placeholder.
 > Related: [ADR-006](../decisions/ADR-006-cytoscape-visualization.md).
 
 ## 1. Components
@@ -58,6 +60,17 @@ GraphQuery
 The projector returns `GraphViewDto` with `nodes`, `edges`, `truncation` information (what was
 omitted and why) and `breadcrumbs`.
 
+**Implemented so far (GRAPH-002):** `IGraphProjector.Project(ArchitectureModel, GraphQuery)` returns
+`Result<GraphViewDto>` and is a pure function. `GraphQuery` currently has `RepositoryId`, `Level`
+(only `project` is accepted, others yield `graph.level-not-supported`) and
+`IncludeExternalDependencies`; `Expanded`, `Focus`/`Depth`/`Direction`, filters and `NodeBudget`
+are added with GRAPH-006 … GRAPH-008. L1 nodes: one per project (placeholder projects carry the badge
+`missing`) and, if requested, one per external dependency; `metrics.size` = files owned by the
+project; `childCount` = top-level modules; `isExpandable` stays `false` until expansion exists
+(GRAPH-006). Every relationship is attributed to the projects owning its endpoints (file → its
+project, module/entity → its project); edges inside one project are dropped. `breadcrumbs` is empty
+until navigation exists (GRAPH-009).
+
 ## 4. Node budget and large graphs
 
 1. Compute the candidate node set for the query.
@@ -70,6 +83,11 @@ omitted and why) and `breadcrumbs`.
    many nodes.
 
 ## 5. DTOs (Contracts)
+
+Implemented in `Contracts/Graph` (records, camelCase JSON via the source-generated
+`GraphJsonContext`, nulls omitted). Kinds, levels and badges are lowercase string tokens
+(`GraphLevels`, `GraphNodeKinds`, `GraphEvidenceLevels`, `GraphBadges`; relationship kinds use the
+Domain key tokens such as `project-reference`), so the wire format does not depend on Domain enums.
 
 ```text
 GraphViewDto     { schemaVersion, repositoryId, level, nodes[], edges[], truncation?, breadcrumbs[] }
@@ -86,7 +104,11 @@ DTOs contain **no source code** — only names, paths and metrics.
 ## 6. .NET ↔ web view message protocol
 
 All messages are JSON envelopes `{ "type": string, "version": 1, "payload": object }`, validated on
-both sides (unknown types ignored and logged; schema mismatches rejected).
+both sides (unknown types ignored and logged; schema mismatches rejected). Implemented in
+`Contracts/Graph/Messages`: `GraphMessage`, `GraphMessageTypes`, the payload records, and
+`GraphMessageSerializer` (`Serialize`, `TryParse` — rejects invalid JSON, missing type, other protocol
+versions, non-object payloads — and `TryReadPayload`). The `graph/patch` payload follows with
+GRAPH-006 and the theme tokens with GRAPH-003.
 
 | Direction | Type | Payload |
 |---|---|---|

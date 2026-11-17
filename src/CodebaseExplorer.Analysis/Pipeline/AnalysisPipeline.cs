@@ -1,3 +1,4 @@
+using CodebaseExplorer.Domain.Projects;
 using System.Globalization;
 using CodebaseExplorer.Analysis.Scanning;
 using CodebaseExplorer.Application.Analysis;

@@ -152,8 +152,8 @@ internal sealed class DotNetProjectSystemAnalyzer : IProjectSystemAnalyzer
                     directory,
                     new Dictionary<string, string>
                     {
-                        [ProjectProperties.Resolution] = ProjectProperties.ResolutionMissing,
-                        [ProjectProperties.ReferencedPath] = targetPath.Value,
+                        [ProjectPropertyKeys.Resolution] = ProjectPropertyKeys.ResolutionMissing,
+                        [ProjectPropertyKeys.ReferencedPath] = targetPath.Value,
                     });
                 result.Projects.Add(target);
                 level = EvidenceLevel.Syntactic;

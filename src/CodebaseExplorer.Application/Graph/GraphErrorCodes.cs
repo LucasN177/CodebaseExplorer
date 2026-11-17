@@ -1,0 +1,11 @@
+namespace CodebaseExplorer.Application.Graph;
+
+/// <summary>Stable <see cref="Common.ApplicationError"/> codes of graph projection.</summary>
+public static class GraphErrorCodes
+{
+    /// <summary>The query names another repository than the model.</summary>
+    public const string RepositoryMismatch = "graph.repository-mismatch";
+
+    /// <summary>The requested level is not supported (yet).</summary>
+    public const string LevelNotSupported = "graph.level-not-supported";
+}

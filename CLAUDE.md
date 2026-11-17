@@ -14,7 +14,8 @@ WebView). Local-first, never executes repository code, optional local AI with ci
 application `Result`/`ApplicationError`/`AnalysisProgress` conventions (CORE-005), safe file access,
 the repository scanner and language/marker detection (REPO-001 … REPO-003) and the
 `dotnet-layered` fixture (REPO-004), and the analysis pipeline with the static .NET project-system
-analyzer (ANALYSIS-001 … ANALYSIS-004). No language analyzer, persistence, graph, Git or AI
+analyzer (ANALYSIS-001 … ANALYSIS-004), and the project-level graph projection plus graph DTOs and
+message envelope (GRAPH-002). No language analyzer, persistence, graph rendering, Git or AI
 functionality exists yet, and nothing is wired to the UI. Next: the remaining M1
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 
