@@ -32,6 +32,13 @@
 
 ### Analysis
 - Read files exclusively through `IRepositoryFileReader` (containment, size limits, encoding detection).
+  **Implemented (REPO-001):** every path segment below the root is checked; symbolic links and
+  junctions are refused by default (`SymbolicLinkPolicy.DoNotFollow`); with `FollowWithinRoot` a
+  link is followed only if its final target lies inside the root. The size limit is checked before
+  and during reading. Repository roots are validated by `IRepositoryRootValidator` (absolute,
+  existing directory, not a file-system root or device path/administrative share, no overlap with
+  the app data directory; a root that is itself a link is analyzed at its target). Known limit: the
+  check-then-open sequence does not defend against a repository modified concurrently during analysis.
 - XML: `DtdProcessing.Prohibit`, `XmlResolver = null`, `MaxCharactersInDocument` set.
 - JSON/TOML/YAML: depth and size limits; YAML anchors/aliases limited (alias bombs).
 - Roslyn: syntax trees and `CSharpCompilation` only; metadata references read from SDK reference

@@ -21,7 +21,7 @@ Status overview (keep in sync):
 | Milestone | Tasks | Done |
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
-| M1 Vertical slice | 22 | 5 |
+| M1 Vertical slice | 22 | 6 |
 | M2 Persistence | 10 | 0 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
@@ -99,7 +99,7 @@ Status overview (keep in sync):
   - Concurrent import of the same repository is rejected with a typed error.
 
 ### REPO-001 — Repository location validation and safe file reader
-- **Priority:** P0 · **Milestone:** M1 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M1 · **Status:** done
 - **Prerequisites:** CORE-002
 - **Projects:** Application (port), Analysis, Analysis.Tests
 - **Description:** Validate a local repository root (exists, directory, not a FS root, not inside the app data directory). Implement `IRepositoryFileReader` enforcing real-path containment, symlink policy and size limits (SECURITY.md §3).
@@ -107,6 +107,7 @@ Status overview (keep in sync):
   - Reading a path that resolves outside the root (via `..` or symlink) fails with a typed error.
   - Files above the configured limit are not read; a diagnostic is produced.
   - Tests for traversal, symlink escape (skipped on platforms/CI agents without symlink permission, with reason), size limit.
+- **Note:** Symbolic-link tests skip with a reason where the account may not create links (Windows without developer mode); Windows junction tests cover the same link logic without privileges.
 
 ### REPO-002 — Repository scanner
 - **Priority:** P0 · **Milestone:** M1 · **Status:** todo
