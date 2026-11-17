@@ -115,6 +115,12 @@ Run in parallel, one per ecosystem, each over the scanned file list.
 **.NET (`dotnet.msbuild-static`)**
 
 - Parses `.sln` (text format) and `.slnx` (XML) to find projects and solution folders.
+  **Implemented (ANALYSIS-002, `ProjectSystems/DotNet/SolutionParser`):** solution folders are
+  normalized to the `.slnx` form (`/src/`, `/src/core/`; `.sln` folder paths are rebuilt from
+  `NestedProjects`), so both formats yield identical memberships; only entries ending in a `*proj`
+  extension are projects (web sites and solution items are skipped); paths are resolved from the
+  solution's directory and entries outside the repository or rooted are reported
+  (`dotnet.path-outside-repository`) and skipped; malformed files yield warnings, never exceptions.
 - Parses `.csproj` (and detects `.fsproj`/`.vbproj`) as **XML only**. Extracts `Sdk`,
   `TargetFramework(s)`, `OutputType`, `AssemblyName`, `RootNamespace`, `ProjectReference`,
   `PackageReference` (`Version`, `VersionOverride`), `FrameworkReference`.

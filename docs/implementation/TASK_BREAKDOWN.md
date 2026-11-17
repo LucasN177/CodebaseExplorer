@@ -21,7 +21,7 @@ Status overview (keep in sync):
 | Milestone | Tasks | Done |
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
-| M1 Vertical slice | 22 | 10 |
+| M1 Vertical slice | 22 | 11 |
 | M2 Persistence | 10 | 0 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
@@ -152,7 +152,7 @@ Status overview (keep in sync):
 - **Note:** Fragments carry key-derived Domain objects instead of a separate draft model; ANALYSIS_ENGINE.md §3 rule 3 was corrected accordingly. No production analyzer is registered yet (first: ANALYSIS-004).
 
 ### ANALYSIS-002 — Solution parser (.sln, .slnx)
-- **Priority:** P0 · **Milestone:** M1 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M1 · **Status:** done
 - **Prerequisites:** ANALYSIS-001, REPO-004
 - **Projects:** Analysis, Analysis.Tests
 - **Description:** Static parsers for the text `.sln` format and XML `.slnx` format: project paths, solution folders → `SolutionMembership`.

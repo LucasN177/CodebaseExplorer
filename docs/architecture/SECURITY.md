@@ -40,6 +40,9 @@
   the app data directory; a root that is itself a link is analyzed at its target). Known limit: the
   check-then-open sequence does not defend against a repository modified concurrently during analysis.
 - XML: `DtdProcessing.Prohibit`, `XmlResolver = null`, `MaxCharactersInDocument` set.
+  **Implemented:** `Analysis/Parsing/SafeXml` (used for `.slnx`, and for `.csproj`/`.props` from
+  ANALYSIS-003); entity-expansion, external-entity and oversized documents are rejected with a
+  diagnostic (tests in `SolutionParserTests`).
 - JSON/TOML/YAML: depth and size limits; YAML anchors/aliases limited (alias bombs).
 - Roslyn: syntax trees and `CSharpCompilation` only; metadata references read from SDK reference
   packs or existing cache files; **never** `MSBuildWorkspace`, never load analyzers/generators,
