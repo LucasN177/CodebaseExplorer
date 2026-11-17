@@ -124,7 +124,8 @@ project/package/framework references with evidence — without running MSBuild (
 ANALYSIS-004), the project-level graph projection with its JSON wire format (GRAPH-002), and the
 use cases that tie them together — import a local folder, then query its project graph (CORE-006;
 models are kept in memory for the session until persistence arrives in M2). None of this is
-reachable from the UI yet; the graph web view comes next.
+reachable from the UI yet. The graph web view (TypeScript + Cytoscape.js, GRAPH-003) is built and
+shipped with the app, but the host control that displays it inside the window comes next (GRAPH-004).
 
 ## Roadmap
 

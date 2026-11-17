@@ -27,7 +27,7 @@
 | Microsoft.Testing.Platform | via xunit.v3; opted in via `global.json` `test.runner` | Runner for `dotnet test` on the .NET 10 SDK. |
 | NSubstitute | 6.2.0 | Test doubles for ports. |
 | Coverage | open (QA-001) | A Microsoft.Testing.Platform coverage extension will be evaluated; VSTest-based coverlet collector is not used. |
-| Vitest | planned (GRAPH-003) | Tests of the graph web view (message validation, rendering helpers). |
+| Vitest | 5.1.0 (npm, exact) | Tests of the graph web view (`src/CodebaseExplorer.GraphView.Web/test`): message validation, controller, element mapping, static security checks. Run with `npm test`; not part of `dotnet test`. |
 
 Run all tests:
 

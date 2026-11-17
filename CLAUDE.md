@@ -16,8 +16,10 @@ the repository scanner and language/marker detection (REPO-001 … REPO-003) and
 `dotnet-layered` fixture (REPO-004), and the analysis pipeline with the static .NET project-system
 analyzer (ANALYSIS-001 … ANALYSIS-004), and the project-level graph projection plus graph DTOs and
 message envelope (GRAPH-002), and the use cases `ImportLocalRepository` / `GetGraphView` with an
-in-memory session cache (CORE-006). No language analyzer, persistence, graph rendering, Git or AI
-functionality exists yet, and nothing is wired to the UI. Next: the remaining M1
+in-memory session cache (CORE-006), and the graph web view bundle (GRAPH-003; after changing
+`src/CodebaseExplorer.GraphView.Web` run `npm ci && npm run build` and commit `Desktop/GraphView`).
+No language analyzer, persistence, Git or AI functionality exists yet, and nothing is wired to the
+UI (the graph host is GRAPH-004). Next: the remaining M1
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 
 ## Commands

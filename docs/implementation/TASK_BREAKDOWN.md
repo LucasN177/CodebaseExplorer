@@ -21,7 +21,7 @@ Status overview (keep in sync):
 | Milestone | Tasks | Done |
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
-| M1 Vertical slice | 22 | 15 |
+| M1 Vertical slice | 22 | 16 |
 | M2 Persistence | 10 | 0 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
@@ -208,7 +208,7 @@ Status overview (keep in sync):
 - **Note:** GraphQuery holds only the fields L1 uses; expansion, focus, filters and node budget arrive with GRAPH-006…008. The placeholder convention moved to Domain ProjectPropertyKeys so Analysis and Graph share it without referencing each other.
 
 ### GRAPH-003 — Graph web view project scaffold
-- **Priority:** P0 · **Milestone:** M1 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M1 · **Status:** done
 - **Prerequisites:** GRAPH-001
 - **Projects:** `src/CodebaseExplorer.GraphView.Web` (new, non-.NET), Desktop (build integration), docs
 - **Description:** Vite + TypeScript + Cytoscape.js app implementing `graph/load`, `selection/changed`, `ready`, theme messages; build output embedded into Desktop. Decide and document how the .NET build works without Node installed.
@@ -216,6 +216,7 @@ Status overview (keep in sync):
   - `npm ci && npm run build && npm test` succeed; Vitest tests for message validation.
   - Labels rendered as text only; CSP meta tag present; no network requests.
   - SOLUTION_STRUCTURE.md §4 updated with the final build integration.
+- **Note:** Bundle is a classic IIFE script loaded from file:// and committed to Desktop/GraphView; a source hash in build-info.json is checked by a .NET test, so the .NET build needs no Node. Runtime check inside the WebView happens with the host control (GRAPH-004). npm audit: picomatch ReDoS in build tooling accepted (SOLUTION_STRUCTURE §6.2).
 
 ### GRAPH-004 — Graph host control and message bridge
 - **Priority:** P0 · **Milestone:** M1 · **Status:** todo

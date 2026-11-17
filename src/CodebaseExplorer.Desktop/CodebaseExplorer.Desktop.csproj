@@ -36,4 +36,10 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Graph web view (GRAPH-003): built from src/CodebaseExplorer.GraphView.Web by `npm run build` and
+         committed, so the .NET build needs no Node. Loaded from file:// by the graph host (GRAPH-004). -->
+    <Content Include="GraphView/**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

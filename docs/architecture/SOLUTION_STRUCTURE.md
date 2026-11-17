@@ -92,28 +92,38 @@ Test project references:
 | AI | `Providers/`, `Retrieval/`, `Prompting/`, `Citations/`, `Conversations/`. |
 | Storage | `Persistence/` (`DbContext`, entities, configurations), `Migrations/`, `Stores/` (port implementations), `Search/` (FTS). |
 | Infrastructure | `FileSystem/` (**exists**: `ApplicationPaths`), `Secrets/`, `Logging/`. |
-| Desktop | `Composition/` (**exists**), `Services/` (**exists**: theme), `ViewModels/` (**exists**), `Views/` (**exists**), `Controls/` (graph host), `Assets/`, `GraphView/` (built web assets, generated). |
+| Desktop | `Composition/` (**exists**), `Services/` (**exists**: theme), `ViewModels/` (**exists**), `Views/` (**exists**), `GraphView/` (**exists**: built web assets, generated and committed, §4), `Controls/` (graph host, GRAPH-004), `Assets/`. |
 
 Every module has exactly one public `DependencyInjection` class (**exists** for all modules).
 
-## 4. Planned additional project: graph web view (documented deviation)
+## 4. Additional project: graph web view (documented deviation)
 
-The requested structure has no place for the TypeScript/Vite/Cytoscape.js frontend. It will be
-added in task **GRAPH-003** as:
+The requested structure has no place for the TypeScript/Vite/Cytoscape.js frontend. It exists since
+GRAPH-003 as:
 
 ```text
-src/CodebaseExplorer.GraphView.Web/     # not a .NET project
-├── package.json · package-lock.json · tsconfig.json · vite.config.ts
-├── src/ (main.ts, bridge.ts, styles.ts, layouts.ts)
-└── dist/ (build output, git-ignored)
+src/CodebaseExplorer.GraphView.Web/     # not a .NET project, not in the .slnx
+├── package.json · package-lock.json · tsconfig.json · vite.config.ts · buildInfo.ts
+├── src/     protocol.ts (wire types + validation), bridge.ts (transport), graphView.ts (message
+│            handling), elements.ts (GraphView → Cytoscape elements), styles.ts, main.ts (entry)
+├── public/  index.html (strict CSP, loads graph.js)
+└── test/    Vitest tests (protocol, controller, elements, static security checks)
 ```
 
 **Reason for the deviation:** the graph renderer is a separate technology stack with its own build
-(npm/Vite) and tests (Vitest). Keeping it in its own folder isolates Node tooling from .NET
-projects. The Desktop project consumes the built `dist/` output as embedded resources via an
-MSBuild target that runs only when the web sources change (exact mechanism decided in GRAPH-003;
-the .NET build must keep working without Node installed by using a committed or cached build —
-open item for GRAPH-003).
+(npm/Vite) and tests (Vitest). Keeping it in its own folder isolates Node tooling from .NET projects.
+
+**Build integration (decided in GRAPH-003):**
+
+- `npm run build` type-checks and builds **one classic script** `graph.js` (Vite library mode, IIFE,
+  Cytoscape bundled) plus `index.html` and `build-info.json` into
+  `src/CodebaseExplorer.Desktop/GraphView/`. A classic script is used because the page is loaded from
+  `file://` (ADR-006 spike result) and Chromium applies CORS to module scripts from the `null` origin.
+- The output is **committed** (marked `linguist-generated` in `.gitattributes`). The Desktop project
+  copies `GraphView/**` to its output, so **the .NET build and tests need no Node**.
+- `build-info.json` contains a SHA-256 over the web sources (`buildInfo.ts`); the .NET test
+  `GraphViewAssetsTests` recomputes it and fails if the committed bundle is stale. Changing anything
+  in the web project therefore requires `npm ci && npm run build` and committing `GraphView/`.
 
 No other deviations from the requested structure exist.
 
@@ -168,8 +178,8 @@ win-x64/osx-arm64/linux-x64) by the task that introduces it.
 | Microsoft.Extensions.AI / .Abstractions | 10.11.0 (10.x line) | AI-001 | Independently versioned, exempt from the 10.0.x rule (DEVELOPMENT_GUIDE.md §4); check that its dependencies resolve to 10.0.x runtime packages. |
 | OllamaSharp | 5.5.2 | AI-002 | `IChatClient` implementation compatibility with the chosen Microsoft.Extensions.AI version. |
 | Microsoft.Extensions.AI.OpenAI | to be verified | AI-007 (post-MVP) | Version line compatible with net10.0. |
-| npm: cytoscape | 3.35.0 (MIT) | GRAPH-003 | — |
-| npm: vite / typescript / vitest | 8.3.8 / 7.0.2 / 5.1.0 | GRAPH-003 | TypeScript 7 (native compiler) compatibility with the Vite toolchain. |
+| npm: cytoscape | 3.35.0 (MIT) | **adopted** (GRAPH-003) | Bundled into `graph.js`. |
+| npm: vite / typescript / vitest / @types/node | 8.3.8 / 7.0.2 / 5.1.0 / 26.6.6 | **adopted** (GRAPH-003, dev only, exact versions) | Verified: TypeScript 7.0.2 provides `tsc` and type-checks the project; Vite 8 builds; Vitest 5 runs. `npm audit` (2026-11-17) reports a high-severity ReDoS in `picomatch` (GHSA-fc5q-39xc-vjpf, all versions, no fix released) reached through Vite/Vitest. **Accepted:** build-time only, applied to our own glob patterns, not shipped; the offered `--force` fix would downgrade Vite to 6.x. Re-check when a fixed `picomatch` is released. |
 | npm: cytoscape layout extensions | cytoscape-dagre 4.1.0 (MIT), cytoscape-elk 2.4.0 (MIT, depends on elkjs: EPL-2.0 OR GPL-3.0), cytoscape-fcose 2.2.0 (MIT, last release 2023) | GRAPH-005 | **License review for elkjs (EPL-2.0)** before use; maintenance of fcose. |
 
 ### 6.3 Deliberately not used

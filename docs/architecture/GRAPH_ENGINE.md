@@ -2,8 +2,9 @@
 
 > Status: **accepted (specification)** · Last reviewed: 2026-11-17
 > Implementation status: **project level (L1) projection, DTOs and message envelope implemented**
-> (GRAPH-002); web view, host control and the other levels are not. The Architecture Explorer page
-> is still a placeholder.
+> (GRAPH-002); **graph web view implemented** (GRAPH-003: `graph/load`, `graph/focus`, `view/theme`,
+> `ready`, `selection/changed`, `node/openInspector`, `error`). Host control (GRAPH-004) and the other
+> levels are not. The Architecture Explorer page is still a placeholder.
 > Related: [ADR-006](../decisions/ADR-006-cytoscape-visualization.md).
 
 ## 1. Components
@@ -134,6 +135,10 @@ GRAPH-006 and the theme tokens with GRAPH-003.
 | Engine setup | Windows: `AdapterPreference = [WebView2]`, `UserDataFolder` under the app data directory via `EnvironmentRequested`, wait for `AdapterCreated`, check `AdapterInfo` and show an error instead of falling back to WebView1. DevTools off in release builds. |
 
 The page must not use implicit globals for element ids (an element `id="cy"` is `window.cy`).
+The page entry point is `window.ceReceive(json)` (returns `"ok"` or `"error: …"`); invalid messages
+are rejected as a whole and reported with an `error` message (`src/CodebaseExplorer.GraphView.Web`).
+`view/layout` and `graph/patch` are not handled yet (GRAPH-005/006); the page currently lays out with
+Cytoscape's `breadthfirst` until GRAPH-005 decides the layouts.
 macOS and Linux behavior is not verified yet (GRAPH-001 remainder).
 
 ## 7. Web view rules

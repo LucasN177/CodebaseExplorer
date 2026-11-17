@@ -90,8 +90,19 @@ DATABASE_SCHEMA.md in the same change; add a migration test.
 
 ## 7. Graph web view (from GRAPH-003)
 
-The TypeScript project lives in `src/CodebaseExplorer.GraphView.Web`. Its build and how the
-Desktop project consumes it are documented in SOLUTION_STRUCTURE.md §4 once GRAPH-003 is done.
+The TypeScript project lives in `src/CodebaseExplorer.GraphView.Web` (Node.js with npm; developed
+with Node 26). Only needed when changing the graph web view:
+
+```bash
+cd src/CodebaseExplorer.GraphView.Web
+npm ci
+npm test
+npm run build
+```
+
+`npm run build` writes the bundle to `src/CodebaseExplorer.Desktop/GraphView/`; commit it together
+with the source change. The .NET test `GraphViewAssetsTests` fails if the committed bundle does not
+match the sources. Details: SOLUTION_STRUCTURE.md §4.
 
 ## 8. Troubleshooting
 

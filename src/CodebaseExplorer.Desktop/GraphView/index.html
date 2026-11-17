@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Strict CSP (ADR-006 spike result): local scripts only, no network, no inline scripts. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'">
+  <title>Codebase Explorer graph</title>
+  <style>
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+    #graph { width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="graph"></div>
+  <script src="graph.js"></script>
+</body>
+</html>
