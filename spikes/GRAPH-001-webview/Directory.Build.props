@@ -1,0 +1,8 @@
+<Project>
+  <!-- Spike GRAPH-001: isolated from the repository build settings on purpose (not part of the solution). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+</Project>

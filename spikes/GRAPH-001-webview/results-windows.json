@@ -1,0 +1,119 @@
+{
+  "os": "Microsoft Windows NT 10.0.26200.0",
+  "framework": ".NET 10.0.13",
+  "inline": {
+    "adapterCreated": true,
+    "adapterCreatedAfterMs": 352,
+    "adapterPreference": "WebView2",
+    "adapter": "WebView2 / Blink / 157.0.4341.46",
+    "adapterSupported": true,
+    "adapterInstalled": true,
+    "scenarios": "NativeControlHost",
+    "unavailableReason": null,
+    "htmlBytes": 445975,
+    "readyAfterMs": 159,
+    "ready": {
+      "protocolVersion": 1,
+      "bridge": "invokeCSharpAction",
+      "cytoscape": "3.35.0",
+      "url": "about:blank"
+    },
+    "graphMessageBytes": 109810,
+    "invokeScriptReturn": "\u0022ack:graph/load\u0022",
+    "graphLoadRoundTripMs": 120,
+    "rendered": {
+      "nodes": 500,
+      "edges": 2000,
+      "ms": 109
+    },
+    "coseLayout": {
+      "name": "cose",
+      "ms": 12814
+    },
+    "selectReturn": "\u0022{\\\u0022found\\\u0022:1,\\\u0022selected\\\u0022:true,\\\u0022selectable\\\u0022:true,\\\u0022total\\\u0022:500}\u0022",
+    "selection": {
+      "nodeIds": [
+        "n7"
+      ],
+      "edgeIds": []
+    },
+    "probeFetch": {
+      "result": "blocked"
+    },
+    "probeCsp": {
+      "violations": [
+        "connect-src https://example.com/",
+        "img-src https://example.com/pixel.png"
+      ]
+    },
+    "titleAfterNavigationAttempt": "\u0022spike\u0022",
+    "stillOnPage": "\u0022yes\u0022",
+    "navigations": [
+      "data:text/html;charset=utf-8;base64,PCFkb2N0eXBlIGh0bWw\u002BCjxodG1sPgo8aGVhZD4KICA8bWV0YSBjaGFyc2V0PSJ1dGYtOCI\u002BCiAgPG1ldGEg\u2026",
+      "https://example.com/"
+    ],
+    "cancelledNavigations": [
+      "https://example.com/"
+    ],
+    "blockedNewWindows": [
+      "https://example.com/"
+    ]
+  },
+  "file": {
+    "adapterCreated": true,
+    "adapterCreatedAfterMs": 78,
+    "adapterPreference": "WebView2",
+    "adapter": "WebView2 / Blink / 157.0.4341.46",
+    "adapterSupported": true,
+    "adapterInstalled": true,
+    "scenarios": "NativeControlHost",
+    "unavailableReason": null,
+    "readyAfterMs": 55,
+    "ready": {
+      "protocolVersion": 1,
+      "bridge": "invokeCSharpAction",
+      "cytoscape": "3.35.0",
+      "url": "file:///C:/Projects/Github%20Projects/CodebaseExplorer/spikes/GRAPH-001-webview/bin/Debug/net10.0/web/page-file.html"
+    },
+    "graphMessageBytes": 109810,
+    "invokeScriptReturn": "\u0022ack:graph/load\u0022",
+    "graphLoadRoundTripMs": 120,
+    "rendered": {
+      "nodes": 500,
+      "edges": 2000,
+      "ms": 112
+    },
+    "coseLayout": {
+      "name": "cose",
+      "ms": 12554
+    },
+    "selectReturn": "\u0022{\\\u0022found\\\u0022:1,\\\u0022selected\\\u0022:true,\\\u0022selectable\\\u0022:true,\\\u0022total\\\u0022:500}\u0022",
+    "selection": {
+      "nodeIds": [
+        "n7"
+      ],
+      "edgeIds": []
+    },
+    "probeFetch": {
+      "result": "blocked"
+    },
+    "probeCsp": {
+      "violations": [
+        "connect-src https://example.com/",
+        "img-src https://example.com/pixel.png"
+      ]
+    },
+    "titleAfterNavigationAttempt": "\u0022spike\u0022",
+    "stillOnPage": "\u0022yes\u0022",
+    "navigations": [
+      "file:///C:/Projects/Github Projects/CodebaseExplorer/spikes/GRAPH-001-webview/bin/Debug/net10.0/web/page-file.html",
+      "https://example.com/"
+    ],
+    "cancelledNavigations": [
+      "https://example.com/"
+    ],
+    "blockedNewWindows": [
+      "https://example.com/"
+    ]
+  }
+}
