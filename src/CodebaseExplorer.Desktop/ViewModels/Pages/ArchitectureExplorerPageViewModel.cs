@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using CodebaseExplorer.Application.Graph;
+using CodebaseExplorer.Application.Inspector;
 using CodebaseExplorer.Application.Source;
+using CodebaseExplorer.Contracts.Inspector;
 using CodebaseExplorer.Application.Settings;
 using CodebaseExplorer.Contracts.Graph;
 using CodebaseExplorer.Desktop.Services;
@@ -24,6 +26,8 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
     private readonly GetGraphView _getGraphView;
     private readonly GetGraphEdgeDetails _getEdgeDetails;
     private readonly GetSourceSnippet _getSnippet;
+    private readonly GetElementDetails _getDetails;
+    private int _detailsNumber;
     private readonly IClipboardService _clipboard;
     private int _snippetNumber;
     private string? _snippetAbsolutePath;
@@ -41,6 +45,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         GetGraphView getGraphView,
         GetGraphEdgeDetails getEdgeDetails,
         GetSourceSnippet getSnippet,
+        GetElementDetails getDetails,
         IClipboardService clipboard,
         RepositorySession session,
         IUserSettingsStore settings,
@@ -51,6 +56,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         _getGraphView = getGraphView;
         _getEdgeDetails = getEdgeDetails;
         _getSnippet = getSnippet;
+        _getDetails = getDetails;
         _clipboard = clipboard;
         _session = session;
         _settings = settings;
@@ -67,6 +73,9 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         Graph.CollapseRequested += (_, e) => _ = SetExpandedAsync(e.ElementId, expanded: false);
         SelectionEvidence.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasEvidence));
         SnippetLines.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasSnippet));
+        InspectorMembers.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasMembers));
+        IncomingGroups.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasIncoming));
+        OutgoingGroups.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasOutgoing));
     }
 
     public override string Title => "Architecture Explorer";
@@ -312,9 +321,10 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         if (graph is not null && selection.NodeIds.Count > 0 && graph.Nodes.FirstOrDefault(n => n.Id == selection.NodeIds[0]) is { } node)
         {
             SelectionKind = KindText(node);
-            SelectionDetail = node.Sublabel;
+            SelectionDetail = node.Kind == GraphNodeKinds.Entity ? null : node.Sublabel; // an entity's sublabel is its kind, shown above
             SelectionName = node.Label;
             ClearEvidence();
+            _ = LoadDetailsAsync(node.Id);
         }
         else if (graph is not null && selection.EdgeIds.Count > 0 && graph.Edges.FirstOrDefault(e => e.Id == selection.EdgeIds[0]) is { } edge)
         {
@@ -322,6 +332,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             SelectionKind = "Dependency";
             SelectionDetail = edge.Count == 1 ? "1 relationship" : $"{edge.Count} relationships";
             SelectionName = $"{labels.GetValueOrDefault(edge.Source, "?")} → {labels.GetValueOrDefault(edge.Target, "?")}";
+            ClearDetails();
             _ = LoadEvidenceAsync(edge.Id);
         }
         else
@@ -330,6 +341,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             SelectionDetail = null;
             SelectionName = null;
             ClearEvidence();
+            ClearDetails();
         }
     }
 
@@ -386,6 +398,146 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         SelectedEvidence = null;
         SelectionEvidence.Clear();
         EvidenceMessage = null;
+    }
+
+    // ---- Component Inspector (UI-006) ----
+
+    /// <summary>Facts of the inspected node (path, ecosystem, visibility, declarations, …).</summary>
+    public System.Collections.ObjectModel.ObservableCollection<InspectorFact> InspectorFacts { get; } = [];
+
+    /// <summary>Members of a type or types of a namespace.</summary>
+    public System.Collections.ObjectModel.ObservableCollection<InspectorItem> InspectorMembers { get; } = [];
+
+    public System.Collections.ObjectModel.ObservableCollection<InspectorGroup> IncomingGroups { get; } = [];
+
+    public System.Collections.ObjectModel.ObservableCollection<InspectorGroup> OutgoingGroups { get; } = [];
+
+    /// <summary>E.g. <c>fan-in 3 · fan-out 5 · size 12</c>; null while no node is inspected.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasDetails))]
+    public partial string? InspectorMetrics { get; private set; }
+
+    public bool HasDetails => InspectorMetrics is not null;
+
+    public bool HasMembers => InspectorMembers.Count > 0;
+
+    public bool HasIncoming => IncomingGroups.Count > 0;
+
+    public bool HasOutgoing => OutgoingGroups.Count > 0;
+
+    /// <summary>Loading state, an error, or why "show in graph" was not possible.</summary>
+    [ObservableProperty]
+    public partial string? InspectorMessage { get; private set; }
+
+    private void ClearDetails()
+    {
+        ++_detailsNumber;
+        InspectorFacts.Clear();
+        InspectorMembers.Clear();
+        IncomingGroups.Clear();
+        OutgoingGroups.Clear();
+        InspectorMetrics = null;
+        InspectorMessage = null;
+    }
+
+    /// <summary>Loads the inspector details of a selected node; late results of a previous selection are dropped.</summary>
+    private async Task LoadDetailsAsync(string elementId)
+    {
+        ClearDetails();
+        var detailsNumber = _detailsNumber;
+        if (_query is not { } query)
+        {
+            return;
+        }
+
+        InspectorMessage = "Loading details…";
+        try
+        {
+            var result = await _getDetails.ExecuteAsync(query.RepositoryId, elementId, CancellationToken.None);
+            if (detailsNumber != _detailsNumber)
+            {
+                return;
+            }
+
+            if (!result.TryGetValue(out var details, out var error))
+            {
+                _logger.LogWarning("Inspector details failed with {ErrorCode}", error.Code);
+                InspectorMessage = error.Message;
+                return;
+            }
+
+            InspectorMessage = null;
+            foreach (var fact in details.Facts)
+            {
+                InspectorFacts.Add(new InspectorFact(fact.Label, fact.Value));
+            }
+
+            foreach (var member in details.Members)
+            {
+                InspectorMembers.Add(InspectorItem.Member(member));
+            }
+
+            foreach (var group in details.Incoming)
+            {
+                IncomingGroups.Add(new InspectorGroup($"{group.Kind} ({group.Items.Count})", [.. group.Items.Select(InspectorItem.From)]));
+            }
+
+            foreach (var group in details.Outgoing)
+            {
+                OutgoingGroups.Add(new InspectorGroup($"{group.Kind} ({group.Items.Count})", [.. group.Items.Select(InspectorItem.From)]));
+            }
+
+            InspectorMetrics = $"fan-in {details.FanIn} · fan-out {details.FanOut} · size {details.Size}";
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.LogError(exception, "Loading inspector details failed unexpectedly");
+            if (detailsNumber == _detailsNumber)
+            {
+                InspectorMessage = "The details could not be loaded. Details are in the application log.";
+            }
+        }
+    }
+
+    /// <summary>
+    /// "Show in graph" (UI-006): expands the project and namespaces that contain the element, then selects and centers
+    /// its node (a member is shown by its type, a file by its project).
+    /// </summary>
+    [RelayCommand]
+    private async Task ShowInGraphAsync(InspectorItem? item)
+    {
+        if (item?.Reference.GraphNodeId is not { } nodeId || _query is not { } query)
+        {
+            return;
+        }
+
+        var expanded = query.Expanded.ToHashSet(StringComparer.Ordinal);
+        var changed = false;
+        foreach (var ancestor in item.Reference.ExpandPath)
+        {
+            changed |= expanded.Add(ancestor); // all of them, not only the first new one
+        }
+
+        if (changed)
+        {
+            var next = query with { Expanded = [.. expanded.Order(StringComparer.Ordinal)] };
+            var result = await _getGraphView.ExecuteAsync(next, CancellationToken.None);
+            if (!result.TryGetValue(out var view, out var error))
+            {
+                InspectorMessage = error.Message;
+                return;
+            }
+
+            _query = next;
+            await Graph.PatchGraphAsync(view, CancellationToken.None);
+        }
+
+        if (!await Graph.FocusAsync(nodeId, CancellationToken.None))
+        {
+            InspectorMessage = item.Reference.Kind == "external-dependency"
+                ? $"{item.Label} is not shown: external dependencies are hidden in the graph."
+                : $"{item.Label} could not be shown in the graph.";
+        }
     }
 
     /// <summary>The evidence record whose source snippet is shown (UI-007).</summary>

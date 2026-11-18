@@ -30,7 +30,8 @@ public sealed class GraphLayoutSwitcherTests : IAsyncLifetime
         _host.SetLayoutAsync(default, Arg.Any<CancellationToken>()).ReturnsForAnyArgs(true);
         _viewModel = new ArchitectureExplorerPageViewModel(
             _host, _app.Services.GetRequiredService<GetGraphView>(), _app.Services.GetRequiredService<GetGraphEdgeDetails>(),
-            _app.Services.GetRequiredService<CodebaseExplorer.Application.Source.GetSourceSnippet>(), Substitute.For<IClipboardService>(),
+            _app.Services.GetRequiredService<CodebaseExplorer.Application.Source.GetSourceSnippet>(),
+            _app.Services.GetRequiredService<CodebaseExplorer.Application.Inspector.GetElementDetails>(), Substitute.For<IClipboardService>(),
             new RepositorySession(), _settings, _shell, NullLogger<ArchitectureExplorerPageViewModel>.Instance);
     }
 

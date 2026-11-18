@@ -32,7 +32,8 @@ public sealed class ArchitectureExplorerPageViewModelTests : IAsyncLifetime
         _host.Selection.Returns(GraphSelection.Empty);
         _viewModel = new ArchitectureExplorerPageViewModel(
             _host, _app.Services.GetRequiredService<GetGraphView>(), _app.Services.GetRequiredService<GetGraphEdgeDetails>(),
-            _app.Services.GetRequiredService<CodebaseExplorer.Application.Source.GetSourceSnippet>(), _clipboard,
+            _app.Services.GetRequiredService<CodebaseExplorer.Application.Source.GetSourceSnippet>(),
+            _app.Services.GetRequiredService<CodebaseExplorer.Application.Inspector.GetElementDetails>(), _clipboard,
             _session, Substitute.For<IUserSettingsStore>(), _shell, NullLogger<ArchitectureExplorerPageViewModel>.Instance);
     }
 
@@ -175,6 +176,40 @@ public sealed class ArchitectureExplorerPageViewModelTests : IAsyncLifetime
         Assert.Null(_viewModel.SelectedEvidence);
         Assert.False(_viewModel.HasSnippet);
         Assert.Null(_viewModel.SnippetPath);
+    }
+
+    [Fact]
+    public async Task NodeSelection_ShowsTheInspector_AndShowInGraphExpandsAndFocuses()
+    {
+        // UI-006 over dotnet-layered: Shop.Infrastructure implements Shop.Domain's IOrderRepository.
+        var view = await ImportFixtureAsync();
+        _host.PatchGraphAsync(default!, Arg.Any<CancellationToken>()).ReturnsForAnyArgs(true);
+        _host.FocusAsync(default!, Arg.Any<CancellationToken>()).ReturnsForAnyArgs(true);
+        var infrastructure = view.Nodes.Single(n => n.Label == "Shop.Infrastructure");
+
+        Select(view, [infrastructure.Id], []);
+        await WaitUntilAsync(() => _viewModel.HasDetails);
+
+        Assert.Null(_viewModel.InspectorMessage);
+        Assert.StartsWith("fan-in ", _viewModel.InspectorMetrics, StringComparison.Ordinal);
+        Assert.Contains(_viewModel.InspectorFacts, f => f is { Label: "Folder", Value: "src/Shop.Infrastructure" });
+        Assert.True(_viewModel.HasOutgoing);
+        var implements = Assert.Single(_viewModel.OutgoingGroups, g => g.Title.StartsWith("implements", StringComparison.Ordinal));
+        var target = Assert.Single(implements.Items);
+        Assert.Equal("Shop.Domain.Orders.IOrderRepository", target.Label);
+        Assert.StartsWith("confirmed · 1 occurrence · via Shop.Infrastructure.Persistence.SqliteOrderRepository", target.Detail, StringComparison.Ordinal);
+
+        await _viewModel.ShowInGraphCommand.ExecuteAsync(target);
+
+        // The Domain project and its namespaces were expanded so that the type is visible, then it was focused.
+        var patched = LastPatch();
+        Assert.Contains(patched.Nodes, n => n.Id == target.Reference.GraphNodeId);
+        await _host.Received(1).FocusAsync(target.Reference.GraphNodeId!, Arg.Any<CancellationToken>());
+        Assert.Null(_viewModel.InspectorMessage);
+
+        // Selecting an edge replaces the inspector by the evidence.
+        Select(view, [], [view.Edges[0].Id]);
+        Assert.False(_viewModel.HasDetails);
     }
 
     [Fact]

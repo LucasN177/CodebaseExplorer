@@ -23,7 +23,7 @@ Status overview (keep in sync):
 | M0 Foundation | (initialization) | ✅ |
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
-| M3 Deep C# & Inspector | 9 | 8 |
+| M3 Deep C# & Inspector | 9 | 9 |
 | M4 Polyglot & scale | 11 | 0 |
 | M5 Git | 7 | 0 |
 | M6 Export | 2 | 0 |
@@ -428,11 +428,12 @@ Status overview (keep in sync):
 - **Note:** `GraphQuery.Expanded`; `VisibleTree` (Graph) builds the visible nodes: expanded projects show their namespaces, expanded namespaces their sub-namespaces and types (types not expandable in M3); namespace chains without types are compressed (`Shop` → `Shop.Domain` → `Shop.Domain.Orders` shows `Shop.Domain.Orders`); relationships attach to the deepest visible ancestor, edges inside a node or between a compound and its content are dropped; unknown/hidden ids are ignored. Protocol `graph/patch` (`GraphPatchPayload`): `GraphViewBridge.PatchGraphAsync` sends the difference, the web view validates it against its copy of the graph (`applyPatch`, all or nothing) and re-runs the layout; double click on an expandable node sends `node/expandRequested`/`collapseRequested`, the bridge checks the node state, the explorer keeps the expanded set (hidden inner expansions are remembered). Styles: namespaces rectangles, types circles, double outline = expandable, translucent compound boxes; focus dimming keeps a selected compound with its content. **Not done here:** Storage slice queries — the whole model is still read per run (ADR-010); slices follow with the node budget (GRAPH-008, QA-002). Tests: projection (mixed levels, compression, deepest-visible-ancestor, reversibility by JSON comparison, ignored ids, edge details), bridge diff and request validation, web `applyPatch`/controller/dimming, ViewModel end to end over `dotnet-layered`. **Manually verified on Windows:** expand project → namespace → types and collapse again by double click (after re-analyzing a repository stored before ANALYSIS-005, which has no namespaces).
 
 ### UI-006 — Component Inspector
-- **Priority:** P0 · **Milestone:** M3 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M3 · **Status:** done
 - **Prerequisites:** STORE-004, GRAPH-006
 - **Projects:** Application (query), Contracts, Desktop
 - **Description:** Panel with element details, metrics (fan-in/out, size), incoming/outgoing relationships grouped by kind with level badges, "show in graph".
 - **Acceptance criteria:** Works for projects, modules, entities, external dependencies and aggregated edges.
+- **Note:** Use case `GetElementDetails` (Application `Inspector/`, Contracts `ElementDetailsDto`): facts per kind (folder, project file, target frameworks; namespace counts; qualified name, visibility, modifiers, signature, declarations, symbol key; package ecosystem), fan-in/fan-out/size, members (type → members, namespace → types, project → top-level namespaces) and incoming/outgoing relationships grouped by kind, strongest evidence first, with the inner element (`via`) when a member holds the relationship. A project, namespace or type stands for its subtree, so the lists match the aggregated graph edges. Each related element carries the graph node to focus (a member → its type, a file → its project) and the nodes to expand. Desktop: the explorer's side panel (now 320 px, scrollable) shows the inspector for a selected node; clicking an entry runs *Show in graph* (expands project and namespaces via `graph/patch`, then focuses). **Aggregated edges** keep the evidence list of GRAPH-010/UI-007 (relationships with kind, level, location and snippet). **External dependencies** are covered by the use case and appear in the lists; their nodes are hidden in the explorer (no UI switch for external dependencies yet), so *Show in graph* reports that. Tests: use case over `dotnet-advanced` (type, project, namespace, package, expand path, errors) and ViewModel over `dotnet-layered` (details, show in graph = patch + focus). **Manually verified on Windows:** inspector of `Shop.Infrastructure`, *Show in graph* on `IOrderRepository` expands `Shop.Domain` and selects the type.
 
 ### UI-007 — Evidence list and source snippet view
 - **Priority:** P0 · **Milestone:** M3 · **Status:** done

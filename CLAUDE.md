@@ -35,9 +35,10 @@ shows runs and diagnostics (UI-005), and an overview page (languages, projects, 
 hostile .NET fixtures prove that imports execute nothing (QA-003); test projects without tests fail the run (CORE-010).
 M3: graph layouts (force/fcose default, hierarchical/dagre, concentric) with a persisted layout switcher
 (`graph.layout`) and the visual encoding of GRAPH_ENGINE.md §9 (GRAPH-005); projects and namespaces expand in the graph
-(`GraphQuery.Expanded`, `graph/patch`, GRAPH-006); selected evidence shows a read-only source snippet (`GetSourceSnippet`, UI-007).
+(`GraphQuery.Expanded`, `graph/patch`, GRAPH-006); a Component Inspector shows details and relationships of a selected node (`GetElementDetails`, UI-006) and selected
+evidence a read-only source snippet (`GetSourceSnippet`, UI-007).
 No Tree-sitter analyzer, Git or AI
-functionality exists yet. Next: the open M1 tasks and M3
+functionality exists yet. Next: the open M1 checks (macOS/Linux) and M4
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 
 ## Commands

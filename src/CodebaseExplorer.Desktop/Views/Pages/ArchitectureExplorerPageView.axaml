@@ -6,6 +6,14 @@
              x:DataType="pages:ArchitectureExplorerPageViewModel">
   <UserControl.Styles>
     <!-- Evidence lines of a source snippet (UI-007); the color is not the only cue: the lines are also selected in the list. -->
+    <!-- Inspector entries: flat, left-aligned, full width; a click shows the element in the graph (UI-006). -->
+    <Style Selector="Button.inspector-item">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="Padding" Value="4,2" />
+      <Setter Property="FontSize" Value="12" />
+    </Style>
     <Style Selector="Border.evidence">
       <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentLowBrush}" />
     </Style>
@@ -31,11 +39,12 @@
       </Border>
     </StackPanel>
 
-    <!-- Selection panel (name and kind; the full Component Inspector follows in UI-006) -->
-    <Border DockPanel.Dock="Right" Width="260" Margin="16,0,0,0" Padding="16"
+    <!-- Selection panel and Component Inspector (UI-006): node details, relationships, evidence and source (UI-007) -->
+    <Border DockPanel.Dock="Right" Width="320" Margin="16,0,0,0" Padding="16"
             IsVisible="{Binding HasGraph}"
             BorderThickness="1" CornerRadius="6"
             BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled">
       <StackPanel Spacing="8">
         <TextBlock Text="Selection" FontWeight="SemiBold" />
         <TextBlock Text="Select a node or edge in the graph." Opacity="0.7" TextWrapping="Wrap"
@@ -47,6 +56,84 @@
                      IsVisible="{Binding SelectionDetail, Converter={x:Static ObjectConverters.IsNotNull}}" />
           <TextBlock Text="{Binding SelectionCountText}" Opacity="0.6" FontSize="12"
                      IsVisible="{Binding SelectionCountText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        </StackPanel>
+
+        <!-- Component Inspector of a selected node (UI-006) -->
+        <TextBlock Text="{Binding InspectorMessage}" Opacity="0.7" TextWrapping="Wrap" FontSize="12"
+                   IsVisible="{Binding InspectorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        <StackPanel Spacing="8" IsVisible="{Binding HasDetails}">
+          <TextBlock Text="{Binding InspectorMetrics}" Opacity="0.8" FontSize="12" />
+          <ItemsControl ItemsSource="{Binding InspectorFacts}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="pages:InspectorFact">
+                <StackPanel Margin="0,0,0,4">
+                  <TextBlock Text="{Binding Label}" Opacity="0.6" FontSize="11" />
+                  <SelectableTextBlock Text="{Binding Value}" TextWrapping="Wrap" FontSize="12" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <Expander Header="Members" IsVisible="{Binding HasMembers}" HorizontalAlignment="Stretch">
+            <ItemsControl ItemsSource="{Binding InspectorMembers}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="pages:InspectorItem">
+                  <Button Classes="inspector-item" Content="{Binding Label}" ToolTip.Tip="Show in graph"
+                          IsEnabled="{Binding CanShowInGraph}"
+                          Command="{Binding $parent[UserControl].((pages:ArchitectureExplorerPageViewModel)DataContext).ShowInGraphCommand}"
+                          CommandParameter="{Binding}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Expander>
+
+          <TextBlock Text="Outgoing" FontWeight="SemiBold" IsVisible="{Binding HasOutgoing}" />
+          <ItemsControl ItemsSource="{Binding OutgoingGroups}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="pages:InspectorGroup">
+                <Expander Header="{Binding Title}" HorizontalAlignment="Stretch" Margin="0,0,0,4">
+                  <ItemsControl ItemsSource="{Binding Items}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="pages:InspectorItem">
+                        <Button Classes="inspector-item" ToolTip.Tip="Show in graph" IsEnabled="{Binding CanShowInGraph}"
+                                Command="{Binding $parent[UserControl].((pages:ArchitectureExplorerPageViewModel)DataContext).ShowInGraphCommand}"
+                                CommandParameter="{Binding}">
+                          <StackPanel>
+                            <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding Detail}" Opacity="0.7" FontSize="11" TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </Expander>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <TextBlock Text="Incoming" FontWeight="SemiBold" IsVisible="{Binding HasIncoming}" />
+          <ItemsControl ItemsSource="{Binding IncomingGroups}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="pages:InspectorGroup">
+                <Expander Header="{Binding Title}" HorizontalAlignment="Stretch" Margin="0,0,0,4">
+                  <ItemsControl ItemsSource="{Binding Items}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="pages:InspectorItem">
+                        <Button Classes="inspector-item" ToolTip.Tip="Show in graph" IsEnabled="{Binding CanShowInGraph}"
+                                Command="{Binding $parent[UserControl].((pages:ArchitectureExplorerPageViewModel)DataContext).ShowInGraphCommand}"
+                                CommandParameter="{Binding}">
+                          <StackPanel>
+                            <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding Detail}" Opacity="0.7" FontSize="11" TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </Expander>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
         </StackPanel>
 
         <!-- Evidence of the selected edge (GRAPH-010); select a record to see its source (UI-007) -->
@@ -97,6 +184,7 @@
           </ScrollViewer>
         </StackPanel>
       </StackPanel>
+      </ScrollViewer>
     </Border>
 
     <Border BorderThickness="1" CornerRadius="6" ClipToBounds="True"

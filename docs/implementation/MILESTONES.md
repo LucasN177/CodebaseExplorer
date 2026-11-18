@@ -7,7 +7,7 @@
 | M0 | Foundation | ✅ done (2026-11-17) | Docs, buildable solution, dependency tests, startable shell. |
 | M1 | Vertical slice: .NET project graph | 🚧 in progress | Local folder → .NET projects → project graph in the explorer on 3 OSes. |
 | M2 | Persistence & analysis runs | 🚧 all tasks implemented (2026-11-18); new pages manually verified on Windows; macOS/Linux open | SQLite persistence, reopen, run history, migrations. |
-| M3 | Deep C# & Component Inspector | ⏳ planned | Namespaces/types with evidence levels, inspector, hostile fixtures. |
+| M3 | Deep C# & Component Inspector | 🚧 all tasks implemented (2026-11-18); verified on Windows, macOS/Linux open | Namespaces/types with evidence levels, inspector, hostile fixtures. |
 | M4 | Polyglot & large repositories | ⏳ planned | TS/JS/Python, filters/search/budget, performance targets. |
 | M5 | Git integration | ⏳ planned | Metadata, HTTPS clone, activity overlay. |
 | M6 | Documentation export | ⏳ planned | Markdown + Mermaid report. |
