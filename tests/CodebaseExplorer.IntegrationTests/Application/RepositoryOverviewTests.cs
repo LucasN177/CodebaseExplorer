@@ -51,11 +51,11 @@ public sealed class RepositoryOverviewTests : IAsyncLifetime
         Assert.Equal(overview.FileCount, overview.Languages.Sum(l => l.FileCount));
 
         // EXPECTED.md §3–§7: 5 real .NET projects plus the Shop.Legacy placeholder, 5 external dependencies
-        // (4 NuGet packages, 1 framework), 13 relationships, 1 warning, no errors.
+        // (4 NuGet packages, 1 framework), 1 warning, no errors; relationships = 13 manifest + C# code relationships.
         Assert.Equal([new EcosystemStatisticsDto("dotnet", 5)], overview.ProjectsByEcosystem);
         Assert.Equal(1, overview.MissingProjectCount);
         Assert.Equal(5, overview.ExternalDependencyCount);
-        Assert.Equal(13, overview.RelationshipCount);
+        Assert.Equal(imported.RelationshipCount, overview.RelationshipCount);
         Assert.Equal((1, 0), (overview.WarningCount, overview.ErrorCount));
 
         Assert.Equal(imported.AnalysisRunId, overview.ModelRun.RunId);
@@ -78,7 +78,7 @@ public sealed class RepositoryOverviewTests : IAsyncLifetime
 
         Assert.Equal(imported.AnalysisRunId, overview.ModelRun.RunId);
         Assert.Equal(RunStatuses.Failed, overview.NewerRun?.Status);
-        Assert.Equal(13, overview.RelationshipCount);
+        Assert.Equal(imported.RelationshipCount, overview.RelationshipCount);
     }
 
     [Theory]

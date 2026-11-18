@@ -1,7 +1,7 @@
 # Analysis Engine — Codebase Explorer
 
 > Status: **accepted (specification)** · Last reviewed: 2026-11-17
-> Implementation status: **partially implemented** — pipeline, scanner, .NET project-system analyzer (M1); Roslyn C# declarations (ANALYSIS-005: namespaces → modules, types and members → entities); semantic relationships follow with ANALYSIS-006.
+> Implementation status: **partially implemented** — pipeline, scanner, .NET project-system analyzer (M1); Roslyn C# declarations (ANALYSIS-005: namespaces → modules, types and members → entities) and their relationships (ANALYSIS-006: Inherits, Implements, UsesType, Instantiates, Calls).
 > Related: [ADR-004](../decisions/ADR-004-static-analysis-strategy.md),
 > [ADR-007](../decisions/ADR-007-evidence-based-analysis.md),
 > [ADR-009](../decisions/ADR-009-incremental-analysis.md), [SECURITY.md](SECURITY.md).
@@ -201,12 +201,21 @@ warning (`csharp.project.reference-cycle`).
    - compilations of referenced in-repository projects (as `CompilationReference`s, transitive), built in
      topological order;
    - **no NuGet assemblies** (ADR-011): package types remain unresolved everywhere.
-   *Implemented (ANALYSIS-005):* steps 1–2 and the declaration part of step 3.
+   *Implemented:* steps 1–2 and the declarations of step 3 (ANALYSIS-005); relationships of steps 3–4 except
+   the DI heuristics (ANALYSIS-006). The analyzer runs in two phases: all projects are compiled and their
+   declarations collected (topological order), then relationships are extracted, so the name-based fallback
+   sees the types of every project. Only Domain objects leave the analyzer; all compilations are released
+   after the run.
 3. Walk the semantic model: declared namespaces → `CodeModule`s; types and members →
-   `CodeEntity`s; base types, interfaces, type usages, object creations, invocations →
-   relationships.
+   `CodeEntity`s; base types (`Inherits`, interfaces → `Implements`), type usages incl. generic arguments
+   and constraints (`UsesType`), object creations (`Instantiates`), invocations and constructor initializers
+   (`Calls`) →
+   relationships between repository entities (generic instantiations target the definition; framework and
+   package types produce none; source = innermost declaring member, else type; one evidence per occurrence,
+   rules `csharp.<Kind>`).
 4. Evidence level: symbol resolved by the semantic model → `Confirmed`; unresolved symbol but
-   syntactic name match to a known in-repository type → `Syntactic`; patterns (e.g.
+   name (and arity) matching exactly one repository type → `Syntactic` (e.g. missing project reference;
+   a single overload candidate the compiler did not pick → `Syntactic` too); patterns (e.g.
    `services.AddScoped<IFoo, Foo>()`) → `Heuristic` (ANALYSIS-007).
 5. **Never** load analyzers, source generators or any assembly from the repository or its
    packages for execution. Generated code is therefore invisible (documented limitation).

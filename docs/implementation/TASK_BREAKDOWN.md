@@ -23,7 +23,7 @@ Status overview (keep in sync):
 | M0 Foundation | (initialization) | ✅ |
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
-| M3 Deep C# & Inspector | 9 | 2 |
+| M3 Deep C# & Inspector | 9 | 3 |
 | M4 Polyglot & scale | 11 | 0 |
 | M5 Git | 7 | 0 |
 | M6 Export | 2 | 0 |
@@ -377,7 +377,7 @@ Status overview (keep in sync):
 - **Note:** Microsoft.CodeAnalysis.CSharp 5.12.0 (re-verified). **Decided with the user (ADR-011):** compilations reference the embedded .NET 10 reference assemblies of `Basic.Reference.Assemblies.Net100` 1.8.15 and never SDK packs or NuGet assemblies, because Roslyn formats resolved and unresolved types differently in documentation comment IDs (verified) and entity ids must not depend on the machine (fixture V-1). New pipeline seam `IRepositoryLanguageAnalyzer`: `CSharpAnalyzer` analyzes all C# projects in topological order with `CompilationReference`s to referenced projects (cycles broken with a warning, failures isolated per project). `DeclarationCollector` creates namespace modules (with enclosing namespaces) and entities for types and source-declared members (EXPECTED.md §8.2 rules; global-namespace types go to module `(global)`; top-level statements produce no entity). Implicit usings follow the SDK defaults. Tests: all 7 modules and 41 entities of `dotnet-advanced` match EXPECTED.md §8 exactly (key, kind, visibility, modifiers, declarations, containment), keys are stable across runs, references are in-memory, no assembly is loaded from the repository; `dotnet-layered` is analyzed without errors.
 
 ### ANALYSIS-006 — Roslyn semantic relationships without build
-- **Priority:** P0 · **Milestone:** M3 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M3 · **Status:** done
 - **Prerequisites:** ANALYSIS-005
 - **Projects:** Analysis, Analysis.Tests
 - **Description:** Build `CSharpCompilation`s in topological project order with metadata references (SDK reference packs if found, in-repo `CompilationReference`s, cached NuGet assemblies only via existing `project.assets.json`). Extract `Inherits`, `Implements`, `UsesType`, `Instantiates`, `Calls` with evidence levels.
@@ -385,6 +385,7 @@ Status overview (keep in sync):
   - Without SDK packs present, analysis still succeeds with more `Syntactic` evidence (test with packs disabled).
   - Memory released per project (compilations not retained after linking).
   - Fixture expectations met, including cross-project relationships.
+- **Note:** `RelationshipCollector` (second phase of `CSharpAnalyzer`, after all declarations): `Inherits`, `Implements`, `UsesType` (incl. generic arguments and constraints), `Instantiates`, `Calls` (incl. `base`/`this` initializers) between repository entities; rules `csharp.<Kind>`, one evidence per occurrence, no excerpts. Per ADR-011 neither SDK packs nor NuGet assemblies are used, so the first acceptance criterion is met by construction: in-repository resolution never depends on packs; the `Syntactic` fallback (unique name + arity match, e.g. a missing project reference) is tested with a temporary two-project repository. Compilations are released after the run (weak-reference test). All 16 rows of `dotnet-advanced` EXPECTED.md §9 are found as `Confirmed` with the documented evidence location (one oracle location corrected in this task: the `Instantiates` evidence is the type name after `new`, as in the other row); no relationship from the comment or string. `dotnet-layered` now has 29 relationships (13 manifest + 16 code); project edges in the graph are unchanged and aggregate the code relationships in their details.
 
 ### ANALYSIS-007 — DI registration heuristics (C#)
 - **Priority:** P2 · **Milestone:** M3 · **Status:** todo

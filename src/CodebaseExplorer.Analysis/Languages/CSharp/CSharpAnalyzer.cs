@@ -26,6 +26,9 @@ internal sealed class CSharpAnalyzer : IRepositoryLanguageAnalyzer
 
     public bool Supports(LanguageId language) => language == LanguageId.CSharp;
 
+    /// <summary>Test hook: called with every compilation created, to verify that none outlives the run.</summary>
+    internal Action<Compilation>? CompilationCreated { get; set; }
+
     public async Task<AnalyzerFragment> AnalyzeAsync(RepositoryLanguageContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -34,7 +37,18 @@ internal sealed class CSharpAnalyzer : IRepositoryLanguageAnalyzer
         var compilations = new Dictionary<ElementId, CSharpCompilation>();
         var modules = new List<Domain.Modules.CodeModule>();
         var entities = new List<Domain.Entities.CodeEntity>();
+        var relationships = new List<Domain.Relationships.CodeRelationship>();
 
+        // Entities by (assembly, documentation comment ID): the same full name may exist in several projects.
+        var index = new Dictionary<(string Assembly, string Key), Domain.Entities.CodeEntity>();
+        Domain.Entities.CodeEntity? EntityOf(ISymbol symbol) =>
+            symbol.ContainingAssembly?.Name is { } assembly && symbol.GetDocumentationCommentId() is { } key
+                ? index.GetValueOrDefault((assembly, key))
+                : null;
+
+        // Phase 1 (topological order): compile and collect declarations of every project, so that phase 2 can
+        // resolve names against the entities of all projects (also projects without a declared reference).
+        var compiled = new List<(ProjectInput Input, CSharpCompilation Compilation, Dictionary<SyntaxTree, SourceFile> Files)>();
         foreach (var input in TopologicalOrder(context, diagnostics))
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -42,28 +56,60 @@ internal sealed class CSharpAnalyzer : IRepositoryLanguageAnalyzer
             {
                 var (compilation, files) = await CompileAsync(context, input, compilations, diagnostics, cancellationToken);
                 compilations[input.Project.Id] = compilation;
+                CompilationCreated?.Invoke(compilation);
 
-                var collector = new DeclarationCollector(input.Project, files);
-                collector.Collect(compilation, cancellationToken);
-                modules.AddRange(collector.Modules);
-                entities.AddRange(collector.Entities);
+                var declarations = new DeclarationCollector(input.Project, files);
+                declarations.Collect(compilation, cancellationToken);
+                modules.AddRange(declarations.Modules);
+                entities.AddRange(declarations.Entities);
+                foreach (var entity in declarations.Entities)
+                {
+                    index[(compilation.AssemblyName!, entity.SymbolKey)] = entity;
+                }
+
+                compiled.Add((input, compilation, files));
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
-                diagnostics.Add(new AnalysisDiagnostic(DiagnosticSeverity.Error, CSharpCodes.ProjectFailed,
-                    $"C# analysis of project '{input.Project.Name}' failed: {exception.GetType().Name}: {exception.Message}", CSharpCodes.Analyzer));
+                diagnostics.Add(Failed(input, exception));
+            }
+        }
+
+        // Phase 2: relationships (ANALYSIS-006).
+        var types = entities.Where(e => e.SymbolKey.StartsWith("T:", StringComparison.Ordinal)).ToArray();
+        foreach (var (input, compilation, files) in compiled)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                var references = new RelationshipCollector(EntityOf, types, files, context.AnalysisRunId);
+                references.Collect(compilation, cancellationToken);
+                relationships.AddRange(references.Relationships);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                diagnostics.Add(Failed(input, exception));
             }
 
             context.ProjectCompleted(input.Project.Name);
         }
 
+        // Nothing of Roslyn outlives the run (ANALYSIS-006): only Domain objects leave this method.
+        compiled.Clear();
+        compilations.Clear();
+
         return new AnalyzerFragment
         {
             Modules = [.. modules.OrderBy(m => m.NaturalKey.Value, StringComparer.Ordinal)],
             Entities = [.. entities.OrderBy(e => e.NaturalKey.Value, StringComparer.Ordinal)],
+            Relationships = [.. relationships.OrderBy(r => r.NaturalKey.Value, StringComparer.Ordinal)],
             Diagnostics = diagnostics,
         };
     }
+
+    private static AnalysisDiagnostic Failed(ProjectInput input, Exception exception) =>
+        new(DiagnosticSeverity.Error, CSharpCodes.ProjectFailed,
+            $"C# analysis of project '{input.Project.Name}' failed: {exception.GetType().Name}: {exception.Message}", CSharpCodes.Analyzer);
 
     private static async Task<(CSharpCompilation Compilation, Dictionary<SyntaxTree, SourceFile> Files)> CompileAsync(
         RepositoryLanguageContext context,

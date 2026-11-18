@@ -8,8 +8,10 @@ are stored byte-exact (`.gitattributes`: `-text`).
 
 **Location conventions.** Manifest items (§3–§6): first character (`<`) of the XML element. Entity
 declarations (§8): first character of the declared **identifier** (for constructors the type name, for
-partial types every part). Relationship evidence (§9, §10): first character of the syntax that produces
-it, as listed per row.
+partial types every part). Relationship evidence (§9): first character of the type syntax for
+`Inherits`, `Implements`, `UsesType` and `Instantiates` (the type name after `new`, not `new` itself; the
+`new` keyword only for target-typed `new()`), of the invoked member name for `Calls` (`base`/`this` for
+constructor initializers). §10: start of the invocation.
 
 ## 1. Files with project markers
 
@@ -197,7 +199,7 @@ relationships for other type occurrences are allowed.
 | `T:Advanced.Core.Entities.Customer` | Inherits | ``T:Advanced.Core.Entities.Entity`1`` | `src/Advanced.Core/Entities/Customer.cs:5:33` | — |
 | `T:Advanced.Core.Entities.Customer` | Implements | `T:Advanced.Core.Abstractions.IAuditable` | `src/Advanced.Core/Entities/Customer.cs:5:47` | — |
 | `M:Advanced.Core.Entities.Customer.#ctor(System.Guid,System.String)` | Calls | ``M:Advanced.Core.Entities.Entity`1.#ctor(`0)`` | `src/Advanced.Core/Entities/Customer.cs:8:11` (`base`) | — |
-| `M:Advanced.Core.Entities.Customer.AddOrder(System.Decimal)` | Instantiates | `T:Advanced.Core.Entities.Customer.OrderSummary` | `src/Advanced.Core/Entities/Customer.Orders.cs:11:21` | — |
+| `M:Advanced.Core.Entities.Customer.AddOrder(System.Decimal)` | Instantiates | `T:Advanced.Core.Entities.Customer.OrderSummary` | `src/Advanced.Core/Entities/Customer.Orders.cs:11:25` | — |
 | `F:Advanced.Core.Entities.Customer._orders` | UsesType | `T:Advanced.Core.Entities.Customer.OrderSummary` | `src/Advanced.Core/Entities/Customer.Orders.cs:5:27` | — |
 | ``T:Advanced.Core.Abstractions.IRepository`1`` | UsesType | ``T:Advanced.Core.Entities.Entity`1`` | `src/Advanced.Core/Abstractions/IRepository.cs:6:15` (constraint) | — |
 | ``P:Advanced.Core.Abstractions.Result`1.Kind`` | UsesType | `T:Advanced.Core.Abstractions.ResultKind` | `src/Advanced.Core/Abstractions/Result.cs:17:12` | — |

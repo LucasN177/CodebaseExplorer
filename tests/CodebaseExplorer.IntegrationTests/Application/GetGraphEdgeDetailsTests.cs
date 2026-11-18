@@ -29,8 +29,9 @@ public sealed class GetGraphEdgeDetailsTests : IAsyncLifetime
         foreach (var edge in view.Edges)
         {
             var details = (await getDetails.ExecuteAsync(query, edge.Id, TestContext.Current.CancellationToken)).Value;
-            var evidence = Assert.Single(Assert.Single(details.Relationships).Evidence);
-            Assert.NotNull(evidence.StartLine);
+            // The declared project reference, plus the aggregated C# code relationships between the two projects.
+            var evidence = Assert.Single(Assert.Single(details.Relationships, r => r.Kind == "project-reference").Evidence);
+            Assert.All(details.Relationships.SelectMany(r => r.Evidence), e => Assert.NotNull(e.StartLine));
             locations.Add((labels[edge.Source], labels[edge.Target], $"{evidence.Path}:{evidence.StartLine}"));
         }
 

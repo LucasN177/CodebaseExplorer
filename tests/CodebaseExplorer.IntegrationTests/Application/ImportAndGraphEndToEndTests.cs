@@ -30,7 +30,9 @@ public sealed class ImportAndGraphEndToEndTests : IAsyncLifetime
         Assert.Equal("dotnet-layered", summary.Name);
         Assert.Equal("succeeded", summary.Status); // warnings do not make a run partial
         Assert.Equal(6, summary.ProjectCount);
-        Assert.Equal(13, summary.RelationshipCount);
+        // 13 manifest relationships (EXPECTED.md §4–§6) plus the C# code relationships (ANALYSIS-006); the code part of
+        // `dotnet-layered` has no oracle (EXPECTED.md §8 is informational) and is checked exactly on `dotnet-advanced`.
+        Assert.True(summary.RelationshipCount > 13, $"{summary.RelationshipCount} relationships");
         Assert.Equal(1, summary.WarningCount);
         Assert.Equal(0, summary.ErrorCount);
         var warning = Assert.Single(summary.Diagnostics);
