@@ -21,7 +21,7 @@ Status overview (keep in sync):
 | Milestone | Tasks | Done |
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
-| M1 Vertical slice | 22 | 16 |
+| M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
