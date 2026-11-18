@@ -25,7 +25,7 @@ Status overview (keep in sync):
 | M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 9 |
 | M4 Polyglot & scale | 11 | 3 |
-| M5 Git | 7 | 5 |
+| M5 Git | 7 | 6 |
 | M6 Export | 2 | 0 |
 | M7 Local AI | 7 | 0 |
 | M8 Hardening & release | 4 | 0 |
@@ -572,11 +572,12 @@ Status overview (keep in sync):
 - **Note:** Done 2026-11-18. `IGitRepositoryReader.ReadFileActivityAsync(info, GitHistoryWindow, progress)` → `GitFileActivityReport` (files relative to the analyzed folder, `CommitsScanned`, `OldestCommitAt`, `ReachedCommitLimit`). `History/FileActivityWalker`: commits from HEAD in time order within the window (default 5,000 commits / 365 days, committer time), merge commits skipped, diffs against the first parent without rename detection, binary files count commits but no lines, distinct authors by case-insensitive e-mail (kept only during the walk); commits are diffed in parallel (≤ 8 workers, one `Repository` each) and merged deterministically. Tests: `GitFileActivityTests` (hand-computed numbers incl. rename = delete + add, merges, commit limit, since-date, subfolder, author e-mail case, binary, empty repository, 60-commit determinism + progress, cancellation). Runtime: 8.8 s on 2,511 commits of `libgit2/libgit2sharp` (TEST_STRATEGY.md §8). **Open:** "bounded runtime on the performance fixture" waits for QA-002 (M4); the window bounds the work meanwhile.
 
 ### GIT-005 — Persist Git data and activity overlay
-- **Priority:** P0 · **Milestone:** M5 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M5 · **Status:** done
 - **Prerequisites:** GIT-004, STORE-004
 - **Projects:** Storage, Application, Graph, Desktop
 - **Description:** `GitSnapshots`/`GitChanges` tables and migration; aggregation to projects/modules; activity overlay in graph and inspector.
 - **Acceptance criteria:** Overlay matches persisted numbers; repositories without Git work unchanged.
+- **Note:** Done 2026-11-18. Tables `GitSnapshots`/`GitChanges` (migration `AddGitActivity`, `GitActivityStore` behind the new port `IGitActivityStore`; statistics keyed by file id, so a model replacement cascades them away). `ImportLocalRepository` reads the snapshot before the analysis (run `CommitSha`/`Branch` — the run history now shows them) and the activity after it (stage `ReadingGitHistory`), stores both after the model; unreadable repositories add a `git.read-failed` warning, folders without Git nothing. The walker restricts diffs to the analyzed subfolder (pathspec). Aggregation `GitActivityIndex` (Application): **file changes** = sum of the files' commit counts per project / module (entity declarations of the subtree) / entity; shared by `GetGraphView` (`GraphQuery.IncludeActivity` → `GraphNodeMetricsDto.ChangeCount`) and `GetElementDetails` (`ElementDetailsDto.Activity`). Overlay: *Git activity* toggle in the explorer (not persisted), halo via Cytoscape `underlay-*` growing with `log10(1 + changes)`; inspector line "N file changes in M files · +a −d lines · last change … · window …". Tests: `GitActivityEndToEndTests` (persisted snapshot and numbers, overlay and inspector equal an independent recomputation from the stored rows incl. module and type nodes, no-Git folder unchanged, unreadable repository = warning, re-import replaces, remove deletes), explorer view-model tests (toggle patches in/out, hint without Git data, inspector text), Vitest `activityHeat` and palette contrast. **Not verified:** the overlay's look in the running app (no manual UI check in this session).
 
 ### UI-008 — Clone dialog
 - **Priority:** P0 · **Milestone:** M5 · **Status:** todo

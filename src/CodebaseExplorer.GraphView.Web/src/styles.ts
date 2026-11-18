@@ -13,6 +13,8 @@ export interface Palette {
   missing: string;
   edge: string;
   selection: string;
+  /** Git-activity overlay (GIT-005): halo behind active nodes. */
+  activity: string;
 }
 
 export const palettes: Record<ThemeMode, Palette> = {
@@ -23,6 +25,7 @@ export const palettes: Record<ThemeMode, Palette> = {
     missing: '#c4432b',
     edge: '#8c959f',
     selection: '#9a6700',
+    activity: '#c2410c',
   },
   dark: {
     background: '#1e1e1e',
@@ -31,6 +34,7 @@ export const palettes: Record<ThemeMode, Palette> = {
     missing: '#ff8a4c',
     edge: '#6e7681',
     selection: '#e3b341',
+    activity: '#fb923c',
   },
 };
 
@@ -42,6 +46,7 @@ export function backgroundOf(mode: ThemeMode): string {
 }
 
 const scaled = (base: number) => (node: NodeSingular): number => base * (Number(node.data('scale')) || 1);
+const heatOf = (node: NodeSingular): number => Math.max(0, Number(node.data('heat')) || 0);
 
 export function stylesheet(mode: ThemeMode): StylesheetJson {
   const p = palettes[mode];
@@ -87,6 +92,17 @@ export function stylesheet(mode: ThemeMode): StylesheetJson {
     {
       selector: 'node:parent',
       style: { 'background-opacity': 0.1, 'border-width': 1, 'border-style': 'solid', 'border-color': p.edge, 'text-valign': 'top', 'text-margin-y': -4, padding: '12px' },
+    },
+    // Git-activity overlay (GIT-005): a halo behind the node whose strength grows with its file changes; it leaves the
+    // border (expandable, missing, selected) untouched. heat < 0 means no Git data or overlay off.
+    {
+      selector: 'node[heat >= 0]',
+      style: {
+        'underlay-color': p.activity,
+        'underlay-opacity': (node: NodeSingular): number => 0.15 + 0.6 * heatOf(node),
+        'underlay-padding': (node: NodeSingular): number => 2 + 10 * heatOf(node),
+        'underlay-shape': 'round-rectangle',
+      },
     },
     { selector: '.dimmed', style: { opacity: DIMMED_OPACITY } },
     { selector: 'node:selected', style: { 'border-width': 3, 'border-style': 'solid', 'border-color': p.selection } },

@@ -39,6 +39,10 @@ internal sealed class CodebaseExplorerDbContext(DbContextOptions<CodebaseExplore
 
     public DbSet<UserSettingRecord> UserSettings => Set<UserSettingRecord>();
 
+    public DbSet<GitSnapshotRecord> GitSnapshots => Set<GitSnapshotRecord>();
+
+    public DbSet<GitChangeRecord> GitChanges => Set<GitChangeRecord>();
+
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
         configurationBuilder.Properties<Guid>().HaveConversion<GuidToBytesConverter>();

@@ -1,5 +1,6 @@
 using CodebaseExplorer.Application.Analysis;
 using CodebaseExplorer.Application.Common;
+using CodebaseExplorer.Application.Git;
 using CodebaseExplorer.Application.Graph;
 using CodebaseExplorer.Application.Repositories;
 using CodebaseExplorer.Contracts.Graph;
@@ -56,7 +57,7 @@ public sealed class RecentRepositoriesTests : IAsyncLifetime
         var analyzer = Substitute.For<IRepositoryAnalyzer>();
         analyzer.AnalyzeAsync(default!, default, Arg.Any<CancellationToken>()).ReturnsForAnyArgs(
             Task.FromResult<Result<RepositoryAnalysis>>(ApplicationError.Failure("analysis.failed", "boom")));
-        var import = new ImportLocalRepository(Get<IRepositoryRootValidator>(), analyzer, Get<IArchitectureModelStore>(), TimeProvider.System);
+        var import = new ImportLocalRepository(Get<IRepositoryRootValidator>(), analyzer, Get<IArchitectureModelStore>(), Get<IGitRepositoryReader>(), Get<IGitActivityStore>(), TimeProvider.System);
         await import.ExecuteAsync(folder.FullPath, null, Token);
 
         var entry = Assert.Single(await Get<ListRecentRepositories>().ExecuteAsync(Token));

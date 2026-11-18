@@ -113,7 +113,11 @@ internal static class FileActivityWalker
     {
         var tree = repository.Lookup<Commit>(selected.Sha).Tree;
         var parentTree = selected.ParentSha is null ? null : repository.Lookup<Commit>(selected.ParentSha).Tree;
-        using var patch = repository.Diff.Compare<Patch>(parentTree, tree, DiffOptions);
+        // For a subfolder, the pathspec keeps libgit2 from diffing the rest of the repository (the prefix filter below
+        // stays authoritative).
+        using var patch = prefix.Length > 0
+            ? repository.Diff.Compare<Patch>(parentTree, tree, [prefix.TrimEnd('/')], null, DiffOptions)
+            : repository.Diff.Compare<Patch>(parentTree, tree, DiffOptions);
         foreach (var change in patch)
         {
             var path = change.Path.Replace('\\', '/');

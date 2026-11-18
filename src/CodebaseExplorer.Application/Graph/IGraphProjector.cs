@@ -13,9 +13,11 @@ public interface IGraphProjector
     /// <summary>
     /// Returns the view, or a <see cref="ErrorKind.Validation"/> error (codes in
     /// <see cref="GraphErrorCodes"/>) if the query does not match the model or asks for an
-    /// unsupported level.
+    /// unsupported level. With <paramref name="activity"/> (GIT-005), every project, module and entity node gets
+    /// <see cref="GraphNodeMetricsDto.ChangeCount"/> = its file changes (<see cref="Git.GitActivityIndex"/>); without, it stays
+    /// <see langword="null"/>.
     /// </summary>
-    Result<GraphViewDto> Project(ArchitectureModel model, GraphQuery query);
+    Result<GraphViewDto> Project(ArchitectureModel model, GraphQuery query, Git.GitActivityIndex? activity = null);
 
     /// <summary>
     /// Returns the stored relationships (with evidence) that make up the edge <paramref name="edgeId"/> of

@@ -1,5 +1,6 @@
 using CodebaseExplorer.Application.Analysis;
 using CodebaseExplorer.Application.Common;
+using CodebaseExplorer.Application.Git;
 using CodebaseExplorer.Application.Repositories;
 using CodebaseExplorer.Contracts.Repositories;
 using CodebaseExplorer.Desktop.Services;
@@ -29,7 +30,7 @@ public sealed class RunHistoryTests : IAsyncLifetime
     private readonly ImportLocalRepository _import;
 
     public RunHistoryTests() =>
-        _import = new ImportLocalRepository(Get<IRepositoryRootValidator>(), _analyzer, Get<IArchitectureModelStore>(), TimeProvider.System);
+        _import = new ImportLocalRepository(Get<IRepositoryRootValidator>(), _analyzer, Get<IArchitectureModelStore>(), Get<IGitRepositoryReader>(), Get<IGitActivityStore>(), TimeProvider.System);
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 

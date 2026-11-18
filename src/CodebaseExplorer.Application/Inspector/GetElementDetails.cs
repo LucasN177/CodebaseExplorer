@@ -1,5 +1,6 @@
 using System.Globalization;
 using CodebaseExplorer.Application.Common;
+using CodebaseExplorer.Application.Git;
 using CodebaseExplorer.Application.Repositories;
 using CodebaseExplorer.Contracts.Inspector;
 using CodebaseExplorer.Domain.Common;
@@ -21,7 +22,7 @@ namespace CodebaseExplorer.Application.Inspector;
 /// those crossing the subtree's boundary, so the inspector matches the aggregated graph edges. Each related element
 /// carries what "show in graph" needs (<see cref="ElementReferenceDto.GraphNodeId"/>, <see cref="ElementReferenceDto.ExpandPath"/>).
 /// </remarks>
-public sealed class GetElementDetails(IArchitectureModelStore store)
+public sealed class GetElementDetails(IArchitectureModelStore store, IGitActivityStore gitStore)
 {
     /// <summary>At most this many declaration locations are listed as facts.</summary>
     public const int MaxDeclarations = 5;
@@ -45,9 +46,34 @@ public sealed class GetElementDetails(IArchitectureModelStore store)
         }
 
         var element = ElementId.Parse(elementId);
-        return Describe(model, element) is { } details
-            ? details
-            : ApplicationError.NotFound(InspectorErrorCodes.ElementNotFound, "The element is not part of the current model.");
+        if (Describe(model, element) is not { } details)
+        {
+            return ApplicationError.NotFound(InspectorErrorCodes.ElementNotFound, "The element is not part of the current model.");
+        }
+
+        // Same aggregation as the graph overlay (GitActivityIndex), so both show the same numbers.
+        var git = await gitStore.LoadCurrentAsync(id, cancellationToken);
+        if (git is null || new GitActivityIndex(model, git).For(element) is not { } activity)
+        {
+            return details;
+        }
+
+        return details with
+        {
+            Activity = new ElementActivityDto
+            {
+                FileChanges = activity.FileChanges,
+                ChangedFiles = activity.ChangedFiles,
+                LinesAdded = activity.LinesAdded,
+                LinesDeleted = activity.LinesDeleted,
+                LastChangeAt = activity.LastChangeAt,
+                DistinctAuthors = activity.DistinctAuthors,
+                CommitsScanned = git.Snapshot.HistoryDepth,
+                WindowStart = git.Snapshot.HistoryWindowStart,
+                HeadCommitSha = git.Snapshot.HeadCommitSha,
+                Branch = git.Snapshot.Branch,
+            },
+        };
     }
 
     private static ElementDetailsDto? Describe(ArchitectureModel model, ElementId id)

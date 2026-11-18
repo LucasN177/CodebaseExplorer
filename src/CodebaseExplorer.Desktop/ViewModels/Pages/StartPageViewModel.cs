@@ -55,6 +55,7 @@ public sealed partial class StartPageViewModel : PageViewModel
             new(AnalysisStage.AnalyzingCode, "Analyzing code"),
             new(AnalysisStage.Linking, "Linking"),
             new(AnalysisStage.Validating, "Validating"),
+            new(AnalysisStage.ReadingGitHistory, "Reading Git history"),
             new(AnalysisStage.Saving, "Saving"),
         ];
         RecentRepositories.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasRecentRepositories));

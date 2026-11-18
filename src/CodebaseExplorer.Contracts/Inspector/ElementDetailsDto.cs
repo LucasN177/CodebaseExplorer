@@ -36,6 +36,44 @@ public sealed record ElementDetailsDto
     public IReadOnlyList<RelationshipGroupDto> Incoming { get; init; } = [];
 
     public IReadOnlyList<RelationshipGroupDto> Outgoing { get; init; } = [];
+
+    /// <summary>Git activity of the element's files (GIT-005); <see langword="null"/> without Git data or for external dependencies.</summary>
+    public ElementActivityDto? Activity { get; init; }
+}
+
+/// <summary>
+/// Git activity of an element within the history window of its repository's current run (GIT-005). Counts
+/// <b>file changes</b> — the sum of the commit counts of the element's files — not distinct commits.
+/// </summary>
+public sealed record ElementActivityDto
+{
+    /// <summary>Sum of the commit counts of the element's files.</summary>
+    public int FileChanges { get; init; }
+
+    /// <summary>Files of the element changed in the window.</summary>
+    public int ChangedFiles { get; init; }
+
+    public long LinesAdded { get; init; }
+
+    public long LinesDeleted { get; init; }
+
+    /// <summary>Newest change of any of its files.</summary>
+    public DateTimeOffset? LastChangeAt { get; init; }
+
+    /// <summary>Distinct authors; only when exactly one file changed (author counts cannot be summed).</summary>
+    public int? DistinctAuthors { get; init; }
+
+    /// <summary>Commits scanned for the repository's statistics (history window).</summary>
+    public int CommitsScanned { get; init; }
+
+    /// <summary>Oldest commit time in the window.</summary>
+    public DateTimeOffset? WindowStart { get; init; }
+
+    /// <summary>HEAD commit of the snapshot.</summary>
+    public required string HeadCommitSha { get; init; }
+
+    /// <summary>Branch of the snapshot; <see langword="null"/> when detached.</summary>
+    public string? Branch { get; init; }
 }
 
 /// <param name="Label">What the value is, e.g. <c>Path</c>.</param>

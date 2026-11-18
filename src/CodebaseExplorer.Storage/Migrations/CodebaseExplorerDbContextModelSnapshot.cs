@@ -469,6 +469,95 @@ namespace CodebaseExplorer.Storage.Migrations
                     b.ToTable("Files", (string)null);
                 });
 
+            modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.GitChangeRecord", b =>
+                {
+                    b.Property<byte[]>("GitSnapshotId")
+                        .HasColumnType("BLOB");
+
+                    b.Property<byte[]>("FileId")
+                        .HasColumnType("BLOB");
+
+                    b.Property<int>("CommitCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DistinctAuthorCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("FirstCommitAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastCommitAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastCommitSha")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("LinesAdded")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("LinesDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("GitSnapshotId", "FileId");
+
+                    b.HasIndex("FileId")
+                        .HasDatabaseName("IX_GitChanges_FileId");
+
+                    b.ToTable("GitChanges", (string)null);
+                });
+
+            modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.GitSnapshotRecord", b =>
+                {
+                    b.Property<byte[]>("Id")
+                        .HasColumnType("BLOB");
+
+                    b.Property<byte[]>("AnalysisRunId")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("Branch")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CapturedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("HasUncommittedChanges")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("HeadCommitSha")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("HistoryDepth")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("HistoryWindowStart")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDetachedHead")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("RemotesJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("RepositoryId")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AnalysisRunId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_GitSnapshots_AnalysisRunId");
+
+                    b.HasIndex("RepositoryId", "CapturedAt")
+                        .HasDatabaseName("IX_GitSnapshots_RepositoryId_CapturedAt");
+
+                    b.ToTable("GitSnapshots", (string)null);
+                });
+
             modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.ModuleRecord", b =>
                 {
                     b.Property<byte[]>("Id")
@@ -751,6 +840,36 @@ namespace CodebaseExplorer.Storage.Migrations
                         .WithMany()
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("CodebaseExplorer.Storage.Persistence.Entities.RepositoryRecord", null)
+                        .WithMany()
+                        .HasForeignKey("RepositoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.GitChangeRecord", b =>
+                {
+                    b.HasOne("CodebaseExplorer.Storage.Persistence.Entities.FileRecord", null)
+                        .WithMany()
+                        .HasForeignKey("FileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CodebaseExplorer.Storage.Persistence.Entities.GitSnapshotRecord", null)
+                        .WithMany()
+                        .HasForeignKey("GitSnapshotId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.GitSnapshotRecord", b =>
+                {
+                    b.HasOne("CodebaseExplorer.Storage.Persistence.Entities.AnalysisRunRecord", null)
+                        .WithOne()
+                        .HasForeignKey("CodebaseExplorer.Storage.Persistence.Entities.GitSnapshotRecord", "AnalysisRunId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("CodebaseExplorer.Storage.Persistence.Entities.RepositoryRecord", null)
                         .WithMany()

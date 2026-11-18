@@ -1,4 +1,5 @@
 using CodebaseExplorer.Application.Abstractions;
+using CodebaseExplorer.Application.Git;
 using CodebaseExplorer.Application.Repositories;
 using CodebaseExplorer.Application.Settings;
 using CodebaseExplorer.Storage.Persistence;
@@ -27,6 +28,7 @@ public static class DependencyInjection
         services.AddSingleton<IDatabaseInitializer, DatabaseInitializer>();
         services.AddSingleton<IArchitectureModelStore, ArchitectureModelStore>();
         services.AddSingleton<IUserSettingsStore, UserSettingsStore>();
+        services.AddSingleton<IGitActivityStore, GitActivityStore>();
         services.AddDbContextFactory<CodebaseExplorerDbContext>((provider, options) =>
             Configure(options, ConnectionString(provider.GetRequiredService<IApplicationPaths>().DatabaseFilePath)));
 

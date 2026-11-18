@@ -191,7 +191,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
 
         try
         {
-            var query = new GraphQuery { RepositoryId = repository.RepositoryId };
+            var query = new GraphQuery { RepositoryId = repository.RepositoryId, IncludeActivity = ShowActivity };
             var result = await _getGraphView.ExecuteAsync(query, cancellationToken);
             if (loadNumber != _loadNumber)
             {
@@ -210,6 +210,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             }
 
             HasGraph = true;
+            UpdateActivityHint(view);
             if (!await Graph.ShowGraphAsync(view, cancellationToken))
             {
                 ErrorMessage = "The graph view did not accept the graph. Details are in the application log.";
@@ -277,6 +278,63 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             ErrorMessage = "The graph could not be changed. Details are in the application log.";
         }
     }
+
+    /// <summary>
+    /// Git-activity overlay (GIT-005): when on, nodes carry their file changes and the web view draws a halo whose
+    /// strength grows with them. Toggling re-queries the view and sends only the changed nodes.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool ShowActivity { get; set; }
+
+    /// <summary>Shown when the overlay is on but the repository has no Git data.</summary>
+    [ObservableProperty]
+    public partial string? ActivityHint { get; private set; }
+
+    partial void OnShowActivityChanged(bool value) => _ = ApplyActivityOverlayAsync(value);
+
+    /// <summary>Re-projects the current view with or without activity (public for tests; the toggle calls it).</summary>
+    public async Task ApplyActivityOverlayAsync(bool show, CancellationToken cancellationToken = default)
+    {
+        if (_query is not { } query || query.IncludeActivity == show)
+        {
+            return;
+        }
+
+        var loadNumber = _loadNumber;
+        var next = query with { IncludeActivity = show };
+        try
+        {
+            var result = await _getGraphView.ExecuteAsync(next, cancellationToken);
+            if (loadNumber != _loadNumber)
+            {
+                return;
+            }
+
+            if (!result.TryGetValue(out var view, out var error))
+            {
+                _logger.LogWarning("Toggling the activity overlay failed with {ErrorCode}", error.Code);
+                ErrorMessage = error.Message;
+                return;
+            }
+
+            _query = next;
+            UpdateActivityHint(view);
+            if (!await Graph.PatchGraphAsync(view, cancellationToken))
+            {
+                ErrorMessage = "The graph view did not accept the change. Details are in the application log.";
+            }
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.LogError(exception, "Toggling the activity overlay failed unexpectedly");
+            ErrorMessage = "The activity overlay could not be shown. Details are in the application log.";
+        }
+    }
+
+    private void UpdateActivityHint(GraphViewDto view) =>
+        ActivityHint = ShowActivity && view.Nodes.All(n => n.Metrics.ChangeCount is null)
+            ? "No Git activity: the folder is not in a Git repository, or it was analyzed before Git support. Re-analyze to read it."
+            : null;
 
     partial void OnSelectedLayoutChanged(GraphLayoutOption value)
     {
@@ -437,7 +495,49 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         IncomingGroups.Clear();
         OutgoingGroups.Clear();
         InspectorMetrics = null;
+        InspectorActivity = null;
         InspectorMessage = null;
+    }
+
+    /// <summary>Git activity of the inspected node (GIT-005), e.g. <c>12 file changes in 3 files · +120 −40 · …</c>; null without Git data.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasInspectorActivity))]
+    public partial string? InspectorActivity { get; private set; }
+
+    public bool HasInspectorActivity => InspectorActivity is not null;
+
+    /// <summary>One line for the inspector; dates as UTC days, the window from the repository's snapshot.</summary>
+    public static string DescribeActivity(ElementActivityDto activity)
+    {
+        ArgumentNullException.ThrowIfNull(activity);
+        var culture = System.Globalization.CultureInfo.InvariantCulture;
+        var parts = new List<string>
+        {
+            activity.ChangedFiles == 0
+                ? "no changes"
+                : string.Create(culture, $"{activity.FileChanges} file changes in {activity.ChangedFiles} {(activity.ChangedFiles == 1 ? "file" : "files")}"),
+        };
+        if (activity.ChangedFiles > 0)
+        {
+            parts.Add(string.Create(culture, $"+{activity.LinesAdded} −{activity.LinesDeleted} lines"));
+        }
+
+        if (activity.DistinctAuthors is { } authors)
+        {
+            parts.Add(string.Create(culture, $"{authors} {(authors == 1 ? "author" : "authors")}"));
+        }
+
+        if (activity.LastChangeAt is { } last)
+        {
+            parts.Add(string.Create(culture, $"last change {last.UtcDateTime:yyyy-MM-dd}"));
+        }
+
+        var window = activity.WindowStart is { } start
+            ? string.Create(culture, $"{activity.CommitsScanned} commits since {start.UtcDateTime:yyyy-MM-dd}")
+            : string.Create(culture, $"{activity.CommitsScanned} commits");
+        var head = activity.HeadCommitSha[..Math.Min(7, activity.HeadCommitSha.Length)];
+        parts.Add($"window: {window} on {activity.Branch ?? "detached HEAD"} @ {head}");
+        return string.Join(" · ", parts);
     }
 
     /// <summary>Loads the inspector details of a selected node; late results of a previous selection are dropped.</summary>
@@ -488,6 +588,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             }
 
             InspectorMetrics = $"fan-in {details.FanIn} · fan-out {details.FanOut} · size {details.Size}";
+            InspectorActivity = details.Activity is { } activity ? DescribeActivity(activity) : null;
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

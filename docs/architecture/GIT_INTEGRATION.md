@@ -1,7 +1,8 @@
 # Git Integration — Codebase Explorer
 
 > Status: **accepted (specification)** · Last reviewed: 2026-11-18
-> Implementation status: **in progress** — adapter verified (GIT-006, §3.1).
+> Implementation status: **implemented except the clone dialog** — adapter verified (GIT-006, §3.1); reader, history
+> statistics, HTTPS clone, persistence and activity overlay (GIT-001 … GIT-005); clone dialog UI-008.
 
 ## 1. Scope
 
@@ -146,6 +147,22 @@ sequenceDiagram
 ```
 
 Git activity is mapped to `Files` by relative path and aggregated to projects/modules at query time.
+
+**Implemented in GIT-005.** `ImportLocalRepository` (also used by `ImportRemoteRepository`) opens the Git working tree
+before the analysis, so the run records HEAD and branch (`AnalysisRuns.CommitSha/Branch`, shown in the run history);
+after a successful analysis it reads the activity within `GitHistoryWindow.Default(start)` (progress stage
+`ReadingGitHistory`) and stores snapshot and statistics through `IGitActivityStore` right after the model. A folder
+outside Git produces no Git data and no diagnostic; a repository that cannot be read (`git.read-failed`) adds a
+**warning** to the run and is imported without Git data — Git never fails an import.
+
+Aggregation (`Application/Git/GitActivityIndex`, shared by graph and inspector so both show the same numbers): the files
+of a project are the files it owns; of a module the files declaring an entity of the module or a sub-module; of an
+entity the files of its declarations and nested entities. Because per-commit data is not stored, an element's value is
+its **file changes** — the sum of its files' commit counts (a commit touching three files of a project counts three
+times) — plus changed files, added/deleted lines and the last change; distinct authors only for a single changed file.
+The graph shows it as an optional overlay (`GraphQuery.IncludeActivity` → `GraphNodeMetricsDto.ChangeCount`; toggle
+*Git activity* in the Architecture Explorer, GRAPH_ENGINE.md §9), the Component Inspector as a *Git activity* line
+(`ElementDetailsDto.Activity`).
 
 ## 6. Privacy
 

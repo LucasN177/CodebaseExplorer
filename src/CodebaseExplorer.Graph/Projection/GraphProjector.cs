@@ -1,4 +1,5 @@
 using CodebaseExplorer.Application.Common;
+using CodebaseExplorer.Application.Git;
 using CodebaseExplorer.Application.Graph;
 using CodebaseExplorer.Contracts.Graph;
 using CodebaseExplorer.Domain.Common;
@@ -19,12 +20,12 @@ namespace CodebaseExplorer.Graph.Projection;
 /// </summary>
 internal sealed class GraphProjector : IGraphProjector
 {
-    public Result<GraphViewDto> Project(ArchitectureModel model, GraphQuery query)
+    public Result<GraphViewDto> Project(ArchitectureModel model, GraphQuery query, GitActivityIndex? activity = null)
     {
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(query);
 
-        return Validate(model, query) is { } error ? error : ProjectView(model, query);
+        return Validate(model, query) is { } error ? error : ProjectView(model, query, activity);
     }
 
     public Result<GraphEdgeDetailsDto> DescribeEdge(ArchitectureModel model, GraphQuery query, string edgeId)
@@ -95,7 +96,7 @@ internal sealed class GraphProjector : IGraphProjector
         return null;
     }
 
-    private static GraphViewDto ProjectView(ArchitectureModel model, GraphQuery query)
+    private static GraphViewDto ProjectView(ArchitectureModel model, GraphQuery query, GitActivityIndex? activity)
     {
         var tree = VisibleTree.Build(model, query);
         var edges = AggregateEdges(GroupRelationships(model, tree));
@@ -110,7 +111,12 @@ internal sealed class GraphProjector : IGraphProjector
             // Parents before children (the web view adds nodes in order); roots sorted as before GRAPH-006.
             Nodes = [.. tree.Order.Select(id => tree.Nodes[id] with
             {
-                Metrics = tree.Nodes[id].Metrics with { FanIn = fanIn.GetValueOrDefault(id), FanOut = fanOut.GetValueOrDefault(id) },
+                Metrics = tree.Nodes[id].Metrics with
+                {
+                    FanIn = fanIn.GetValueOrDefault(id),
+                    FanOut = fanOut.GetValueOrDefault(id),
+                    ChangeCount = activity?.For(ElementId.Parse(id))?.FileChanges,
+                },
             })],
             Edges = edges,
         };

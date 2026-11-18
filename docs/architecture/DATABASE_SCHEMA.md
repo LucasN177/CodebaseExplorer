@@ -5,7 +5,8 @@
 > `AnalysisDiagnostics`, `Files`, `Projects`, `Modules`; STORE-002: `CodeEntities`, `CodeEntityDeclarations`,
 > `CodeRelationships`, `AnalysisEvidence`, `ExternalDependencies` — DbContext, records, mapping; schema created
 > by the startup migration (STORE-003); runs and the current model are written and read by
-> `ArchitectureModelStore` (STORE-004); `UserSettings` is read and written by `UserSettingsStore` (STORE-005)). Implemented by STORE-001 … STORE-005 (core and
+> `ArchitectureModelStore` (STORE-004); `UserSettings` is read and written by `UserSettingsStore` (STORE-005); `GitSnapshots` and
+> `GitChanges` by `GitActivityStore` (GIT-005, migration `AddGitActivity`)). Implemented by STORE-001 … STORE-005 (core and
 > settings tables), GIT-005 (Git tables), AI-003 and AI-006 (search index and AI tables) in
 > `src/CodebaseExplorer.Storage` using EF Core with the SQLite provider
 > ([ADR-005](../decisions/ADR-005-sqlite-storage.md)).
@@ -283,7 +284,9 @@ Git state at the time of an analysis run.
 | HistoryWindowStart | TEXT | Oldest commit date scanned |
 | CapturedAt | TEXT | NN |
 
-Index: `IX_GitSnapshots_RepositoryId_CapturedAt`.
+Indexes: `IX_GitSnapshots_RepositoryId_CapturedAt`, `UX_GitSnapshots_AnalysisRunId` (the UQ constraint). *Implemented in GIT-005*
+(`IGitActivityStore`, `GitActivityStore`): written right after the run's model, only for repositories with a HEAD commit;
+`RemotesJson` is a JSON array of `{ name, url }` with sanitized URLs.
 
 ### 4.13 GitChanges
 
@@ -300,7 +303,9 @@ Per-file change statistics within the snapshot's history window (aggregated, not
 | LastCommitSha | TEXT | |
 
 Author identities are **not stored** in the MVP (only counts) to minimize personal data.
-Index: `IX_GitChanges_FileId`.
+Index: `IX_GitChanges_FileId`. *Implemented in GIT-005:* rows exist only for files of the run's model with at least one
+commit in the window (paths are matched to `Files.RelativePath`; other paths are dropped). Because `FileId` cascades,
+replacing a model deletes the statistics of the previous snapshot — only the current run keeps per-file numbers.
 
 ### 4.14 AIConversations
 

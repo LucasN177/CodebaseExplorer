@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Bridge } from '../src/bridge';
-import { edgeWidth, nodeScale, toElements } from '../src/elements';
+import { activityHeat, edgeWidth, nodeScale, toElements } from '../src/elements';
 import { GraphViewController } from '../src/graphView';
 import type { Renderer } from '../src/graphView';
 import { parseGraphView } from '../src/protocol';
@@ -164,5 +164,13 @@ describe('visual scales', () => {
     expect(nodeScale(0)).toBe(1);
     expect(nodeScale(99)).toBeCloseTo(1 + 2 / 3);
     expect(nodeScale(1_000_000)).toBe(2);
+  });
+
+  it('maps Git file changes to an overlay strength, -1 without Git data (GIT-005)', () => {
+    expect(activityHeat(undefined)).toBe(-1);
+    expect(activityHeat(0)).toBe(0);
+    expect(activityHeat(9)).toBeCloseTo(1 / 3);
+    expect(activityHeat(999)).toBeCloseTo(1);
+    expect(activityHeat(1_000_000)).toBe(1);
   });
 });
