@@ -14,11 +14,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel(
         StartPageViewModel start,
         ArchitectureExplorerPageViewModel architectureExplorer,
+        RunHistoryPageViewModel runHistory,
         SettingsPageViewModel settings,
         RepositorySession session,
         ShellStatus shell)
     {
-        Pages = [start, architectureExplorer, settings];
+        Pages = [start, architectureExplorer, runHistory, settings];
         CurrentPage = start;
         Shell = shell;
 

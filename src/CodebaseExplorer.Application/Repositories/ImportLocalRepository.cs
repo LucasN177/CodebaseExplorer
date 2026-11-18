@@ -115,12 +115,7 @@ public sealed class ImportLocalRepository(
         Duration = run.CompletedAt!.Value - run.StartedAt,
         Diagnostics = [.. run.Diagnostics
             .Where(d => d.Severity != DiagnosticSeverity.Info)
-            .Select(d => new DiagnosticDto(
-                d.Severity == DiagnosticSeverity.Error ? "error" : "warning",
-                d.Code,
-                d.Message,
-                d.Location is { } location ? model.FindFile(location.FileId)?.Path.Value : null,
-                d.Location?.StartLine))],
+            .Select(d => GetRunHistory.ToDto(d, fileId => model.FindFile(fileId)?.Path.Value))],
     };
 
     private static string NameOf(RepositoryRoot root) =>

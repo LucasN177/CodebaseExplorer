@@ -191,6 +191,10 @@ foreign keys cascade to runs, diagnostics and all model tables; the analyzed fol
 The Desktop `RepositorySession` holds an `OpenRepositoryDto`; pages refresh via `PageViewModel.ActivateAsync`
 when the shell shows them.
 
+**Implemented (UI-005):** `GetRunHistory` (`IArchitectureModelStore.ListRunsAsync`, newest first with
+diagnostics) returns `AnalysisRunDto`s; diagnostic file paths are resolved against the current model, so a
+file that only existed in an older (replaced) model keeps its line but loses its path.
+
 Principles:
 
 - **Async all the way** for I/O; every long-running call accepts a `CancellationToken` and an

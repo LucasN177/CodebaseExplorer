@@ -32,6 +32,9 @@ public interface IArchitectureModelStore
     /// </summary>
     Task<bool> DeleteRepositoryAsync(RepositoryId repositoryId, CancellationToken cancellationToken);
 
+    /// <summary>All runs of the repository with their diagnostics, newest first (UI-005); empty for unknown repositories.</summary>
+    Task<IReadOnlyList<AnalysisRun>> ListRunsAsync(RepositoryId repositoryId, CancellationToken cancellationToken);
+
     /// <summary>
     /// Records a finished run. The repository is registered if it is new; the run and its diagnostics are
     /// always stored. Only a run that produced a model (<see cref="AnalysisRun.ProducedModel"/>) replaces the

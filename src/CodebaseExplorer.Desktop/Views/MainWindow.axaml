@@ -21,6 +21,9 @@
     <DataTemplate DataType="pages:ArchitectureExplorerPageViewModel">
       <views:ArchitectureExplorerPageView />
     </DataTemplate>
+    <DataTemplate DataType="pages:RunHistoryPageViewModel">
+      <views:RunHistoryPageView />
+    </DataTemplate>
     <DataTemplate DataType="pages:SettingsPageViewModel">
       <views:SettingsPageView />
     </DataTemplate>

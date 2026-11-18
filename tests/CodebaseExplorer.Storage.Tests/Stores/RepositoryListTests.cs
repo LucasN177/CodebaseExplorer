@@ -70,6 +70,24 @@ public sealed class RepositoryListTests : IDisposable
     }
 
     [Fact]
+    public async Task ListRuns_ReturnsAllRunsNewestFirst_WithDiagnostics()
+    {
+        // UI-005
+        await _store.SaveRunAsync(_samples.Repository, _samples.Run, _samples.Model, Token);
+        var failed = AnalysisRun.Create(_samples.Repository.Id, AnalysisTrigger.Manual, _samples.Run.StartedAt.AddHours(1));
+        failed.Start();
+        failed.Fail(failed.StartedAt.AddSeconds(2), [new AnalysisDiagnostic(DiagnosticSeverity.Error, "analysis.failed", "boom")]);
+        await _store.SaveRunAsync(_samples.Repository, failed, model: null, Token);
+
+        var runs = await _store.ListRunsAsync(_samples.Repository.Id, Token);
+
+        Assert.Equal([failed.Id, _samples.Run.Id], runs.Select(r => r.Id));
+        Assert.Equal("analysis.failed", Assert.Single(runs[0].Diagnostics).Code);
+        Assert.Equal(_samples.Run.Diagnostics, runs[1].Diagnostics);
+        Assert.Empty(await _store.ListRunsAsync(RepositoryId.New(), Token));
+    }
+
+    [Fact]
     public async Task Delete_UnknownRepository_ReturnsFalse()
     {
         Assert.False(await _store.DeleteRepositoryAsync(RepositoryId.New(), Token));

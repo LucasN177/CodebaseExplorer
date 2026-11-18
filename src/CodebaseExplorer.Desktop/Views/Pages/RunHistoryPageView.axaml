@@ -1,0 +1,75 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pages="using:CodebaseExplorer.Desktop.ViewModels.Pages"
+             x:Class="CodebaseExplorer.Desktop.Views.Pages.RunHistoryPageView"
+             x:DataType="pages:RunHistoryPageViewModel">
+  <DockPanel>
+    <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,16">
+      <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold" />
+      <TextBlock Text="{Binding RepositoryName}" Opacity="0.8" IsVisible="{Binding HasRepository}" />
+      <Border IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
+              BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,8,0,0"
+              BorderBrush="{DynamicResource ErrorBorderBrush}"
+              Background="{DynamicResource ErrorBackgroundBrush}">
+        <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
+      </Border>
+    </StackPanel>
+
+    <TextBlock DockPanel.Dock="Top" IsVisible="{Binding ShowEmptyState}" TextWrapping="Wrap" Opacity="0.8"
+               Text="Open or import a repository on the start page to see its analysis runs." />
+
+    <Grid ColumnDefinitions="320,16,*" IsVisible="{Binding HasRepository}">
+      <!-- Runs, newest first -->
+      <ListBox Grid.Column="0" ItemsSource="{Binding Runs}" SelectedItem="{Binding SelectedRun}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="pages:RunItemViewModel">
+            <StackPanel Spacing="2" Margin="0,4">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                <TextBlock Text="current" FontSize="11" Opacity="0.7" VerticalAlignment="Center" IsVisible="{Binding IsCurrent}" />
+              </StackPanel>
+              <TextBlock Text="{Binding Summary}" FontSize="12" Opacity="0.7" TextWrapping="Wrap" />
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+
+      <!-- Details of the selected run -->
+      <DockPanel Grid.Column="2" IsVisible="{Binding HasSelectedRun}">
+        <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,12">
+          <TextBlock Text="{Binding SelectedRun.Title, FallbackValue=''}" FontSize="18" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding SelectedRun.Summary, FallbackValue=''}" Opacity="0.8" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding SelectedRun.Statistics, FallbackValue=''}" Opacity="0.8" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding SelectedRun.CommitText, FallbackValue=''}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+            <TextBlock Text="Diagnostics" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Filters}" SelectedItem="{Binding SelectedFilter}" MinWidth="140" />
+          </StackPanel>
+          <TextBlock Text="{Binding DiagnosticsMessage}" Opacity="0.7"
+                     IsVisible="{Binding DiagnosticsMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        </StackPanel>
+        <ScrollViewer>
+          <ItemsControl ItemsSource="{Binding Diagnostics}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="pages:DiagnosticItemViewModel">
+                <Border BorderThickness="0,0,0,1" Padding="0,6"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+                  <StackPanel Spacing="2">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <TextBlock Text="{Binding SeverityText}" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource ErrorBorderBrush}" IsVisible="{Binding IsError}" />
+                      <TextBlock Text="{Binding SeverityText}" FontWeight="SemiBold" IsVisible="{Binding !IsError}" />
+                      <TextBlock Text="{Binding Code}" Opacity="0.7" />
+                    </StackPanel>
+                    <SelectableTextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+                    <SelectableTextBlock Text="{Binding Origin}" FontSize="12" Opacity="0.7" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </DockPanel>
+    </Grid>
+  </DockPanel>
+</UserControl>

@@ -129,7 +129,7 @@ If an expansion would exceed the budget, the app offers a filtered or neighborho
 
 ## WF-10 Re-analyze after changes
 
-**Persona:** Tom · **Capabilities:** MVP-01, MVP-08 · **Status:** *Re-analyze* on the start page implemented (REPO-005; full run); run history in M2 (UI-005); incremental post-MVP
+**Persona:** Tom · **Capabilities:** MVP-01, MVP-08 · **Status:** *Re-analyze* on the start page (REPO-005; full run) and the run history page (UI-005) implemented; commit hashes in M5; incremental post-MVP
 
 1. Tom pulls new commits in his own Git client and clicks *Re-analyze*.
 2. MVP: a full analysis run replaces the stored model; the run history shows both runs with

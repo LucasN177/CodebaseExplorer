@@ -97,6 +97,19 @@ internal sealed class ArchitectureModelStore(IDbContextFactory<CodebaseExplorerD
         return deleted > 0;
     }
 
+    public async Task<IReadOnlyList<AnalysisRun>> ListRunsAsync(RepositoryId repositoryId, CancellationToken cancellationToken)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        var records = await context.AnalysisRuns.AsNoTracking()
+            .Include(r => r.Diagnostics)
+            .Where(r => r.RepositoryId == repositoryId.Value)
+            .OrderByDescending(r => r.StartedAt)
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+
+        return [.. records.Select(RecordMapper.ToDomain)];
+    }
+
     public async Task SaveRunAsync(Repository repository, AnalysisRun run, ArchitectureModel? model, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(repository);

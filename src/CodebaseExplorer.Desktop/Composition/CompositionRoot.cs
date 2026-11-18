@@ -67,6 +67,7 @@ public static class CompositionRoot
 
         services.AddSingleton<StartPageViewModel>();
         services.AddSingleton<ArchitectureExplorerPageViewModel>();
+        services.AddSingleton<RunHistoryPageViewModel>();
         services.AddSingleton<SettingsPageViewModel>();
         services.AddSingleton<MainWindowViewModel>();
 

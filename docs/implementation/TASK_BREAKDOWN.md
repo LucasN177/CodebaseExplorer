@@ -22,7 +22,7 @@ Status overview (keep in sync):
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
 | M1 Vertical slice | 22 | 16 |
-| M2 Persistence | 10 | 8 |
+| M2 Persistence | 10 | 9 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
 | M5 Git | 7 | 0 |
@@ -340,11 +340,12 @@ Status overview (keep in sync):
 - **Acceptance criteria:** Values match fixture expectations; no EF types in ViewModels.
 
 ### UI-005 — Analysis run history and diagnostics
-- **Priority:** P0 · **Milestone:** M2 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M2 · **Status:** done
 - **Prerequisites:** STORE-004
 - **Projects:** Application, Desktop
 - **Description:** List of runs with status, duration, commit; diagnostics list filterable by severity.
 - **Acceptance criteria:** Partially succeeded runs show their errors with analyzer and location.
+- **Note:** Use case `GetRunHistory` (store method `ListRunsAsync`; Contracts `AnalysisRunDto`, `DiagnosticDto` got `Analyzer`). New navigation page *Run History* (`RunHistoryPageViewModel`) for the open repository: runs newest first (status, start, trigger, duration, error/warning counts, *current* marker), details with statistics and commit, diagnostics with severity filter (All/Errors/Warnings/Info), analyzer and `path:line`. Commit is always empty until M5 (shown as such). Limitation: diagnostic locations store file ids only, so for runs whose model was replaced the path of a file that no longer exists cannot be shown (line only). Covered by integration tests (real SQLite, substituted analyzer for partial/failed runs); not manually verified in the running app.
 
 ### CORE-007 — File logging and global exception handling
 - **Priority:** P1 · **Milestone:** M2 · **Status:** done
