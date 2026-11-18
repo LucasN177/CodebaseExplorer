@@ -296,6 +296,20 @@ warning (`csharp.project.reference-cycle`).
 - Resolution against package roots in the repository; otherwise match to declared PyPI
   dependencies (with import-name ↔ distribution-name mapping table for common mismatches, e.g.
   `yaml` ↔ `PyYAML` — heuristic).
+- **Implemented (ANALYSIS-012, `Languages/Python`):** `PythonAnalyzer` (`treesitter.python`), per project. Module
+  names are dotted paths relative to `src/` (projects with `layout=src`, files below it) or the project root; folders
+  with Python files are `Package` modules (also namespace packages), files `FileModule`s; `__init__.py` belongs to its
+  package. Entities: top-level classes and functions (also decorated and `async`), `Private` for `_` names, symbol
+  key `{module}:{name}`. Imports anywhere in a file (also in functions and `try` blocks; `__future__` ignored):
+  relative (`py.import.relative`) and absolute imports of modules of the repository (`py.import.absolute`; a global
+  index over all projects' Python files, preferring the importing project and packages; `from x import y` targets
+  the submodule `x.y` if it exists, `import a.b.c` the longest existing prefix) → `Confirmed`; standard-library
+  modules (`PythonNames.StandardLibrary`) produce nothing; otherwise PyPI: the top-level name declared in a manifest of
+  the project's folder → `Syntactic` `py.import.package`; mapped by `PythonNames.ImportToDistribution` (e.g. `yaml`
+  → `PyYAML`, `bs4` → `beautifulsoup4`) to a declared distribution → `Heuristic` `py.import.package-mapped`; else
+  `Heuristic` `py.import.package-undeclared` (target: mapped name or import name). Unresolvable relative imports
+  (also above the source root) → `Warning` `py.import.unresolved`. Oracle: `python-src-layout` §5–7,
+  `mixed-polyglot` §4.
 
 **Tree-sitter integration** (decided in spike **ANALYSIS-008**, ADR-004 "Spike result"): `TreeSitter.DotNet`
 1.3.0 in-process, wrapped by `Languages/TreeSitter` (`TreeSitterParser`: grammars TypeScript, TSX, JavaScript,

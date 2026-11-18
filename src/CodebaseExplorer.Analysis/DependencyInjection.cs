@@ -1,5 +1,6 @@
 using CodebaseExplorer.Analysis.FileSystem;
 using CodebaseExplorer.Analysis.Languages.CSharp;
+using CodebaseExplorer.Analysis.Languages.Python;
 using CodebaseExplorer.Analysis.Languages.TypeScript;
 using CodebaseExplorer.Analysis.Pipeline;
 using CodebaseExplorer.Analysis.ProjectSystems.DotNet;
@@ -35,6 +36,7 @@ public static class DependencyInjection
         services.AddSingleton<IProjectSystemAnalyzer, PythonProjectSystemAnalyzer>();
         services.AddSingleton<IRepositoryLanguageAnalyzer, CSharpAnalyzer>();
         services.AddSingleton<ILanguageAnalyzer, TypeScriptAnalyzer>();
+        services.AddSingleton<ILanguageAnalyzer, PythonAnalyzer>();
 
         return services;
     }

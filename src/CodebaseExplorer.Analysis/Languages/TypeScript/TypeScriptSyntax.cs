@@ -4,13 +4,6 @@ using TreeSitter;
 
 namespace CodebaseExplorer.Analysis.Languages.TypeScript;
 
-/// <summary>A 1-based source span (UTF-16 columns).</summary>
-internal readonly record struct Span(int Line, int Column, int EndLine, int EndColumn)
-{
-    public static Span Of(Node node) => new(
-        (int)node.StartPosition.Row + 1, (int)node.StartPosition.Column + 1, (int)node.EndPosition.Row + 1, (int)node.EndPosition.Column + 1);
-}
-
 /// <summary>An <c>import</c>, <c>export … from</c>, <c>require(…)</c> or <c>import(…)</c>; specifier <see langword="null"/> if computed.</summary>
 internal sealed record ModuleReference(string Syntax, string? Specifier, Span Span);
 

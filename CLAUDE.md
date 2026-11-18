@@ -41,8 +41,9 @@ M4: the Tree-sitter binding is decided and wrapped (`Languages/TreeSitter`, ANAL
 polyglot fixtures exist (REPO-007); the Node project-system analyzer reads `package.json`, workspaces and `tsconfig.json`
 (ANALYSIS-009, hostile npm fixture), the Python project-system analyzer reads `pyproject.toml` (Tomlyn), `setup.cfg` and
 requirement files (ANALYSIS-011, hostile Python fixture); the Tree-sitter TS/JS analyzer extracts folder/file modules, top-level
-declarations and resolved imports (ANALYSIS-010).
-No Python code analyzer, Git or AI
+declarations and resolved imports (ANALYSIS-010), the Python analyzer packages, file modules, top-level classes/functions
+and imports with PyPI name mapping (ANALYSIS-012).
+No Git or AI
 functionality exists yet. Next: the open M1 checks (macOS/Linux) and the remaining M4
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 

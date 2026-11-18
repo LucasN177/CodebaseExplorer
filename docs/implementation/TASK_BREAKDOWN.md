@@ -24,7 +24,7 @@ Status overview (keep in sync):
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 9 |
-| M4 Polyglot & scale | 11 | 5 |
+| M4 Polyglot & scale | 11 | 6 |
 | M5 Git | 7 | 0 |
 | M6 Export | 2 | 0 |
 | M7 Local AI | 7 | 0 |
@@ -480,11 +480,12 @@ Status overview (keep in sync):
 - **Note:** Done 2026-11-18. `PythonProjectSystemAnalyzer` (`python.manifest`, ANALYSIS_ENGINE.md Stage 2 "Implemented"): one project per folder with manifests; PEP 621/735, Poetry (incl. groups and inline tables), `setup.cfg` and requirement files (includes inside the repository, options/URLs reported); repository projects → `ProjectReference`, others → PyPI `PackageReference`. **TOML library: Tomlyn 2.11.1** (BSD-2-Clause, verified on nuget.org; syntax parser with positions and depth limit; SOLUTION_STRUCTURE.md §6.1); `setup.cfg` by a minimal in-house INI reader. Tests: EXPECTED.md §2–4 of `python-src-layout` and the Poetry project of `mixed-polyglot`; `PythonManifestTests` (PEP 508, requirement files, `setup.cfg`, Poetry/dependency groups, invalid and 100,000-level nested TOML, include cycles, `setup.py` detection, cross-project references). Hostile fixture `python-hostile` + `HostilePythonFixtureTests` (QA-003 harness): `setup.py`, in-tree build backend, `conftest.py`, site customization, `.pth`, package code, `-e .` — nothing runs.
 
 ### ANALYSIS-012 — Python import analysis
-- **Priority:** P0 · **Milestone:** M4 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M4 · **Status:** done
 - **Prerequisites:** ANALYSIS-008, ANALYSIS-011
 - **Projects:** Analysis, Analysis.Tests
 - **Description:** Tree-sitter extraction of `import`/`from … import`, relative imports, top-level classes/functions; resolution against package roots and declared dependencies (heuristic name mapping).
 - **Acceptance criteria:** Fixture expectations met; heuristic mappings carry `Heuristic` level.
+- **Note:** Done 2026-11-18. `PythonAnalyzer` (`treesitter.python`, ANALYSIS_ENGINE.md Stage 3 "Implemented"): package and file modules (dotted, relative to `src/` or the project root), top-level classes/functions, imports anywhere in a file resolved relative/absolute against a repository-wide module index, standard library skipped, PyPI by declared name (`Syntactic`), mapping table (`Heuristic`) or undeclared (`Heuristic`). Declared distributions are re-read from the manifests of the project's folder (`pyproject.toml`, `setup.cfg`, `requirements*.txt` without includes). `Span` moved to `Languages/TreeSitter`. Tests: EXPECTED.md of `python-src-layout` §5–7 and `mixed-polyglot` §4; edge cases (star/aliased/nested/`try` imports, `__future__`, imports above the root, unresolved relative imports, decorated `async` functions, duplicate names).
 
 ### ANALYSIS-013 — Determinism and limits hardening
 - **Priority:** P1 · **Milestone:** M4 · **Status:** todo
