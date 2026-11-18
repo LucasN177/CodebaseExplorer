@@ -38,8 +38,13 @@ public sealed class ImportAndGraphEndToEndTests : IAsyncLifetime
         var warning = Assert.Single(summary.Diagnostics);
         Assert.Equal(("warning", "src/Shop.Infrastructure/Shop.Infrastructure.csproj", 6), (warning.Severity, warning.Path, warning.Line));
 
-        var view = (await getGraph.ExecuteAsync(
+        // Test code is hidden by default (GRAPH-007); with it, all six projects are shown.
+        var withoutTests = (await getGraph.ExecuteAsync(
             new GraphQuery { RepositoryId = summary.RepositoryId }, TestContext.Current.CancellationToken)).Value;
+        Assert.DoesNotContain(withoutTests.Nodes, n => n.Label == "Shop.Tests");
+
+        var view = (await getGraph.ExecuteAsync(
+            new GraphQuery { RepositoryId = summary.RepositoryId, Filters = new GraphFilters { IncludeTests = true } }, TestContext.Current.CancellationToken)).Value;
 
         Assert.Equal(
             ["Shop.Application", "Shop.Domain", "Shop.Infrastructure", "Shop.Legacy", "Shop.Tests", "Shop.Web"],
@@ -74,7 +79,7 @@ public sealed class ImportAndGraphEndToEndTests : IAsyncLifetime
             TestRepositoryCatalog.GetFixturePath("dotnet-layered"), null, TestContext.Current.CancellationToken)).Value;
 
         var view = (await _app.Services.GetRequiredService<GetGraphView>().ExecuteAsync(
-            new GraphQuery { RepositoryId = summary.RepositoryId, IncludeExternalDependencies = true },
+            new GraphQuery { RepositoryId = summary.RepositoryId, IncludeExternalDependencies = true, Filters = new GraphFilters { IncludeTests = true } },
             TestContext.Current.CancellationToken)).Value;
 
         Assert.Equal(

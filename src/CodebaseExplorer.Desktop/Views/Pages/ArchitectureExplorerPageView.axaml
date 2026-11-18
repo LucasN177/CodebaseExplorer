@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:pages="using:CodebaseExplorer.Desktop.ViewModels.Pages"
              xmlns:controls="using:CodebaseExplorer.Desktop.Controls"
+             xmlns:graph="using:CodebaseExplorer.Contracts.Graph"
              x:Class="CodebaseExplorer.Desktop.Views.Pages.ArchitectureExplorerPageView"
              x:DataType="pages:ArchitectureExplorerPageViewModel">
   <UserControl.Styles>
@@ -31,6 +32,104 @@
                     AutomationProperties.Name="Graph layout" />
         </StackPanel>
       </DockPanel>
+      <!-- Search (Ctrl/Cmd+K), filters and neighborhood view (GRAPH-007) -->
+      <DockPanel IsVisible="{Binding HasGraph}" Margin="0,8,0,0">
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" Margin="8,0,0,0">
+          <Button Content="Neighborhood" Command="{Binding ShowNeighborhoodCommand}"
+                  ToolTip.Tip="Show the selected element with its dependencies only" />
+          <ComboBox ItemsSource="{Binding DepthOptions}" SelectedItem="{Binding NeighborhoodDepth}" MinWidth="64"
+                    AutomationProperties.Name="Neighborhood depth" ToolTip.Tip="Hops around the element" />
+          <ComboBox ItemsSource="{Binding DirectionOptions}" SelectedItem="{Binding SelectedDirection}" MinWidth="150"
+                    AutomationProperties.Name="Neighborhood direction" />
+          <Button Content="Whole graph" Command="{Binding ShowWholeGraphCommand}" IsVisible="{Binding IsNeighborhood}" />
+          <Button Content="Filters" AutomationProperties.Name="Graph filters">
+            <Button.Flyout>
+              <Flyout Placement="BottomEdgeAlignedRight">
+                <ScrollViewer MaxHeight="480" Width="300">
+                  <StackPanel Spacing="6" Margin="4">
+                    <CheckBox Content="Test code" IsChecked="{Binding IncludeTests}" />
+                    <CheckBox Content="Generated code" IsChecked="{Binding IncludeGenerated}" />
+                    <CheckBox Content="External packages" IsChecked="{Binding IncludeExternalDependencies}" />
+                    <TextBlock Text="Evidence" FontWeight="SemiBold" Margin="0,6,0,0" />
+                    <ComboBox ItemsSource="{Binding MinLevelOptions}" SelectedItem="{Binding SelectedMinLevel}" HorizontalAlignment="Stretch"
+                              AutomationProperties.Name="Minimum evidence level" />
+                    <TextBlock Text="Languages (none = all)" FontWeight="SemiBold" Margin="0,6,0,0" />
+                    <ItemsControl ItemsSource="{Binding LanguageFilters}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="pages:FilterOption">
+                          <CheckBox Content="{Binding Display}" IsChecked="{Binding IsChecked}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="Ecosystems (none = all)" FontWeight="SemiBold" Margin="0,6,0,0" />
+                    <ItemsControl ItemsSource="{Binding EcosystemFilters}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="pages:FilterOption">
+                          <CheckBox Content="{Binding Display}" IsChecked="{Binding IsChecked}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="Relationships (none = all)" FontWeight="SemiBold" Margin="0,6,0,0" />
+                    <ItemsControl ItemsSource="{Binding RelationshipKindFilters}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="pages:FilterOption">
+                          <CheckBox Content="{Binding Display}" IsChecked="{Binding IsChecked}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Content="Reset filters" Command="{Binding ResetFiltersCommand}" Margin="0,6,0,0" />
+                  </StackPanel>
+                </ScrollViewer>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+          <TextBlock Text="{Binding FilterSummary}" VerticalAlignment="Center" Opacity="0.7" FontSize="12"
+                     IsVisible="{Binding FilterSummary, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        </StackPanel>
+        <TextBox x:Name="SearchBox" Text="{Binding SearchText}" PlaceholderText="Search projects, modules, types… (Ctrl+K)"
+                 AutomationProperties.Name="Search" />
+      </DockPanel>
+      <Border IsVisible="{Binding SearchMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
+              BorderThickness="1" CornerRadius="6" Padding="6" Margin="0,4,0,0"
+              BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+        <StackPanel Spacing="4">
+          <TextBlock Text="{Binding SearchMessage}" Opacity="0.7" FontSize="12" />
+          <ScrollViewer MaxHeight="240">
+            <ItemsControl ItemsSource="{Binding SearchResults}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="pages:SearchResultItem">
+                  <Button Classes="inspector-item" ToolTip.Tip="Show its neighborhood"
+                          Command="{Binding $parent[UserControl].((pages:ArchitectureExplorerPageViewModel)DataContext).OpenSearchResultCommand}"
+                          CommandParameter="{Binding}">
+                    <StackPanel>
+                      <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding Detail}" Opacity="0.7" FontSize="11" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </StackPanel>
+      </Border>
+      <!-- Breadcrumbs: the path to the focused element; a click focuses that step (the repository shows the whole graph) -->
+      <ItemsControl ItemsSource="{Binding Breadcrumbs}" IsVisible="{Binding IsNeighborhood}" Margin="0,4,0,0">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="graph:BreadcrumbDto">
+            <StackPanel Orientation="Horizontal">
+              <Button Classes="inspector-item" Content="{Binding Label}"
+                      Command="{Binding $parent[UserControl].((pages:ArchitectureExplorerPageViewModel)DataContext).OpenBreadcrumbCommand}"
+                      CommandParameter="{Binding}" />
+              <TextBlock Text="›" VerticalAlignment="Center" Opacity="0.5" Margin="2,0" />
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
       <!-- Node budget (GRAPH-008): what was left out and how to see it -->
       <Border IsVisible="{Binding TruncationText, Converter={x:Static ObjectConverters.IsNotNull}}"
               BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,8,0,0"

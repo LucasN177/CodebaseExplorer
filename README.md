@@ -48,7 +48,7 @@ analysis. Full vision: [docs/product/VISION.md](docs/product/VISION.md).
 | Graph layouts (force-directed, hierarchical, concentric; choice remembered) and visual encoding (ecosystem colors, kind shapes, evidence line styles, edge weight, focus dimming) | ✅ available |
 | Hierarchical drill-down in the graph: double-click a project or namespace to show its namespaces and types (edges attach to the deepest visible element) | ✅ available (verified on Windows) |
 | Node limit for large graphs: at most 500 nodes, the least connected projects collapse into an "N more" node, oversized expansions are refused with a hint | ✅ available |
-| Filters, search and neighborhood view in the graph | ⏳ planned (M4) |
+| Filters (language, ecosystem, relationship kind, evidence level; tests and generated code hidden by default), search with `Ctrl/Cmd+K`, neighborhood view (depth 1–3, direction) with breadcrumbs | ✅ available (tests only; not yet checked manually in the running app) |
 | Component Inspector with evidence and source snippets | ⏳ planned (M3) |
 | Local persistence (SQLite) and analysis history | 🚧 in progress (M2: database created and migrated at startup; analysis runs and models are saved — reopening a saved repository from the UI follows with REPO-005) |
 | Git metadata and change-activity overlays | ⏳ planned (M5) |

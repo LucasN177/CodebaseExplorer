@@ -11,14 +11,15 @@
     Generated repositories are deleted afterwards and never committed.
 
 .PARAMETER Scenario
-    All (default), DotNet100, DotNet2000, TypeScript50k or ModelStore (STORE-004: 1,000,000 relationships).
+    All (default), DotNet100, DotNet2000, TypeScript50k, ModelStore (STORE-004: 1,000,000 relationships) or Search
+    (GRAPH-007: search on the 2,000-project repository).
 
 .EXAMPLE
     pwsh tools/development/Run-Benchmarks.ps1 -Scenario DotNet2000
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('All', 'DotNet100', 'DotNet2000', 'TypeScript50k', 'ModelStore')]
+    [ValidateSet('All', 'DotNet100', 'DotNet2000', 'TypeScript50k', 'ModelStore', 'Search')]
     [string] $Scenario = 'All'
 )
 
@@ -29,6 +30,7 @@ $runs = switch ($Scenario) {
     'DotNet100' { , @('tests/CodebaseExplorer.IntegrationTests', '--filter-method', '*DotNet_100Projects*') }
     'DotNet2000' { , @('tests/CodebaseExplorer.IntegrationTests', '--filter-method', '*DotNet_2000Projects*') }
     'TypeScript50k' { , @('tests/CodebaseExplorer.IntegrationTests', '--filter-method', '*TypeScript_50000Files*') }
+    'Search' { , @('tests/CodebaseExplorer.IntegrationTests', '--filter-method', '*Search_OnGeneratedRepository*') }
     'ModelStore' { , @('tests/CodebaseExplorer.Storage.Tests', '--filter-method', '*SaveOneMillionRelationships*') }
     'All' {
         @('tests/CodebaseExplorer.IntegrationTests', '--filter-class', '*PerformanceBenchmarks'),

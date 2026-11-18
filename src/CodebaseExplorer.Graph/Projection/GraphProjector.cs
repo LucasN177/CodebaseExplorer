@@ -39,7 +39,7 @@ internal sealed class GraphProjector : IGraphProjector
         }
 
         // Same visibility and attribution as the view, so the details always match the edge the user selected.
-        var tree = VisibleTree.Build(model, query);
+        var tree = VisibleTree.Build(model, query, query.Focus is null ? null : GraphQuery.MaxNodeBudget);
         var group = GroupRelationships(model, tree)
             .FirstOrDefault(g => string.Equals(EdgeId(g.Key.Source, g.Key.Target), edgeId, StringComparison.OrdinalIgnoreCase));
         if (group.Value is null)
@@ -98,13 +98,42 @@ internal sealed class GraphProjector : IGraphProjector
                 $"The node budget must be between 2 and {GraphQuery.MaxNodeBudget}.");
         }
 
+        if (query.Depth is < 1 or > 3 || query.Direction is not (GraphDirections.Incoming or GraphDirections.Outgoing or GraphDirections.Both))
+        {
+            return ApplicationError.Validation(GraphErrorCodes.NeighborhoodInvalid,
+                "The neighborhood needs a depth of 1 to 3 and the direction incoming, outgoing or both.");
+        }
+
         return null;
     }
 
-    private static GraphViewDto ProjectView(ArchitectureModel model, GraphQuery query)
+    private static Result<GraphViewDto> ProjectView(ArchitectureModel model, GraphQuery query)
     {
-        var tree = VisibleTree.Build(model, query);
+        // In neighborhood mode the whole graph (up to the maximum budget) is built first, then reduced to the neighborhood,
+        // and only then is the requested budget applied — so a focus can reach elements an overview would aggregate.
+        var tree = VisibleTree.Build(model, query, query.Focus is null ? null : GraphQuery.MaxNodeBudget);
         var edges = AggregateEdges(GroupRelationships(model, tree));
+        IReadOnlyList<string> order = tree.Order;
+        var truncation = TruncationOf(tree);
+        List<BreadcrumbDto> breadcrumbs = [new(model.RepositoryId.ToString(), "Repository", GraphLevels.Repository)];
+
+        if (query.Focus is { } requested)
+        {
+            if (FocusNode(model, tree, requested) is not { } focus)
+            {
+                return ApplicationError.NotFound(GraphErrorCodes.FocusNotFound, "The focused element is not part of the graph (it may be hidden by a filter).");
+            }
+
+            (order, edges, var omitted) = Neighborhood(tree, edges, focus, query);
+            truncation = omitted > 0
+                ? new TruncationDto(omitted, TruncationReasons.NodeBudget,
+                [
+                    $"{omitted} elements of the neighborhood are not shown (limit {query.NodeBudget} nodes).",
+                    "Reduce the depth or use filters.",
+                ])
+                : null;
+            breadcrumbs.AddRange(PathTo(tree, focus));
+        }
 
         var fanOut = edges.GroupBy(e => e.Source).ToDictionary(g => g.Key, g => g.Select(e => e.Target).Distinct().Count());
         var fanIn = edges.GroupBy(e => e.Target).ToDictionary(g => g.Key, g => g.Select(e => e.Source).Distinct().Count());
@@ -114,14 +143,110 @@ internal sealed class GraphProjector : IGraphProjector
             RepositoryId = model.RepositoryId.ToString(),
             Level = GraphLevels.Project,
             // Parents before children (the web view adds nodes in order); roots sorted as before GRAPH-006.
-            Nodes = [.. tree.Order.Select(id => tree.Nodes[id] with
+            Nodes = [.. order.Select(id => tree.Nodes[id] with
             {
                 Metrics = tree.Nodes[id].Metrics with { FanIn = fanIn.GetValueOrDefault(id), FanOut = fanOut.GetValueOrDefault(id) },
             })],
             Edges = edges,
-            Truncation = TruncationOf(tree),
+            Truncation = truncation,
+            Breadcrumbs = breadcrumbs,
         };
     }
+
+    /// <summary>The visible node for a focus id: a node of the view, or the deepest visible node of a model element.</summary>
+    private static string? FocusNode(ArchitectureModel model, VisibleTree tree, string focus)
+    {
+        if (tree.Nodes.ContainsKey(focus))
+        {
+            return focus;
+        }
+
+        if (focus is not { Length: 32 } || !Guid.TryParseExact(focus, "N", out var guid) || guid == Guid.Empty)
+        {
+            return null;
+        }
+
+        var id = ElementId.Parse(focus);
+        ElementKind? kind = model.FindProject(id) is not null ? ElementKind.Project
+            : model.FindModule(id) is not null ? ElementKind.Module
+            : model.FindEntity(id) is not null ? ElementKind.Entity
+            : model.FindExternalDependency(id) is not null ? ElementKind.ExternalDependency
+            : model.FindFile(id) is not null ? ElementKind.File
+            : null;
+        return kind is { } elementKind ? tree.VisibleNodeOf(new ElementReference(elementKind, id)) : null;
+    }
+
+    /// <summary>
+    /// The focus (with its content), every node within <c>Depth</c> hops along <c>Direction</c>, and their compound
+    /// parents; nearest first until the node budget is reached (GRAPH_ENGINE.md §3, WF-05).
+    /// </summary>
+    private static (IReadOnlyList<string> Order, List<GraphEdgeDto> Edges, int Omitted) Neighborhood(
+        VisibleTree tree, List<GraphEdgeDto> edges, string focus, GraphQuery query)
+    {
+        var distance = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var id in tree.Order.Where(id => id == focus || tree.IsAncestor(focus, id)))
+        {
+            distance[id] = 0;
+        }
+
+        var outgoing = query.Direction != GraphDirections.Incoming ? edges.ToLookup(e => e.Source, e => e.Target) : null;
+        var incoming = query.Direction != GraphDirections.Outgoing ? edges.ToLookup(e => e.Target, e => e.Source) : null;
+        var frontier = distance.Keys.ToList();
+        for (var hop = 1; hop <= query.Depth && frontier.Count > 0; hop++)
+        {
+            var next = new List<string>();
+            foreach (var node in frontier)
+            {
+                foreach (var neighbor in (outgoing?[node] ?? []).Concat(incoming?[node] ?? []))
+                {
+                    if (distance.TryAdd(neighbor, hop))
+                    {
+                        next.Add(neighbor);
+                    }
+                }
+            }
+
+            frontier = next;
+        }
+
+        var position = tree.Order.Select((id, index) => (id, index)).ToDictionary(x => x.id, x => x.index, StringComparer.Ordinal);
+        var kept = new HashSet<string>(StringComparer.Ordinal);
+        var omitted = 0;
+        foreach (var node in distance.OrderBy(d => d.Value).ThenBy(d => position[d.Key]).Select(d => d.Key))
+        {
+            var withAncestors = AncestorsOf(tree, node).Append(node).Where(id => !kept.Contains(id)).ToArray();
+            if (kept.Count + withAncestors.Length > query.NodeBudget)
+            {
+                omitted++;
+                continue;
+            }
+
+            kept.UnionWith(withAncestors);
+        }
+
+        return ([.. tree.Order.Where(kept.Contains)], [.. edges.Where(e => kept.Contains(e.Source) && kept.Contains(e.Target))], omitted);
+    }
+
+    /// <summary>Compound parents of a node, outermost first.</summary>
+    private static IEnumerable<string> AncestorsOf(VisibleTree tree, string node)
+    {
+        var chain = new List<string>();
+        for (var parent = tree.Nodes[node].ParentId; parent is not null; parent = tree.Nodes[parent].ParentId)
+        {
+            chain.Insert(0, parent);
+        }
+
+        return chain;
+    }
+
+    /// <summary>Breadcrumbs from the outermost container down to the focused node.</summary>
+    private static IEnumerable<BreadcrumbDto> PathTo(VisibleTree tree, string focus) =>
+        AncestorsOf(tree, focus).Append(focus).Select(id => tree.Nodes[id]).Select(node => new BreadcrumbDto(node.Id, node.Label, node.Kind switch
+        {
+            GraphNodeKinds.Module => GraphLevels.Module,
+            GraphNodeKinds.Entity => GraphLevels.Entity,
+            _ => GraphLevels.Project,
+        }));
 
     /// <summary>What the node budget left out and how to see it (GRAPH_ENGINE.md §4).</summary>
     private static TruncationDto? TruncationOf(VisibleTree tree)
@@ -176,6 +301,11 @@ internal sealed class GraphProjector : IGraphProjector
 
         foreach (var relationship in model.Relationships)
         {
+            if (!tree.Filter.Shows(relationship))
+            {
+                continue;
+            }
+
             var source = tree.VisibleNodeOf(relationship.Source);
             var target = tree.VisibleNodeOf(relationship.Target);
             if (source is null || target is null || source == target || tree.IsAncestor(source, target) || tree.IsAncestor(target, source))

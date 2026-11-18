@@ -12,6 +12,7 @@ namespace CodebaseExplorer.Contracts.Graph;
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     GenerationMode = JsonSourceGenerationMode.Default)]
 [JsonSerializable(typeof(GraphQuery))]
+[JsonSerializable(typeof(GraphFilters))]
 [JsonSerializable(typeof(GraphViewDto))]
 [JsonSerializable(typeof(GraphNodeDto))]
 [JsonSerializable(typeof(GraphEdgeDto))]

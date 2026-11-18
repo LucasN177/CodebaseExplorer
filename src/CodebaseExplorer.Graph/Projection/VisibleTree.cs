@@ -33,17 +33,19 @@ internal sealed class VisibleTree
     private readonly Dictionary<ElementId, int> _entitiesByModule;
     private readonly HashSet<ElementId> _omittedRoots = [];
     private readonly int _budget;
+    private readonly GraphFilter _filter;
     private int _rootCount;
     private int _childNodeCount;
     private string? _aggregateId;
 
-    private VisibleTree(ArchitectureModel model, int budget)
+    private VisibleTree(ArchitectureModel model, int budget, GraphFilter filter)
     {
         _model = model;
         _budget = budget;
+        _filter = filter;
         _childModules = model.Modules.Where(m => m.ParentModuleId is not null).ToLookup(m => m.ParentModuleId);
         _topModules = model.Modules.Where(m => m.ParentModuleId is null).ToLookup(m => m.ProjectId);
-        _typesByModule = model.Entities.Where(e => e.ContainingEntityId is null).ToLookup(e => e.ModuleId);
+        _typesByModule = model.Entities.Where(e => e.ContainingEntityId is null && filter.Shows(e)).ToLookup(e => e.ModuleId);
         _filesByProject = model.Files.Where(f => f.ProjectId is not null).GroupBy(f => f.ProjectId!.Value).ToDictionary(g => g.Key, g => g.Count());
         _entitiesByModule = model.Entities.GroupBy(e => e.ModuleId).ToDictionary(g => g.Key, g => g.Count());
     }
@@ -63,17 +65,20 @@ internal sealed class VisibleTree
     /// <summary>Node ids, parents before children.</summary>
     public List<string> Order { get; } = [];
 
-    public static VisibleTree Build(ArchitectureModel model, GraphQuery query)
+    /// <summary>The filter the tree was built with (GRAPH-007).</summary>
+    public GraphFilter Filter => _filter;
+
+    public static VisibleTree Build(ArchitectureModel model, GraphQuery query, int? budget = null)
     {
-        var tree = new VisibleTree(model, query.NodeBudget);
+        var tree = new VisibleTree(model, budget ?? query.NodeBudget, new GraphFilter(model, query.Filters));
         var expanded = query.Expanded
             .Select(id => id is { Length: 32 } && Guid.TryParseExact(id, "N", out var guid) && guid != Guid.Empty ? ElementId.Parse(id) : (ElementId?)null)
             .OfType<ElementId>()
             .ToHashSet();
 
-        var projects = model.Projects.OrderBy(p => p.Name, StringComparer.Ordinal).ThenBy(p => p.Id.ToString(), StringComparer.Ordinal).ToArray();
+        var projects = model.Projects.Where(tree._filter.Shows).OrderBy(p => p.Name, StringComparer.Ordinal).ThenBy(p => p.Id.ToString(), StringComparer.Ordinal).ToArray();
         var dependencies = query.IncludeExternalDependencies
-            ? model.ExternalDependencies.OrderBy(d => d.DisplayName, StringComparer.Ordinal).ThenBy(d => d.Id.ToString(), StringComparer.Ordinal).ToArray()
+            ? model.ExternalDependencies.Where(tree._filter.Shows).OrderBy(d => d.DisplayName, StringComparer.Ordinal).ThenBy(d => d.Id.ToString(), StringComparer.Ordinal).ToArray()
             : [];
         tree.SelectRoots([.. projects.Select(p => p.Id), .. dependencies.Select(d => d.Id)]);
 
@@ -181,6 +186,11 @@ internal sealed class VisibleTree
                 return _model.FindModule(reference.Id) is { } module ? VisibleModuleOrProject(module) : null;
             case ElementKind.Entity:
                 var entity = _model.FindEntity(reference.Id);
+                if (entity is not null && !_filter.Shows(entity))
+                {
+                    return null; // hidden by a filter (e.g. test code): its relationships are not shown either
+                }
+
                 for (var current = entity; current is not null; current = current.ContainingEntityId is { } container ? _model.FindEntity(container) : null)
                 {
                     if (Visible(current.Id) is { } visible)

@@ -155,7 +155,7 @@ public sealed class GetElementDetails(IArchitectureModelStore store)
                         r.Inner.Id == inspected ? null : Label(model, r.Inner)))]))];
 
     /// <summary>A related element with the graph node that represents it and the expansions that make that node visible.</summary>
-    private static ElementReferenceDto Reference(ArchitectureModel model, ElementReference reference)
+    internal static ElementReferenceDto Reference(ArchitectureModel model, ElementReference reference)
     {
         var label = Label(model, reference);
         switch (reference.Kind)
@@ -190,7 +190,7 @@ public sealed class GetElementDetails(IArchitectureModelStore store)
         }
     }
 
-    private static string Label(ArchitectureModel model, ElementReference reference) => reference.Kind switch
+    internal static string Label(ArchitectureModel model, ElementReference reference) => reference.Kind switch
     {
         ElementKind.Project => model.FindProject(reference.Id)?.Name,
         ElementKind.File => model.FindFile(reference.Id)?.Path.Value,
@@ -237,7 +237,7 @@ public sealed class GetElementDetails(IArchitectureModelStore store)
     ];
 
     /// <summary>Display name of a module kind: C# namespace, TS/JS folder or file, Python package or module.</summary>
-    private static string ModuleKindText(ModuleKind kind) => kind switch
+    internal static string ModuleKindText(ModuleKind kind) => kind switch
     {
         ModuleKind.Namespace => "Namespace",
         ModuleKind.Directory => "Folder",
@@ -330,7 +330,7 @@ public sealed class GetElementDetails(IArchitectureModelStore store)
         _ => "file",
     };
 
-    private static string KindText(EntityKind kind) => kind switch
+    internal static string KindText(EntityKind kind) => kind switch
     {
         EntityKind.TypeAlias => "Type alias",
         _ => kind.ToString(),

@@ -8,7 +8,7 @@
 > expand/collapse implemented** (GRAPH-006: `GraphQuery.Expanded`, compound nodes, `graph/patch`,
 > `node/expandRequested`/`collapseRequested`). The Architecture Explorer page shows the graph of the imported
 > repository (UI-003) and the evidence of a selected edge (GRAPH-010, §6.2). Focus/neighborhood, filters and
-> the node budget is implemented (GRAPH-008, §4); focus/neighborhood and filters are not implemented yet (GRAPH-007).
+> the node budget (GRAPH-008, §4), filters, neighborhood view, breadcrumbs and search (GRAPH-007, §3) are implemented.
 > Related: [ADR-006](../decisions/ADR-006-cytoscape-visualization.md).
 
 ## 1. Components
@@ -97,8 +97,31 @@ expanded nodes add children (mixed levels, `parentId` = compound parent, parents
   projection is pure, so collapsing restores exactly the previous view. The explorer keeps hidden
   expansions, so re-expanding a project restores its inner expansions.
 
-The whole model is still read per run (ADR-010); the Storage slice queries listed for GRAPH-006 in the
-task breakdown follow with the node budget in M4 (GRAPH-008, QA-002).
+The whole model is still read per run (ADR-010; ADR-012 proposes to keep it after the QA-002 benchmarks).
+
+**Implemented (GRAPH-007):** `GraphQuery.Filters` (`GraphFilters`) and the neighborhood mode (`Focus`, `Depth`,
+`Direction`), evaluated by `GraphFilter` and `GraphProjector`:
+
+- **Filters** (empty lists = all): `Languages` (projects by primary language, code elements by their language),
+  `Ecosystems` (projects; external dependencies by package manager: NuGet/framework → `dotnet`, npm → `node`,
+  PyPI → `python`), `RelationshipKinds` and `MinLevel` (only relationships; nodes stay), `IncludeTests` and
+  `IncludeGenerated` (**default false**): a project whose code files are all tests is hidden, an entity declared only
+  in test/generated files is hidden (with its relationships), and a relationship whose every evidence location lies
+  in such files is not aggregated. Edge details use the same filters.
+- **Neighborhood:** `Focus` is a node of the view or any model element (shown by its deepest visible node; hidden or
+  unknown → `graph.focus-not-found`). The view is built with the maximum budget, reduced to the focus (with its
+  content), every node within `Depth` (1–3) hops along `Direction` (`incoming`, `outgoing`, `both`; else
+  `graph.neighborhood-invalid`) and their compound parents, and then cut to `NodeBudget` nearest-first
+  (`truncation.reason = node-budget`).
+- **Breadcrumbs:** always start with the repository (`level = repository`); in neighborhood mode they continue with the
+  compound parents of the focus and the focus itself.
+
+**Search** is an Application use case (`SearchElements`, Contracts `Search/SearchResultsDto`): case-insensitive over
+project, module, entity and package names (exact › prefix › contained › qualified name contains; shorter names
+first), at most 200 results, each with the graph node and expansions of *Show in graph*; the name index is built once
+per loaded model. In the explorer `Ctrl/Cmd+K` focuses the search box (only while the Avalonia part of the window has
+the keyboard focus — the embedded web view does not forward keys), and choosing a result opens its neighborhood
+(WF-05).
 
 ## 4. Node budget and large graphs
 

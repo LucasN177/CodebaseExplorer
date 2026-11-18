@@ -39,6 +39,34 @@ public sealed class PerformanceBenchmarks : IAsyncLifetime
         await MeasureAsync($"TypeScript monorepo, 250 packages, {files:N0} files", target: null);
     }
 
+    /// <summary>GRAPH-007 acceptance: search on the 2,000-project performance fixture answers within 200 ms.</summary>
+    [Fact(Explicit = true)]
+    public async Task Search_OnGeneratedRepository_Within200Milliseconds()
+    {
+        var output = TestContext.Current.TestOutputHelper!;
+        var token = TestContext.Current.CancellationToken;
+        SyntheticRepository.WriteDotNet(_repository.FullPath, 2_000);
+        var summary = (await _app.Services.GetRequiredService<ImportLocalRepository>().ExecuteAsync(_repository.FullPath, null, token)).Value;
+        var search = _app.Services.GetRequiredService<CodebaseExplorer.Application.Search.SearchElements>();
+
+        var first = Stopwatch.StartNew();
+        var firstResult = (await search.ExecuteAsync(summary.RepositoryId, "Service1", cancellationToken: token)).Value;
+        first.Stop(); // includes loading the model (cache miss) and building the name index
+
+        var timings = new List<double>();
+        foreach (var term in new[] { "P1234", "service", "Compute3", "model4", "Area2", "remote", "x", "P0001.Area0.Service0" })
+        {
+            var watch = Stopwatch.StartNew();
+            var result = (await search.ExecuteAsync(summary.RepositoryId, term, cancellationToken: token)).Value;
+            timings.Add(watch.Elapsed.TotalMilliseconds);
+            output.WriteLine($"'{term}': {result.TotalCount:N0} matches in {watch.Elapsed.TotalMilliseconds:F1} ms");
+        }
+
+        output.WriteLine($"First search (model load + index): {first.Elapsed.TotalMilliseconds:F0} ms, {firstResult.TotalCount:N0} matches");
+        output.WriteLine($"Searches on the loaded model: max {timings.Max():F1} ms, mean {timings.Average():F1} ms");
+        Assert.True(timings.Max() < 200, $"Slowest search took {timings.Max():F1} ms; target 200 ms.");
+    }
+
     private async Task DotNetAsync(int projects, TimeSpan target)
     {
         var files = SyntheticRepository.WriteDotNet(_repository.FullPath, projects);

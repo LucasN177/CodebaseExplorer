@@ -24,7 +24,7 @@ Status overview (keep in sync):
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 9 |
-| M4 Polyglot & scale | 11 | 9 |
+| M4 Polyglot & scale | 11 | 10 |
 | M5 Git | 7 | 0 |
 | M6 Export | 2 | 0 |
 | M7 Local AI | 7 | 0 |
@@ -504,11 +504,12 @@ Status overview (keep in sync):
 - **Note:** Done 2026-11-18. Four fixtures (LF, byte-exact) with `EXPECTED.md`: `ts-monorepo-workspaces` (19 files), `js-commonjs` (7), `python-src-layout` (9), `mixed-polyglot` (10). Their EXPECTED.md files fix the conventions the analyzers implement: one Node project per `package.json` (root with `workspaces` = `NodeWorkspaceRoot`), dependencies on repository packages = `ProjectReference`, solution-style `tsconfig` references are no dependency; one Python project per folder with manifests; TS/JS modules = directory modules + one `FileModule` per source file, Python modules = packages + file modules (dotted, relative to `src/` or the project root); `Imports` connect file modules (rules `ts.{syntax}.{resolution}`, `py.import.*`). `PolyglotFixtureTests` asserts section 1 (files, markers, classifications, LF) of all four; the analyzer sections are asserted by ANALYSIS-009 … 012. Hostile npm/`setup.py` fixtures are added with ANALYSIS-009/011.
 
 ### GRAPH-007 — Filters, search and neighborhood view
-- **Priority:** P0 · **Milestone:** M4 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M4 · **Status:** done
 - **Prerequisites:** GRAPH-006
 - **Projects:** Application, Storage (search query), Graph, Desktop, GraphView.Web
 - **Description:** Filters (language, ecosystem, relationship kind, min level, tests/generated/external toggles), `Ctrl/Cmd+K` search, focus + n-hop neighborhood.
 - **Acceptance criteria:** Filter combinations covered by projection tests; search returns results < 200 ms on the performance fixture.
+- **Note:** Done 2026-11-18. `GraphQuery.Filters` (`GraphFilters`: languages, ecosystems, relationship kinds, minimum level, tests and generated code **hidden by default** as specified in GRAPH_ENGINE.md §3) and neighborhood mode (`Focus`, `Depth` 1–3, `Direction`) with breadcrumbs (GRAPH_ENGINE.md §3 "Implemented"); search as Application use case `SearchElements` over the cached model (not a Storage query — the whole model is read, ADR-010/012). Desktop: search box (`Ctrl/Cmd+K` while the Avalonia part has focus), results open the neighborhood, filter flyout, neighborhood depth/direction, breadcrumbs. Tests: `GraphFilterAndNeighborhoodTests` (filter combinations incl. test/generated evidence, external dependencies by ecosystem, kinds × level, directions, depth, compound parents, budget, focus errors, edge details), `SearchElementsTests`, ViewModel tests (filters, search → neighborhood, breadcrumbs, whole graph). Search benchmark on the 2,000-project repository: max 14.4 ms (TEST_STRATEGY.md §8). Hiding test code changed the default dotnet-layered graph (Shop.Tests hidden; tests adjusted). **Not verified manually** in the running app.
 
 ### GRAPH-008 — Node budget and truncation
 - **Priority:** P0 · **Milestone:** M4 · **Status:** done

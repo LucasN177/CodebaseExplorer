@@ -43,7 +43,9 @@ polyglot fixtures exist (REPO-007); the Node project-system analyzer reads `pack
 requirement files (ANALYSIS-011, hostile Python fixture); the Tree-sitter TS/JS analyzer extracts folder/file modules, top-level
 declarations and resolved imports (ANALYSIS-010), the Python analyzer packages, file modules, top-level classes/functions
 and imports with PyPI name mapping (ANALYSIS-012); every fixture is analyzed deterministically and parse time is limited
-(ANALYSIS-013); graph views respect a node budget with an "N more" aggregate and refused expansions (GRAPH-008).
+(ANALYSIS-013); graph views respect a node budget with an "N more" aggregate and refused expansions (GRAPH-008); generated repositories
+benchmark import and first graph (QA-002, ADR-012 proposed); the explorer has filters (tests hidden by default), search
+(`SearchElements`, Ctrl/Cmd+K) and a neighborhood view with breadcrumbs (GRAPH-007).
 No Git or AI
 functionality exists yet. Next: the open M1 checks (macOS/Linux) and the remaining M4
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
