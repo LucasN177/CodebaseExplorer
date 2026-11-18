@@ -31,6 +31,13 @@
                     AutomationProperties.Name="Graph layout" />
         </StackPanel>
       </DockPanel>
+      <!-- Node budget (GRAPH-008): what was left out and how to see it -->
+      <Border IsVisible="{Binding TruncationText, Converter={x:Static ObjectConverters.IsNotNull}}"
+              BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,8,0,0"
+              BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+              Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+        <TextBlock Text="{Binding TruncationText}" TextWrapping="Wrap" FontSize="12" />
+      </Border>
       <Border IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
               BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,8,0,0"
               BorderBrush="{DynamicResource ErrorBorderBrush}"

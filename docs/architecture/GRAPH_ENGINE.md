@@ -8,7 +8,7 @@
 > expand/collapse implemented** (GRAPH-006: `GraphQuery.Expanded`, compound nodes, `graph/patch`,
 > `node/expandRequested`/`collapseRequested`). The Architecture Explorer page shows the graph of the imported
 > repository (UI-003) and the evidence of a selected edge (GRAPH-010, §6.2). Focus/neighborhood, filters and
-> the node budget are not implemented yet (GRAPH-007/008).
+> the node budget is implemented (GRAPH-008, §4); focus/neighborhood and filters are not implemented yet (GRAPH-007).
 > Related: [ADR-006](../decisions/ADR-006-cytoscape-visualization.md).
 
 ## 1. Components
@@ -110,6 +110,18 @@ task breakdown follow with the node budget in M4 (GRAPH-008, QA-002).
      neighborhood view or filters.
 3. The UI never receives more than `NodeBudget` nodes; layouts run in the web view on at most that
    many nodes.
+
+**Implemented (GRAPH-008):** `GraphQuery.NodeBudget` (default 500, accepted 2 … 5,000, else
+`graph.node-budget-invalid`). Roots (projects and, if requested, external dependencies): if there are more than the
+budget, the `budget − 1` roots with the highest root-level degree (fan-in + fan-out over all relationships,
+ties in display order) stay and the rest collapse into one node of kind `aggregate` (`"N more"`, stable id derived
+from the repository, not expandable, not inspectable) that takes their edges; `truncation.reason = node-budget`.
+Expansions are applied in display order only while their children still fit; a refused expansion stays collapsed and
+yields `truncation.reason = expansion-refused` with the number of children not shown (only one aggregate per view —
+the root level — is needed because deeper levels are refused instead of truncated). `truncation.suggestions` carry
+readable hints; the explorer shows them in a banner above the graph. Verified by parameterized tests over random
+models (`GraphNodeBudgetTests`: no view exceeds the budget, edges and parents stay consistent, untruncated views equal
+the unlimited projection). File and entity counts per node are now precomputed (they were O(n²)).
 
 ## 5. DTOs (Contracts)
 

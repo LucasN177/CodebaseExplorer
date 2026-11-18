@@ -24,7 +24,7 @@ Status overview (keep in sync):
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 9 |
-| M4 Polyglot & scale | 11 | 7 |
+| M4 Polyglot & scale | 11 | 8 |
 | M5 Git | 7 | 0 |
 | M6 Export | 2 | 0 |
 | M7 Local AI | 7 | 0 |
@@ -511,11 +511,12 @@ Status overview (keep in sync):
 - **Acceptance criteria:** Filter combinations covered by projection tests; search returns results < 200 ms on the performance fixture.
 
 ### GRAPH-008 — Node budget and truncation
-- **Priority:** P0 · **Milestone:** M4 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M4 · **Status:** done
 - **Prerequisites:** GRAPH-006
 - **Projects:** Graph, Graph.Tests, Desktop
 - **Description:** Enforce node budget; top-N by degree + "N more" aggregate nodes; truncation hints in the UI.
 - **Acceptance criteria:** No `GraphViewDto` exceeds the budget (property-based/parameterized tests).
+- **Note:** Done 2026-11-18. `GraphQuery.NodeBudget` (500, 2 … 5,000); surplus roots → top-N by degree + one `aggregate` "N more" node carrying their edges; expansions that do not fit are refused; `TruncationDto` with reason (`node-budget`, `expansion-refused`) and suggestions (GRAPH_ENGINE.md §4 "Implemented"). Desktop: truncation banner in the explorer, the aggregate is not inspected; web view: dashed aggregate style (bundle rebuilt). Tests: `GraphNodeBudgetTests` (18 random models × budgets/expansions/packages, degree ranking and edge re-attribution, refused expansion, invalid budgets, stable aggregate id with edge details). **Not done here:** Storage slice queries — the whole model is still read and cached per run (ADR-010); QA-002 decides whether slices are needed.
 
 ### QA-002 — Performance fixture generator and benchmarks
 - **Priority:** P0 · **Milestone:** M4 · **Status:** todo

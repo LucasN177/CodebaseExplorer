@@ -11,4 +11,7 @@ public static class GraphErrorCodes
 
     /// <summary>The edge id does not denote an edge of the projected view.</summary>
     public const string EdgeNotFound = "graph.edge-not-found";
+
+    /// <summary>The node budget is outside 2 … <c>GraphQuery.MaxNodeBudget</c>.</summary>
+    public const string NodeBudgetInvalid = "graph.node-budget-invalid";
 }

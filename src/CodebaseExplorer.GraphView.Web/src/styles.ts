@@ -83,6 +83,8 @@ export function stylesheet(mode: ThemeMode): StylesheetJson {
     // an expanded node is a translucent compound box labeled at the top.
     { selector: 'node[kind = "module"]', style: { shape: 'rectangle' } },
     { selector: 'node[kind = "entity"]', style: { shape: 'ellipse', width: scaled(16), height: scaled(16) } },
+    // GRAPH-008: "N more" collects the roots left out by the node budget.
+    { selector: 'node[kind = "aggregate"]', style: { shape: 'round-rectangle', 'background-opacity': 0.25, 'border-width': 2, 'border-style': 'dashed', 'border-color': p.text } },
     { selector: 'node[expandable = 1][expanded = 0]', style: { 'border-width': 3, 'border-style': 'double', 'border-color': p.text } },
     {
       selector: 'node:parent',

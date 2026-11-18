@@ -106,6 +106,18 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
     [ObservableProperty]
     public partial bool IsLoading { get; private set; }
 
+    /// <summary>What the node budget left out of the shown graph and how to see it (GRAPH-008); null if nothing.</summary>
+    [ObservableProperty]
+    public partial string? TruncationText { get; private set; }
+
+    private void ShowTruncation(GraphViewDto view) =>
+        TruncationText = view.Truncation is { } truncation
+            ? (truncation.Reason == TruncationReasons.ExpansionRefused
+                ? $"Not expanded: {truncation.OmittedNodeCount} more elements would exceed the limit of {_query?.NodeBudget ?? GraphQuery.DefaultNodeBudget} nodes. "
+                : $"{truncation.OmittedNodeCount} elements are not shown individually (limit {_query?.NodeBudget ?? GraphQuery.DefaultNodeBudget} nodes). ")
+              + string.Join(" ", truncation.Suggestions.Skip(1))
+            : null;
+
     /// <summary>Why the graph could not be shown; displayed inline.</summary>
     [ObservableProperty]
     public partial string? ErrorMessage { get; private set; }
@@ -175,6 +187,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             // The repository was closed (removed): back to the empty state; late results of a running load are dropped.
             ++_loadNumber;
             _query = null;
+            TruncationText = null;
             RepositoryName = null;
             ErrorMessage = null;
             HasGraph = false;
@@ -210,6 +223,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             }
 
             HasGraph = true;
+            ShowTruncation(view);
             if (!await Graph.ShowGraphAsync(view, cancellationToken))
             {
                 ErrorMessage = "The graph view did not accept the graph. Details are in the application log.";
@@ -266,6 +280,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             }
 
             _query = next;
+            ShowTruncation(view);
             if (!await Graph.PatchGraphAsync(view, cancellationToken))
             {
                 ErrorMessage = "The graph view did not accept the change. Details are in the application log.";
@@ -324,7 +339,14 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             SelectionDetail = node.Kind == GraphNodeKinds.Entity ? null : node.Sublabel; // an entity's sublabel is its kind, shown above
             SelectionName = node.Label;
             ClearEvidence();
-            _ = LoadDetailsAsync(node.Id);
+            if (node.Kind == GraphNodeKinds.Aggregate)
+            {
+                ClearDetails(); // not a model element: there is nothing to inspect
+            }
+            else
+            {
+                _ = LoadDetailsAsync(node.Id);
+            }
         }
         else if (graph is not null && selection.EdgeIds.Count > 0 && graph.Edges.FirstOrDefault(e => e.Id == selection.EdgeIds[0]) is { } edge)
         {
@@ -529,6 +551,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             }
 
             _query = next;
+            ShowTruncation(view);
             await Graph.PatchGraphAsync(view, CancellationToken.None);
         }
 
@@ -643,6 +666,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         {
             GraphNodeKinds.Project => "Project",
             GraphNodeKinds.ExternalDependency => "External dependency",
+            GraphNodeKinds.Aggregate => "Elements hidden by the node limit",
             GraphNodeKinds.Module => "Namespace",
             GraphNodeKinds.Entity => node.Sublabel is { Length: > 0 } entityKind ? char.ToUpperInvariant(entityKind[0]) + entityKind[1..] : "Code element",
             _ => node.Kind,

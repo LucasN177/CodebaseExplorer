@@ -42,7 +42,8 @@ polyglot fixtures exist (REPO-007); the Node project-system analyzer reads `pack
 (ANALYSIS-009, hostile npm fixture), the Python project-system analyzer reads `pyproject.toml` (Tomlyn), `setup.cfg` and
 requirement files (ANALYSIS-011, hostile Python fixture); the Tree-sitter TS/JS analyzer extracts folder/file modules, top-level
 declarations and resolved imports (ANALYSIS-010), the Python analyzer packages, file modules, top-level classes/functions
-and imports with PyPI name mapping (ANALYSIS-012).
+and imports with PyPI name mapping (ANALYSIS-012); every fixture is analyzed deterministically and parse time is limited
+(ANALYSIS-013); graph views respect a node budget with an "N more" aggregate and refused expansions (GRAPH-008).
 No Git or AI
 functionality exists yet. Next: the open M1 checks (macOS/Linux) and the remaining M4
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).

@@ -92,6 +92,12 @@ internal sealed class GraphProjector : IGraphProjector
                 $"The graph level '{query.Level}' is not supported yet; supported: '{GraphLevels.Project}'.");
         }
 
+        if (query.NodeBudget < 2 || query.NodeBudget > GraphQuery.MaxNodeBudget)
+        {
+            return ApplicationError.Validation(GraphErrorCodes.NodeBudgetInvalid,
+                $"The node budget must be between 2 and {GraphQuery.MaxNodeBudget}.");
+        }
+
         return null;
     }
 
@@ -113,7 +119,30 @@ internal sealed class GraphProjector : IGraphProjector
                 Metrics = tree.Nodes[id].Metrics with { FanIn = fanIn.GetValueOrDefault(id), FanOut = fanOut.GetValueOrDefault(id) },
             })],
             Edges = edges,
+            Truncation = TruncationOf(tree),
         };
+    }
+
+    /// <summary>What the node budget left out and how to see it (GRAPH_ENGINE.md §4).</summary>
+    private static TruncationDto? TruncationOf(VisibleTree tree)
+    {
+        if (tree.OmittedRootCount > 0)
+        {
+            return new TruncationDto(tree.OmittedRootCount + tree.RefusedChildCount, TruncationReasons.NodeBudget,
+            [
+                $"{tree.OmittedRootCount} elements with the fewest dependencies are collapsed into the \"more\" node.",
+                "Use filters (language, ecosystem, relationship kind) to reduce the graph.",
+                "Open the neighborhood of an element to see it with its dependencies only.",
+            ]);
+        }
+
+        return tree.RefusedChildCount > 0
+            ? new TruncationDto(tree.RefusedChildCount, TruncationReasons.ExpansionRefused,
+            [
+                $"{tree.RefusedExpansions.Count} expansion(s) would exceed the node budget and were not applied.",
+                "Collapse other nodes, use filters or open the neighborhood of an element.",
+            ])
+            : null;
     }
 
     private static List<GraphEdgeDto> AggregateEdges(Dictionary<(string Source, string Target), List<CodeRelationship>> groups) =>
