@@ -74,7 +74,7 @@ Scope details: [docs/product/MVP_SCOPE.md](docs/product/MVP_SCOPE.md).
 | Core | C#, .NET 10, Clean Architecture, modular monolith, DI, async/await |
 | Desktop | Avalonia UI 12 (Fluent, light/dark), CommunityToolkit.Mvvm |
 | Static analysis | Roslyn (C#, without MSBuild evaluation), Tree-sitter (TS/JS/Python, pending spike), manifest parsers |
-| Graph | Cytoscape.js, TypeScript, Vite, Avalonia WebView (pending spike) |
+| Graph | Cytoscape.js, TypeScript, Vite, Avalonia.Controls.WebView (WebView2 verified on Windows; macOS/Linux pending) |
 | Storage | SQLite, Entity Framework Core 10, migrations |
 | Git | LibGit2Sharp (initial adapter behind an abstraction) |
 | AI (optional) | Microsoft.Extensions.AI, Ollama; cloud providers opt-in (post-MVP) |
@@ -125,7 +125,7 @@ ANALYSIS-004), the project-level graph projection with its JSON wire format (GRA
 use cases that tie them together — import a local folder, then query its project graph (CORE-006;
 models are kept in memory for the session until persistence arrives in M2). None of this is
 reachable from the UI yet. The graph web view (TypeScript + Cytoscape.js, GRAPH-003) is built and
-shipped with the app, but the host control that displays it inside the window comes next (GRAPH-004).
+shipped with the app, and the host control that embeds it in the window (GRAPH-004, verified on Windows) exists, but it is not yet placed on the Architecture Explorer page (UI-003).
 
 ## Roadmap
 

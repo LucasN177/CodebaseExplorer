@@ -1,5 +1,6 @@
 using CodebaseExplorer.Application.Abstractions;
 using CodebaseExplorer.Desktop.Composition;
+using CodebaseExplorer.Desktop.Services;
 using CodebaseExplorer.Desktop.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -25,6 +26,16 @@ public sealed class CompositionRootTests
 
         Assert.Equal(["Start", "Architecture Explorer", "Settings"], shell.Pages.Select(p => p.Title));
         Assert.Same(shell.Pages[0], shell.CurrentPage);
+    }
+
+    [Fact]
+    public void BuildServiceProvider_RegistersOneGraphViewBridgeAsGraphViewHost()
+    {
+        using var provider = CompositionRoot.BuildServiceProvider();
+
+        var host = provider.GetRequiredService<IGraphViewHost>();
+
+        Assert.Same(provider.GetRequiredService<GraphViewBridge>(), host);
     }
 
     [Fact]

@@ -92,7 +92,7 @@ Test project references:
 | AI | `Providers/`, `Retrieval/`, `Prompting/`, `Citations/`, `Conversations/`. |
 | Storage | `Persistence/` (`DbContext`, entities, configurations), `Migrations/`, `Stores/` (port implementations), `Search/` (FTS). |
 | Infrastructure | `FileSystem/` (**exists**: `ApplicationPaths`), `Secrets/`, `Logging/`. |
-| Desktop | `Composition/` (**exists**), `Services/` (**exists**: theme), `ViewModels/` (**exists**), `Views/` (**exists**), `GraphView/` (**exists**: built web assets, generated and committed, §4), `Controls/` (graph host, GRAPH-004), `Assets/`. |
+| Desktop | `Composition/` (**exists**), `Services/` (**exists**: theme, `IGraphViewHost` + `GraphViewBridge`), `ViewModels/` (**exists**), `Views/` (**exists**), `GraphView/` (**exists**: built web assets, generated and committed, §4), `Controls/` (**exists**: `GraphHostControl`, `GraphViewNavigationPolicy`), `app.manifest` (**exists**: Windows supportedOS, required for native control hosting), `Assets/`. |
 
 Every module has exactly one public `DependencyInjection` class (**exists** for all modules).
 
@@ -156,6 +156,7 @@ dotnet run --project src/CodebaseExplorer.Desktop
 | Package | Version | Used by | Notes |
 |---|---|---|---|
 | Avalonia, Avalonia.Desktop, Avalonia.Themes.Fluent, Avalonia.Fonts.Inter | 12.1.6 | Desktop | MIT; targets net8.0/net10.0. |
+| Avalonia.Controls.WebView | 12.1.2 | Desktop | MIT; adopted after spike GRAPH-001, used since GRAPH-004. Verified on Windows (WebView2); needs explicit `AdapterPreference`, `UserDataFolder` and an `app.manifest` with supportedOS. **Open:** macOS (WKWebView), Linux (WebKitGTK — embedding possibly unavailable). |
 | CommunityToolkit.Mvvm | 8.4.2 | Desktop | MIT; source-generated `[ObservableProperty]` on partial properties. |
 | Microsoft.Extensions.DependencyInjection | 10.0.15 | Desktop | 10.0.x servicing line to match net10.0. |
 | Microsoft.Extensions.DependencyInjection.Abstractions | 10.0.15 | Application and all technical modules | Not referenced by Domain/Contracts. |
@@ -174,7 +175,6 @@ win-x64/osx-arm64/linux-x64) by the task that introduces it.
 | Microsoft.CodeAnalysis.CSharp(.Workspaces) | 5.12.0 | ANALYSIS-005 | Only syntax/semantic APIs are used; `Microsoft.CodeAnalysis.Workspaces.MSBuild` and `Microsoft.Build.Locator` are **deliberately not used** (they evaluate MSBuild = code execution, see ADR-004). |
 | TreeSitter.DotNet | 1.3.0 (MIT, netstandard2.0, published 2026-01) | ANALYSIS-008 | Which grammars are bundled (C#, TS, TSX, JS, Python); native binaries for all RIDs; parser timeout/cancellation; maintenance level (single maintainer). Alternatives must be evaluated in the spike. |
 | LibGit2Sharp | 0.32.0 (targets net8.0/net472, published 2026-07) | GIT-001 | Native binaries for osx-arm64/linux-x64; SSH not supported (OPD-02); shallow clone support. |
-| Avalonia.Controls.WebView | 12.1.2 (MIT, net8.0/net10.0) | GRAPH-004 (adopted after spike GRAPH-001) | **Verified on Windows** (WebView2): messaging, `file://` loading, CSP, navigation blocking (ADR-006 "Spike result"). Needs explicit `AdapterPreference` and `UserDataFolder`. **Open:** macOS (WKWebView) and Linux (WebKitGTK — embedding possibly unavailable). |
 | Microsoft.Extensions.AI / .Abstractions | 10.11.0 (10.x line) | AI-001 | Independently versioned, exempt from the 10.0.x rule (DEVELOPMENT_GUIDE.md §4); check that its dependencies resolve to 10.0.x runtime packages. |
 | OllamaSharp | 5.5.2 | AI-002 | `IChatClient` implementation compatibility with the chosen Microsoft.Extensions.AI version. |
 | Microsoft.Extensions.AI.OpenAI | to be verified | AI-007 (post-MVP) | Version line compatible with net10.0. |

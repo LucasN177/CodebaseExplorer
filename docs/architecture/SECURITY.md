@@ -67,7 +67,10 @@
   messages schema-validated. Verified in spike GRAPH-001 (Windows): CSP blocks `fetch` and remote
   images, `NavigationStarted.Cancel` and `NewWindowRequested.Handled` block navigation and new
   windows. The WebView2 user data folder lives under the app data directory; DevTools are disabled
-  in release builds; the legacy WebView1/EdgeHTML engine is never used.
+  in release builds; the legacy WebView1/EdgeHTML engine is never used. Implemented in GRAPH-004
+  (`GraphHostControl`, `GraphViewNavigationPolicy`, `GraphViewBridge`): inbound messages are limited
+  to 1,000,000 characters, validated against the current graph and ignored (logged without content)
+  when invalid.
 - "Open in editor" uses a user-configured command template with the file path passed as a single
   argument (no shell interpolation); only paths inside the repository are allowed.
 
@@ -94,7 +97,7 @@
 | Path traversal / symlink escape | Analysis.Tests (REPO-001) |
 | XML bombs, deep JSON | Analysis.Tests (ANALYSIS-003, ANALYSIS-009) |
 | No network with AI disabled | IntegrationTests with a guarded `HttpMessageHandler` (AI-001) |
-| WebView CSP/navigation | Manual checklist + GRAPH-004 tests where automatable |
+| WebView CSP/navigation | `GraphViewNavigationPolicyTests`, `GraphViewBridgeTests` (inbound validation), `GraphViewAssetsTests` (CSP); runtime checked manually on Windows (GRAPH-004) |
 
 ## 7. Reporting
 

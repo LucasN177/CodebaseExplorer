@@ -219,7 +219,7 @@ Status overview (keep in sync):
 - **Note:** Bundle is a classic IIFE script loaded from file:// and committed to Desktop/GraphView; a source hash in build-info.json is checked by a .NET test, so the .NET build needs no Node. Runtime check inside the WebView happens with the host control (GRAPH-004). npm audit: picomatch ReDoS in build tooling accepted (SOLUTION_STRUCTURE §6.2).
 
 ### GRAPH-004 — Graph host control and message bridge
-- **Priority:** P0 · **Milestone:** M1 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M1 · **Status:** done
 - **Prerequisites:** GRAPH-001, GRAPH-002, GRAPH-003
 - **Projects:** Desktop, IntegrationTests
 - **Description:** Avalonia control hosting the WebView, loading bundled assets, serializing DTOs, validating inbound messages, exposing selection as bindable state for ViewModels.
@@ -227,6 +227,7 @@ Status overview (keep in sync):
   - ViewModels interact with an `IGraphViewHost` abstraction, not with the WebView.
   - Inbound messages failing validation are logged and ignored.
   - Navigation to any non-bundled URL is blocked.
+- **Note:** `IGraphViewHost` and `GraphViewBridge` live in Desktop/Services (CODING_STANDARDS §7), the control and navigation policy in Desktop/Controls. The bridge re-sends graph and theme on every `ready`. Added `app.manifest` (supportedOS), without which native control hosting crashes on Windows. Runtime verified on Windows only (GRAPH_ENGINE.md §6.1); macOS/Linux stay with GRAPH-001. The page is wired in UI-003.
 
 ### UI-001 — Shell polish and Avalonia 12 developer tooling
 - **Priority:** P1 · **Milestone:** M1 · **Status:** todo

@@ -50,6 +50,11 @@ public static class CompositionRoot
     {
         services.AddSingleton<IThemeService, ThemeService>();
 
+        // One graph web view in the application; the bridge is bound to GraphHostControl.Host and
+        // ViewModels use it through IGraphViewHost (GRAPH-004).
+        services.AddSingleton<GraphViewBridge>();
+        services.AddSingleton<IGraphViewHost>(provider => provider.GetRequiredService<GraphViewBridge>());
+
         services.AddSingleton<StartPageViewModel>();
         services.AddSingleton<ArchitectureExplorerPageViewModel>();
         services.AddSingleton<SettingsPageViewModel>();

@@ -82,6 +82,9 @@ license-key check found in the assembly) with Avalonia 12.1.6, Cytoscape.js 3.35
 2. **Element ids become JavaScript globals** (`<div id="cy">` is `window.cy`); page code must not
    rely on implicit globals.
 3. `InvokeScript` returns `null` on script exceptions — the host must treat `null` as failure.
+4. **Application manifest required (found in GRAPH-004).** Inside the real app (unlike the spike), the
+   host crashed with "Unable to create child window for native control host" until the Desktop
+   project got an `app.manifest` declaring Windows 10/11 in `supportedOS`.
 
 **Decisions taken from the spike (binding for GRAPH-003/GRAPH-004):**
 

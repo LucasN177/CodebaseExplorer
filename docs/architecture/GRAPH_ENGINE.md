@@ -1,10 +1,11 @@
 # Graph Engine — Codebase Explorer
 
-> Status: **accepted (specification)** · Last reviewed: 2026-11-17
+> Status: **accepted (specification)** · Last reviewed: 2026-11-18
 > Implementation status: **project level (L1) projection, DTOs and message envelope implemented**
 > (GRAPH-002); **graph web view implemented** (GRAPH-003: `graph/load`, `graph/focus`, `view/theme`,
-> `ready`, `selection/changed`, `node/openInspector`, `error`). Host control (GRAPH-004) and the other
-> levels are not. The Architecture Explorer page is still a placeholder.
+> `ready`, `selection/changed`, `node/openInspector`, `error`); **host control and message bridge
+> implemented** (GRAPH-004, §6.1; verified on Windows/WebView2). The other levels are not, and the
+> Architecture Explorer page is still a placeholder (the host is placed on it in UI-003).
 > Related: [ADR-006](../decisions/ADR-006-cytoscape-visualization.md).
 
 ## 1. Components
@@ -13,8 +14,8 @@
 |---|---|---|---|
 | Graph projection | `src/CodebaseExplorer.Graph` | C# | Turn a model slice into a `GraphViewDto` for a `GraphQuery`: level projection, edge aggregation, filters, neighborhood, node budget. |
 | Graph DTOs & messages | `src/CodebaseExplorer.Contracts/Graph` | C# records, System.Text.Json source generation | Wire format between .NET and the web view. |
-| Graph host | `src/CodebaseExplorer.Desktop/Controls` | Avalonia + WebView | Hosts the web view, loads bundled assets, relays messages, applies theme. |
-| Graph web view | `src/CodebaseExplorer.GraphView.Web` (planned, GRAPH-003) | TypeScript, Vite, Cytoscape.js | Rendering, layout, interaction; no business logic. |
+| Graph host | `src/CodebaseExplorer.Desktop/Controls` (control), `Desktop/Services` (`IGraphViewHost`, `GraphViewBridge`) | Avalonia + Avalonia.Controls.WebView | Hosts the web view, loads bundled assets, validates and relays messages, applies theme (§6.1). |
+| Graph web view | `src/CodebaseExplorer.GraphView.Web` | TypeScript, Vite, Cytoscape.js | Rendering, layout, interaction; no business logic. |
 
 ## 2. Levels and hierarchy
 
@@ -140,6 +141,24 @@ are rejected as a whole and reported with an `error` message (`src/CodebaseExplo
 `view/layout` and `graph/patch` are not handled yet (GRAPH-005/006); the page currently lays out with
 Cytoscape's `breadthfirst` until GRAPH-005 decides the layouts.
 macOS and Linux behavior is not verified yet (GRAPH-001 remainder).
+
+### 6.1 Graph host (GRAPH-004)
+
+| Type | Responsibility |
+|---|---|
+| `IGraphViewHost` (`Desktop/Services`) | What ViewModels use: `IsReady`, `CurrentGraph`, `Selection` (bindable, `INotifyPropertyChanged`), event `InspectorRequested`, `ShowGraphAsync(GraphViewDto)`, `FocusAsync(elementId)`, `SetThemeAsync(mode)`. ViewModels never touch the WebView. |
+| `GraphViewBridge` (`Desktop/Services`) | Implements `IGraphViewHost` without Avalonia types (testable). Serializes outbound messages with `GraphMessageSerializer` and runs `window.ceReceive("<ASCII-only JSON string literal>")`; a `null` result, an exception or anything other than `"ok"` counts as failure and is logged. Keeps the current graph and theme and re-sends them (theme first) on every `ready`, so calls before the page is loaded or after a reload are not lost. Validates every inbound message: length ≤ 1,000,000 characters, envelope, payload type, `ready.protocolVersion`, and element ids that must belong to the current graph (selection, inspector). Invalid messages are logged as warnings (type and reason only, never content) and ignored. `node/expandRequested`/`collapseRequested` are ignored until GRAPH-006. Registered once as singleton (as itself and as `IGraphViewHost`). |
+| `GraphHostControl` (`Desktop/Controls`) | `ContentControl` bound to the bridge (`Host="{Binding …}"`; must be the `GraphViewBridge`). Creates the `NativeWebView`: `AdapterPreference = [WebView2]` on Windows and rejects any other adapter, `UserDataFolder` = `<data directory>/webview`, DevTools only in debug builds. Navigates to `GraphView/index.html` after `AdapterCreated`; cancels every other navigation and every new window; relays `WebMessageReceived` to the bridge; marks the page unloaded on navigation, adapter destruction and process termination (reloads up to 3 times after a crash). Shows an error text instead of the graph when the engine is unavailable (no adapter within 20 s, unsupported adapter). Sends the theme from `ActualThemeVariant`. |
+| `GraphViewNavigationPolicy` (`Desktop/Controls`) | Allows only the local bundled page file (no query; case-insensitive path on Windows). |
+
+The Desktop project needs an **`app.manifest` with the Windows 10/11 `supportedOS` entry**: without
+it Avalonia cannot create the child window for native control hosting and the app crashes as soon
+as the host is shown (found in GRAPH-004).
+
+**Runtime check (Windows 11, WebView2, 2026-11-18, temporary harness not committed):** graph sent
+before `ready` was delivered on `ready`; `graph/focus` produced a `selection/changed` that updated
+`Selection`; `view/theme` accepted; a scripted `location.href = https://…` and `window.open` were
+blocked and the page stayed loaded.
 
 ## 7. Web view rules
 
