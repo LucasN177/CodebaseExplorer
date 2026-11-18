@@ -44,13 +44,12 @@ requirement files (ANALYSIS-011, hostile Python fixture); the Tree-sitter TS/JS 
 declarations and resolved imports (ANALYSIS-010), the Python analyzer packages, file modules, top-level classes/functions
 and imports with PyPI name mapping (ANALYSIS-012); every fixture is analyzed deterministically and parse time is limited
 (ANALYSIS-013); graph views respect a node budget with an "N more" aggregate and refused expansions (GRAPH-008); generated repositories
-benchmark import and first graph (QA-002, ADR-012 proposed); the explorer has filters (tests hidden by default), search
+benchmark import and first graph (QA-002; ADR-012: whole-model reads stay for the MVP); the explorer has filters (tests hidden by default), search
 (`SearchElements`, Ctrl/Cmd+K) and a neighborhood view with breadcrumbs (GRAPH-007), a grouped repository level, *Back* and a
 folder graph for repositories without projects (GRAPH-009). All M4 tasks are implemented; the new explorer features are
 verified by tests only.
 No Git or AI
-functionality exists yet. Next: the open manual checks (M1 on macOS/Linux, M4 explorer features), the decision on
-ADR-012 (proposed), and M5 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
+functionality exists yet. Next: the open manual checks (M1 on macOS/Linux, M4 explorer features) and the M5 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 
 ## Commands
 

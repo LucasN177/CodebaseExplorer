@@ -1,6 +1,6 @@
 # ADR-012: Keep Whole-Model Reads for the MVP after the M4 Benchmarks
 
-- **Status:** Proposed (drafted in QA-002 on 2026-11-18; needs the user's approval)
+- **Status:** Accepted (drafted in QA-002; accepted by the user on 2026-11-18)
 - **Date:** 2026-11-18
 - **Related:** [ADR-010](ADR-010-model-read-path-and-gc.md) (whole-model reads in M2, slices deferred to M4),
   SYSTEM_ARCHITECTURE.md §6, GRAPH_ENGINE.md §3–4, TEST_STRATEGY.md §8
@@ -23,7 +23,7 @@ projects (81.5 s). The node budget (GRAPH-008) already guarantees that the UI ne
 remaining cost of whole-model reads is the **cold load** after an import or an app start (7–16 s for the large
 repositories) and memory proportional to the model.
 
-## Decision (proposed)
+## Decision
 
 1. Keep the whole-model read path of ADR-010 for the MVP; do **not** introduce SQL slice queries and a slice-shaped
    projector API now.

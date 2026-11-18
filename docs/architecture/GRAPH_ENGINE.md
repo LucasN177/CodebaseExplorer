@@ -97,7 +97,7 @@ expanded nodes add children (mixed levels, `parentId` = compound parent, parents
   projection is pure, so collapsing restores exactly the previous view. The explorer keeps hidden
   expansions, so re-expanding a project restores its inner expansions.
 
-The whole model is still read per run (ADR-010; ADR-012 proposes to keep it after the QA-002 benchmarks).
+The whole model is still read per run (ADR-010; kept for the MVP after the QA-002 benchmarks, ADR-012).
 
 **Implemented (GRAPH-007):** `GraphQuery.Filters` (`GraphFilters`) and the neighborhood mode (`Focus`, `Depth`,
 `Direction`), evaluated by `GraphFilter` and `GraphProjector`:
