@@ -14,4 +14,7 @@ public abstract class PageViewModel : ViewModelBase
     /// pages handle and show their own errors.
     /// </summary>
     public virtual Task ActivateAsync() => Task.CompletedTask;
+
+    /// <summary>The title; list items use it as their accessible name (otherwise screen readers read the type name).</summary>
+    public override string ToString() => Title;
 }

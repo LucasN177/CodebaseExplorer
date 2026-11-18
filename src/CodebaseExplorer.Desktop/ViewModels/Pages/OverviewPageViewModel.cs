@@ -153,6 +153,7 @@ public sealed partial class OverviewPageViewModel : PageViewModel
         "json" => "JSON",
         "xml" => "XML",
         "markdown" => "Markdown",
+        "sln" => "Solution files",
         "unknown" => "Other",
         _ => language,
     };

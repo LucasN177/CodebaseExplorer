@@ -38,6 +38,9 @@ public sealed class RunItemViewModel(AnalysisRunDto run) : ViewModelBase
 
     public bool IsCurrent => Run.IsCurrent;
 
+    /// <summary>Accessible name of the list item.</summary>
+    public override string ToString() => Title;
+
     internal static string Count(int count, string noun) =>
         count == 1 ? $"1 {noun}" : $"{count.ToString(CultureInfo.CurrentCulture)} {noun}s";
 

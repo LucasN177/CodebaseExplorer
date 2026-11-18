@@ -125,6 +125,34 @@ public sealed class RunHistoryTests : IAsyncLifetime
         Assert.Empty(page.Runs);
     }
 
+    [Fact]
+    public async Task Page_KeepsTheSelection_ButSelectsANewRun()
+    {
+        var imported = await ImportPartialAsync();
+        await _import.ExecuteAsync(_folder.FullPath, null, Token);
+        var session = new RepositorySession();
+        var page = new RunHistoryPageViewModel(Get<GetRunHistory>(), session, NullLogger<RunHistoryPageViewModel>.Instance);
+        session.SetCurrent(new OpenRepositoryDto
+        {
+            RepositoryId = imported.RepositoryId,
+            Name = imported.Name,
+            RootPath = imported.RootPath,
+            AnalysisRunId = imported.AnalysisRunId,
+        });
+        await page.LoadAsync();
+
+        page.SelectedRun = page.Runs[1];
+        await page.ActivateAsync();
+        Assert.Same(page.Runs[1], page.SelectedRun); // same runs: the selection stays
+
+        await _import.ExecuteAsync(_folder.FullPath, null, Token); // re-analysis adds a run
+        await page.ActivateAsync();
+
+        Assert.Equal(3, page.Runs.Count);
+        Assert.Same(page.Runs[0], page.SelectedRun);
+        Assert.True(page.SelectedRun!.IsCurrent);
+    }
+
     /// <summary>An import whose analysis reports an error and a warning, both with analyzer and file location.</summary>
     private async Task<RepositoryImportSummaryDto> ImportPartialAsync()
     {

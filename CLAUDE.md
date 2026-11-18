@@ -23,7 +23,7 @@ graph host control with its message bridge (`IGraphViewHost`, GRAPH-004), and th
 the Architecture Explorer with the project graph and a selection panel (UI-003; manually verified on Windows only),
 the shell status bar and notifications (`ShellStatus`, UI-001), edge evidence in the side panel
 (`GetGraphEdgeDetails`, GRAPH-010), and CI on Windows/macOS/Linux (QA-001).
-M2 tasks all implemented (manual check of the new pages pending): the EF Core SQLite context with all model tables and Domain mapping exists (STORE-001/002), the app
+M2 tasks all implemented (new pages verified on Windows): the EF Core SQLite context with all model tables and Domain mapping exists (STORE-001/002), the app
 creates, backs up and migrates the database at startup (STORE-003; `dotnet tool restore` + `dotnet ef`, see
 DEVELOPMENT_GUIDE §6), and saves every run and the current model in SQLite (`IArchitectureModelStore`, STORE-004;
 the whole model is read and cached per run, slice queries follow in M4), and stores user settings such as the theme

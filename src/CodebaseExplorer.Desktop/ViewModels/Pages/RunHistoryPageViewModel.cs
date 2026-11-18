@@ -97,14 +97,17 @@ public sealed partial class RunHistoryPageViewModel : PageViewModel
                 return;
             }
 
+            // Keep the user's selection while the runs are the same; a new run (e.g. after a re-analysis) is selected.
             var selectedId = SelectedRun?.Run.RunId;
+            var newestBefore = Runs.FirstOrDefault()?.Run.RunId;
             Runs.Clear();
             foreach (var run in runs)
             {
                 Runs.Add(new RunItemViewModel(run));
             }
 
-            SelectedRun = Runs.FirstOrDefault(r => r.Run.RunId == selectedId) ?? Runs.FirstOrDefault();
+            var keepSelection = newestBefore is not null && newestBefore == Runs.FirstOrDefault()?.Run.RunId;
+            SelectedRun = (keepSelection ? Runs.FirstOrDefault(r => r.Run.RunId == selectedId) : null) ?? Runs.FirstOrDefault();
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

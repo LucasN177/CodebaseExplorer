@@ -26,4 +26,7 @@ public sealed partial class RecentRepositoryItemViewModel(RecentRepositoryDto re
     /// <summary>True while the inline "remove?" confirmation is shown.</summary>
     [ObservableProperty]
     public partial bool IsConfirmingRemove { get; set; }
+
+    /// <summary>Accessible name of the list item.</summary>
+    public override string ToString() => Name;
 }

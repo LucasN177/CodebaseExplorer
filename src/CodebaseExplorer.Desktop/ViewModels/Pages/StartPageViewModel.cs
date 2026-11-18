@@ -274,7 +274,7 @@ public sealed partial class StartPageViewModel : PageViewModel
             // Finish first: progress reports that arrive afterwards are dropped (IsImporting is false).
             FinishImport(statusMessage:
                 $"Analyzed {summary.Name}: {summary.ProjectCount} projects, {summary.FileCount} files, " +
-                $"{summary.WarningCount} warnings, {summary.ErrorCount} errors.");
+                $"{RunItemViewModel.Count(summary.WarningCount, "warning")}, {RunItemViewModel.Count(summary.ErrorCount, "error")}.");
             foreach (var stage in Stages)
             {
                 stage.State = ImportStageState.Done;
