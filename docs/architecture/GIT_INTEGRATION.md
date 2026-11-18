@@ -39,12 +39,22 @@ public interface IGitRepositoryReader
 // GitRepositoryInfo(RootPath, WorkingDirectory, RootPrefix, IsLinkedWorktree, IsShallow): RootPrefix is the analyzed
 // folder relative to the working tree ("" if equal) — Git paths are mapped to the model's files through it.
 
-// Illustrative, finalized in GIT-003:
+// Implemented (GIT-003); adapter Git/Cloning/LibGit2RemoteCloner. Every path must lie strictly inside
+// IApplicationPaths.ClonesDirectory (git.clone-path-invalid otherwise).
 public interface IGitRemoteCloner
 {
-    Task<CloneResult> CloneAsync(CloneRequest request, IProgress<GitProgress>? progress, CancellationToken ct);
-    Task<CloneResult> UpdateAsync(string localPath, string branch, IProgress<GitProgress>? progress, CancellationToken ct);
+    // Full-history clone into <target>.partial, moved to <target> when complete; nothing remains on failure or
+    // cancellation. git.clone-exists (Conflict), git.authentication-failed, git.branch-not-found, git.clone-failed.
+    Task<Result<GitCloneResult>> CloneAsync(GitCloneRequest request, IProgress<GitProgress>? progress, CancellationToken ct);
+    // Fetch origin (prune) + forced checkout/hard reset of the branch (default: current) — app-managed clones only.
+    Task<Result<GitCloneResult>> UpdateAsync(string clonePath, string? branch, GitAccessToken? token,
+        IProgress<GitProgress>? progress, CancellationToken ct);
+    Task<Result> DeleteCloneAsync(string clonePath, CancellationToken ct);  // read-only objects; links not followed
 }
+
+// Use case ImportRemoteRepository(RemoteImportRequest(Url, Branch?, Token?, ExistingCloneAction Ask|Update|Reclone))
+// parses the URL (GitRemoteUrls.ParseCloneUrl), clones or updates, then runs the import of ImportLocalRepository with
+// RepositoryLocation.Cloned → RemoteRepositoryImportDto (Contracts). RemoveRepository deletes the clone directory.
 ```
 
 `GitHistoryWindow` bounds the walk by maximum commit count (default 5,000) and/or since-date
@@ -87,14 +97,26 @@ repositories cloned by the app or explicitly trusted by the user. This adapter r
 
 ## 4. Remote URLs and providers
 
-- Accepted URL forms: `https://<host>/<owner>/<repo>(.git)`; GitHub (`github.com`), GitLab
-  (`gitlab.com` and self-hosted hosts entered by the user). Other HTTPS Git hosts are accepted as
-  `OtherGitRemote` without provider-specific behavior.
-- `file://`, `ssh://`, `git://` and scp-like URLs are rejected in the MVP.
+- Accepted URL forms: `https://<host>[:port]/<owner>[/<subgroup>…]/<repo>(.git)`; GitHub (`github.com`,
+  exactly `owner/repo`) and GitLab (`gitlab.com`, subgroups allowed) are recognized by host. Other HTTPS
+  hosts — including self-hosted GitLab, which cannot be recognized from the URL — are accepted as
+  `OtherGitRemote`. The only provider-specific behavior is the user name sent with a token: `oauth2`
+  for gitlab.com, `x-access-token` otherwise (GitHub requires none in particular; GitLab accepts any
+  user name with a personal access token).
+- Path segments may contain only letters, digits, `-`, `_` and `.` (no `.`/`..`, no trailing dot,
+  no percent-escapes); queries and fragments are rejected (`GitRemoteUrls.ParseCloneUrl`, GIT-003).
+- `http://`, `file://`, `ssh://`, `git://`, other schemes, scp-like URLs and local paths are rejected in
+  the MVP — before anything reaches libgit2, which would start the system `ssh` for SSH remotes (§3.1).
 - Credentials embedded in URLs (`https://user:token@host/...`) are stripped before storage and
-  logging; the user is warned.
-- Clone target: `<data>/clones/<host>/<owner>/<repo>`; if it exists, the user chooses update or
-  re-clone.
+  logging; the user is warned (`RemoteRepositoryImportDto.CredentialsRemovedFromUrl`). Tokens are
+  entered separately and held in memory only (`GitAccessToken`, whose `ToString` hides the secret).
+- Clone target: `<data>/clones/<host>[_<port>]/<owner…>/<repo>` (lowercase, without `.git`); if it
+  exists, the user chooses update or re-clone (`ExistingCloneAction`). A clone is written to
+  `<target>.partial` and renamed when complete, so an interrupted clone is never registered.
+- The user's own global/system Git configuration still applies to clones (e.g. `http.proxy`,
+  `url.<base>.insteadOf`): it is trusted configuration of the user, not repository content. An
+  `insteadOf` rule that rewrites HTTPS to SSH would make libgit2 start `ssh` — accepted, as the user
+  configured it.
 - **Submodules are not cloned** in the MVP (security and size); their presence is reported.
 - LFS pointers are analyzed as small text files; LFS content is not downloaded.
 

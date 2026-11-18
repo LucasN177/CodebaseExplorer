@@ -15,6 +15,7 @@ public sealed class RepositoryRootValidatorTests : IDisposable
     {
         var paths = Substitute.For<IApplicationPaths>();
         paths.DataDirectory.Returns(_workspace.PathOf("app-data"));
+        paths.ClonesDirectory.Returns(_workspace.PathOf("app-data/clones"));
         _validator = new RepositoryRootValidator(paths);
     }
 
@@ -59,9 +60,25 @@ public sealed class RepositoryRootValidatorTests : IDisposable
     [Fact]
     public void FolderInsideAppData_IsRejected()
     {
-        var inside = _workspace.CreateDirectory("app-data/clones/github.com/o/r");
+        var inside = _workspace.CreateDirectory("app-data/logs/r");
 
         Assert.Equal(RepositoryErrorCodes.OverlapsAppData, _validator.Validate(inside).Error.Code);
+    }
+
+    [Fact]
+    public void AppManagedClone_IsAccepted()
+    {
+        var clone = _workspace.CreateDirectory("app-data/clones/github.com/o/r");
+
+        Assert.Equal(Path.GetFullPath(clone), _validator.Validate(clone).Value.FullPath);
+    }
+
+    [Fact]
+    public void ClonesDirectoryItself_IsRejected()
+    {
+        var clones = _workspace.CreateDirectory("app-data/clones");
+
+        Assert.Equal(RepositoryErrorCodes.OverlapsAppData, _validator.Validate(clones).Error.Code);
     }
 
     [Fact]

@@ -25,7 +25,7 @@ Status overview (keep in sync):
 | M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 9 |
 | M4 Polyglot & scale | 11 | 3 |
-| M5 Git | 7 | 4 |
+| M5 Git | 7 | 5 |
 | M6 Export | 2 | 0 |
 | M7 Local AI | 7 | 0 |
 | M8 Hardening & release | 4 | 0 |
@@ -330,7 +330,7 @@ Status overview (keep in sync):
 - **Projects:** Application, Desktop
 - **Description:** Start page lists recent repositories (name, path, last run status/date); opening loads the stored model; "Re-analyze" action; "Remove" deletes data (cascade).
 - **Acceptance criteria:** Reopen shows the graph without running analysis; remove deletes all rows of the repository and, for app-managed clones (from M5), the clone directory after confirmation.
-- **Note:** Use cases `ListRecentRepositories`, `OpenRepository`, `RemoveRepository` (Contracts `RecentRepositoryDto`, `OpenRepositoryDto`, `RunStatuses`); store methods `ListRepositoriesAsync`, `MarkOpenedAsync`, `DeleteRepositoryAsync` (single `DELETE`, FK cascade; invalidates the model cache). A successful import also sets `LastOpenedAt`. Start page: list with name, path, last run status/date; *Open* (disabled without a stored model), *Re-analyze* (full import of the folder, cancellable), *Remove* with an inline confirmation (no dialog service needed); removing the open repository clears the session and the explorer returns to its empty state. `RepositorySession` now holds `OpenRepositoryDto`; `PageViewModel.ActivateAsync` refreshes a page when the shell shows it. App-managed clones do not exist before M5, so no clone directory is deleted yet. Reopening after a restart is covered by an integration test with a second composition root; manually verified on Windows (2026-11-18): list, Open, Re-analyze and the Remove confirmation (Keep) work against the real database.
+- **Note:** Use cases `ListRecentRepositories`, `OpenRepository`, `RemoveRepository` (Contracts `RecentRepositoryDto`, `OpenRepositoryDto`, `RunStatuses`); store methods `ListRepositoriesAsync`, `MarkOpenedAsync`, `DeleteRepositoryAsync` (single `DELETE`, FK cascade; invalidates the model cache). A successful import also sets `LastOpenedAt`. Start page: list with name, path, last run status/date; *Open* (disabled without a stored model), *Re-analyze* (full import of the folder, cancellable), *Remove* with an inline confirmation (no dialog service needed); removing the open repository clears the session and the explorer returns to its empty state. `RepositorySession` now holds `OpenRepositoryDto`; `PageViewModel.ActivateAsync` refreshes a page when the shell shows it. App-managed clones do not exist before M5; since GIT-003 removing a clone also deletes its clone directory. Reopening after a restart is covered by an integration test with a second composition root; manually verified on Windows (2026-11-18): list, Open, Re-analyze and the Remove confirmation (Keep) work against the real database.
 
 ### UI-004 — Repository overview page
 - **Priority:** P1 · **Milestone:** M2 · **Status:** done
@@ -556,11 +556,12 @@ Status overview (keep in sync):
 - **Note:** Done 2026-11-18. `TestRepositories/Git`: `GitRepositoryBuilder` (`Create`, `Write`/`WriteLines`/`Delete`/`Rename` + `Commit` with explicit `GitTestAuthor` and time — default one hour after the previous commit, starting 2026-01-01 —, `Branch`, `Checkout`, `Merge` (no fast-forward), `DetachHead`, `Remote`, `AppendConfig`, `Hook`, `Worktree`) and `GitTestRepository` (`Commits`, `WorktreePath`, `CreateBareClone` for local-transport clone tests; `Dispose` deletes everything incl. read-only object files). Repositories always start on `main`, independent of the machine's `init.defaultBranch`. Built with LibGit2Sharp (test-only reference of TestRepositories). `GitRepositoryBuilderTests`, including a check that no fixture contains a nested `.git`.
 
 ### GIT-003 — HTTPS clone of GitHub/GitLab remotes
-- **Priority:** P0 · **Milestone:** M5 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M5 · **Status:** done
 - **Prerequisites:** GIT-001
 - **Projects:** Application, Git, IntegrationTests
 - **Description:** URL validation/sanitization, clone into `<data>/clones/<host>/<owner>/<repo>`, progress and cancellation, token via credentials callback (in-memory only until OPD-03), update (fetch + checkout) for app-managed clones, no submodules.
 - **Acceptance criteria:** Rejected URL schemes tested; cancellation leaves no half-cloned directory registered.
+- **Note:** Done 2026-11-18. `GitRemoteUrls.ParseCloneUrl` (HTTPS only, safe segments, no query/fragment, credentials stripped and reported; github.com/gitlab.com recognized, everything else `OtherGitRemote`), port `IGitRemoteCloner` with adapter `Cloning/LibGit2RemoteCloner` (full clone into `<target>.partial`, renamed when complete; token only via the credentials callback, asked once; progress `Receiving`/`CheckingOut`; cancellation through the transfer callback; no submodules, their presence reported; update = fetch + forced checkout + hard reset; every path must lie inside the clones directory), use case `ImportRemoteRepository` (`ExistingCloneAction` Ask/Update/Reclone, then the regular import with `RepositoryLocation.Cloned`; Contracts `RemoteRepositoryImportDto`). The root validator now accepts folders below the clones directory (not the data directory otherwise). `RemoveRepository` deletes the clone directory of app-managed clones (the open part of REPO-005). Tests: `GitRemoteUrlsTests` (accepted/rejected URLs incl. `ext::`, scp-like, local paths), `GitRemoteClonerTests` (local transport, test-only: branches, unknown branch, unreachable remote, cancellation, stale partial, existing target, paths outside the clones directory, submodules, token never written, update, delete), `ImportRemoteRepositoryTests` (substituted cloner: registration as clone, nothing registered after cancel/failure, Ask/Update/Reclone, remove deletes clones only). Opt-in network test `RemoteImportNetworkTests`: clone → analyze → update of a public GitHub and GitLab repository, passed 2026-11-18. Private repositories with a token: not verified (no test token).
 
 ### GIT-004 — File activity statistics
 - **Priority:** P0 · **Milestone:** M5 · **Status:** done

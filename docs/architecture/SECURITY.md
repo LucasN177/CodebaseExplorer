@@ -52,7 +52,10 @@
 ### Git
 - LibGit2Sharp adapter. Never run hooks; never invoke `git` CLI without the hardening of
   GIT_INTEGRATION.md §3 and an ADR.
-- No submodule recursion; reject `file://`, `ssh://`, `git://` URLs in the MVP.
+- No submodule recursion; accept only `https://` clone URLs in the MVP (`file://`, `ssh://`, `git://`, `http://`,
+  scp-like and local paths are rejected before they reach libgit2, whose SSH transport starts the system
+  `ssh` — GIT-006). Fetch, checkout and delete only in app-managed clones below the clones directory
+  (enforced by the cloner); a cloned repository is analyzed like any other untrusted folder.
 
 ### Storage
 - Database file in the user data directory with user-only permissions where the OS supports it

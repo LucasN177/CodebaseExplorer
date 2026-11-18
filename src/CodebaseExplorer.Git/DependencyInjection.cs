@@ -15,6 +15,7 @@ public static class DependencyInjection
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddSingleton<IGitRepositoryReader, LibGit2RepositoryReader>();
+        services.AddSingleton<IGitRemoteCloner, Cloning.LibGit2RemoteCloner>();
 
         return services;
     }

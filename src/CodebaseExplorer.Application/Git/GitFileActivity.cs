@@ -44,4 +44,10 @@ public enum GitProgressStage
 {
     /// <summary>Walking the history for activity statistics.</summary>
     ReadingHistory,
+
+    /// <summary>Receiving objects from the remote (clone, update); units are objects.</summary>
+    Receiving,
+
+    /// <summary>Writing the working tree (clone, update); units are files.</summary>
+    CheckingOut,
 }

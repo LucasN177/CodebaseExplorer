@@ -42,7 +42,8 @@ polyglot fixtures exist (REPO-007); the Node project-system analyzer reads `pack
 (ANALYSIS-009, hostile npm fixture).
 M5 (started in parallel to M4): LibGit2Sharp is verified (GIT-006, GIT_INTEGRATION.md §3.1), Git histories for tests come
 from `GitRepositoryBuilder` (GIT-002), and the Git module reads local repositories (`IGitRepositoryReader`: detect,
-snapshot with sanitized remotes; GIT-001) and computes per-file activity from the history (GIT-004).
+snapshot with sanitized remotes; GIT-001) and computes per-file activity from the history (GIT-004); HTTPS remotes are
+cloned into the app's clones directory and analyzed (`ImportRemoteRepository`, `IGitRemoteCloner`; GIT-003).
 No Tree-sitter analyzer or AI functionality exists yet. Next: the open M1 checks (macOS/Linux) and the remaining M4
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 

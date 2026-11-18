@@ -25,8 +25,19 @@ public sealed class ImportLocalRepository(
 {
     private readonly ConcurrentDictionary<string, byte> _running = new(RootPathComparer.Instance);
 
-    public async Task<Result<RepositoryImportSummaryDto>> ExecuteAsync(
+    public Task<Result<RepositoryImportSummaryDto>> ExecuteAsync(
         string path,
+        IProgress<AnalysisProgress>? progress,
+        CancellationToken cancellationToken) =>
+        ExecuteAsync(path, location: null, progress, cancellationToken);
+
+    /// <summary>
+    /// Imports a folder; a repository registered for the first time gets <paramref name="location"/> (for app-managed
+    /// clones, GIT-003) or <see cref="RepositoryLocation.Local"/>.
+    /// </summary>
+    internal async Task<Result<RepositoryImportSummaryDto>> ExecuteAsync(
+        string path,
+        Func<RepositoryRoot, RepositoryLocation>? location,
         IProgress<AnalysisProgress>? progress,
         CancellationToken cancellationToken)
     {
@@ -44,7 +55,7 @@ public sealed class ImportLocalRepository(
 
         try
         {
-            return await ImportAsync(root, progress, cancellationToken);
+            return await ImportAsync(root, location, progress, cancellationToken);
         }
         finally
         {
@@ -53,12 +64,12 @@ public sealed class ImportLocalRepository(
     }
 
     private async Task<Result<RepositoryImportSummaryDto>> ImportAsync(
-        RepositoryRoot root, IProgress<AnalysisProgress>? progress, CancellationToken cancellationToken)
+        RepositoryRoot root, Func<RepositoryRoot, RepositoryLocation>? location, IProgress<AnalysisProgress>? progress, CancellationToken cancellationToken)
     {
         var started = timeProvider.GetUtcNow();
         var previous = await store.FindRepositoryByRootAsync(root.FullPath, cancellationToken);
         var repository = previous
-            ?? Repository.Register(NameOf(root), RepositoryLocation.Local(root.FullPath), started);
+            ?? Repository.Register(NameOf(root), location?.Invoke(root) ?? RepositoryLocation.Local(root.FullPath), started);
 
         var run = AnalysisRun.Create(repository.Id, previous is null ? AnalysisTrigger.Initial : AnalysisTrigger.Manual, started);
         run.Start();
