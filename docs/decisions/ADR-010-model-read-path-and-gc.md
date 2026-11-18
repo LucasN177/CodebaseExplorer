@@ -1,6 +1,6 @@
 # ADR-010: Whole-Model Reads in M2 and Memory-Conserving GC
 
-- **Status:** Proposed (read path chosen by the user on 2026-11-18 during STORE-004; GC setting pending approval)
+- **Status:** Accepted (read path chosen by the user during STORE-004; ADR accepted by the user on 2026-11-18)
 - **Date:** 2026-11-18
 
 ## Context

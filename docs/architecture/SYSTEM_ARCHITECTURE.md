@@ -193,7 +193,7 @@ Principles:
   focus element, filters) — the full model of a monorepo is never loaded into the UI. *Current state
   (STORE-004, decided 2026-11-18):* the Application layer reads the whole current model (cached per run)
   and the UI only receives projected DTOs; SQL slice queries follow with the node budget and benchmarks in
-  M4 (GRAPH-008, QA-002); see ADR-010 (Proposed).
+  M4 (GRAPH-008, QA-002); see ADR-010.
 
 ## 7. Analyzer pipeline (overview)
 
