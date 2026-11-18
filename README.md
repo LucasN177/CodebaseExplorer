@@ -12,7 +12,9 @@ quickly — without uploading code and without executing it.
 > solution and an application in which a local folder can be imported and its .NET projects analyzed.
 > Its project-level dependency graph is shown in the Architecture Explorer (verified on Windows), and the analysis is
 > saved in a local SQLite database.
-> **There are no Git or AI features yet.** See [Project status](#project-status).
+> Git repositories are recognized: runs record the commit, a Git-activity overlay shows how often the files of projects,
+> namespaces and types changed, and HTTPS remotes can be cloned and analyzed (M5). **There are no AI features yet.**
+> See [Project status](#project-status).
 
 ---
 
@@ -40,8 +42,8 @@ analysis. Full vision: [docs/product/VISION.md](docs/product/VISION.md).
 | Import a local folder (folder picker, progress with stages, cancel) | ✅ available (results are saved locally in SQLite) |
 | Recent repositories on the start page: open the stored result without re-analysis, re-analyze, remove all stored data | ✅ available |
 | Repository overview: files and lines per language, projects per ecosystem, external dependencies, last run, warnings and errors | ✅ available |
-| Run history: every analysis run with status, duration and statistics; its diagnostics (analyzer, file and line) filterable by severity | ✅ available (commit hashes from M5) |
-| Clone GitHub/GitLab remotes | ⏳ planned (M5) |
+| Run history: every analysis run with status, duration and statistics; its diagnostics (analyzer, file and line) filterable by severity | ✅ available (commit and branch for Git repositories since M5) |
+| Clone GitHub/GitLab remotes | ✅ available (M5: HTTPS with optional access token held in memory only; update or re-clone of an existing clone; removing a clone deletes it) |
 | Repository scanner, language and project detection | 🟡 partial (scanner, .NET and Node projects — `package.json`, npm/yarn/pnpm workspaces, `tsconfig.json` references — available; Python projects — `pyproject.toml` (PEP 621, Poetry), `setup.cfg`, requirement files — available) |
 | C# analysis with Roslyn (no build required) | 🟡 partial (namespaces, types and members; inheritance, implementation, type usage, instantiation and calls between them, also across projects, each with evidence; heuristic DI registrations) |
 | TypeScript, JavaScript and Python analysis (Tree-sitter, manifests) | ✅ available (basic depth: Node and Python manifests; TypeScript/JavaScript folders, files, top-level declarations and imports — relative, `tsconfig` paths, workspace packages, npm; Python packages, modules, top-level classes/functions and imports — relative, absolute, PyPI with name mapping) |
@@ -52,7 +54,7 @@ analysis. Full vision: [docs/product/VISION.md](docs/product/VISION.md).
 | Filters (language, ecosystem, relationship kind, evidence level; tests and generated code hidden by default), search with `Ctrl/Cmd+K`, neighborhood view (depth 1–3, direction) with breadcrumbs | ✅ available (tests only; not yet checked manually in the running app) |
 | Component Inspector with evidence and source snippets | ⏳ planned (M3) |
 | Local persistence (SQLite) and analysis history | 🚧 in progress (M2: database created and migrated at startup; analysis runs and models are saved — reopening a saved repository from the UI follows with REPO-005) |
-| Git metadata and change-activity overlays | ⏳ planned (M5) |
+| Git metadata and change-activity overlays | ✅ available (M5: HEAD, branch and remotes per run; per-file change statistics of the last 365 days / 5,000 commits; *Git activity* toggle in the graph and a Git line in the Component Inspector) |
 | Markdown/Mermaid architecture export | ⏳ planned (M6) |
 | Optional local AI (Ollama) with cited answers | ⏳ planned (M7) |
 
@@ -122,7 +124,8 @@ enforced by architecture tests. Details: [docs/architecture/SYSTEM_ARCHITECTURE.
 | M2 Persistence and analysis runs | ✅ done |
 | M3 Deep C# & Inspector | ✅ done |
 | M4 Polyglot & scale | 🚧 in progress (see [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md)) |
-| M5 Git · M6 Export · M7 Local AI · M8 Release | ⏳ planned |
+| M5 Git | ✅ implemented (started in parallel to M4; manual UI checks pending, see [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md)) |
+| M6 Export · M7 Local AI · M8 Release | ⏳ planned |
 
 What exists today: 10 source projects and 6 test projects, central package management, module
 registration seams, a composition root, the Avalonia shell, and the language-independent domain

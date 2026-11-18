@@ -17,6 +17,12 @@ public sealed record GraphQuery
     public bool IncludeExternalDependencies { get; init; }
 
     /// <summary>
+    /// Fill <see cref="GraphNodeMetricsDto.ChangeCount"/> from the stored Git activity (GIT-005 activity overlay; default
+    /// false). Without Git data the counts stay <see langword="null"/>.
+    /// </summary>
+    public bool IncludeActivity { get; init; }
+
+    /// <summary>
     /// Ids of nodes shown expanded (GRAPH-006): an expanded project shows its namespaces, an expanded module its
     /// sub-namespaces and types. Ids that are unknown, not visible or not expandable are ignored.
     /// </summary>

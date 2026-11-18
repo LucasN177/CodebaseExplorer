@@ -59,7 +59,7 @@ referenced document or a new ADR) before the listed milestone starts.
 | ID | Decision | Options | Needed before | Where it will be documented |
 |---|---|---|---|---|
 | OPD-01 | Licensing model of the product | Proprietary (current `LICENSE`), open source (MIT/Apache-2.0), open core | Public release (M8) | README, LICENSE |
-| OPD-02 | SSH support for remote clones | LibGit2Sharp without SSH + HTTPS only; Git CLI adapter for SSH; both | M5 | GIT_INTEGRATION.md / new ADR |
+| OPD-02 | SSH support for remote clones | HTTPS only (SSH URLs rejected); SSH through libgit2's built-in transport, which starts the system `ssh` executable (found in GIT-006); Git CLI adapter for SSH; a combination | M5 | GIT_INTEGRATION.md / new ADR |
 | OPD-03 | Secret storage for Git tokens and AI API keys | OS credential stores via platform APIs; a cross-platform library (to be evaluated); no persistence (ask per session) | M5 | SECURITY.md / new ADR |
 | OPD-04 | Graph rendering fallback if WebView is unsuitable on a platform | Fix/mitigate WebView; native Avalonia graph control; external browser (rejected for security unless sandboxed) | End of M1 (spike GRAPH-001; Windows verified 2026-11-17, no fallback needed there; macOS/Linux pending) | ADR-006 spike amendment, or a superseding ADR if the decision changes |
 | OPD-05 | Distribution channels | Direct download, winget, Homebrew cask, Flatpak/AppImage, stores | M8 | DEVELOPMENT_GUIDE.md |

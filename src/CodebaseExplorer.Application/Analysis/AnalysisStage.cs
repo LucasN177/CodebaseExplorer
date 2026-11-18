@@ -9,5 +9,8 @@ public enum AnalysisStage
     AnalyzingCode,
     Linking,
     Validating,
+
+    /// <summary>Reading Git history statistics (only for folders inside a Git working tree, GIT-005).</summary>
+    ReadingGitHistory,
     Saving,
 }

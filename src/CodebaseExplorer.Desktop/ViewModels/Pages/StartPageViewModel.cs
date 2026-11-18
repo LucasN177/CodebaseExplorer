@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CodebaseExplorer.Application.Analysis;
+using CodebaseExplorer.Application.Git;
 using CodebaseExplorer.Application.Repositories;
 using CodebaseExplorer.Contracts.Repositories;
 using CodebaseExplorer.Desktop.Services;
@@ -18,6 +19,7 @@ namespace CodebaseExplorer.Desktop.ViewModels.Pages;
 public sealed partial class StartPageViewModel : PageViewModel
 {
     private readonly ImportLocalRepository _import;
+    private readonly ImportRemoteRepository _importRemote;
     private readonly ListRecentRepositories _listRecent;
     private readonly OpenRepository _open;
     private readonly RemoveRepository _remove;
@@ -30,6 +32,7 @@ public sealed partial class StartPageViewModel : PageViewModel
 
     public StartPageViewModel(
         ImportLocalRepository import,
+        ImportRemoteRepository importRemote,
         ListRecentRepositories listRecent,
         OpenRepository open,
         RemoveRepository remove,
@@ -39,6 +42,7 @@ public sealed partial class StartPageViewModel : PageViewModel
         ILogger<StartPageViewModel> logger)
     {
         _import = import;
+        _importRemote = importRemote;
         _listRecent = listRecent;
         _open = open;
         _remove = remove;
@@ -55,6 +59,7 @@ public sealed partial class StartPageViewModel : PageViewModel
             new(AnalysisStage.AnalyzingCode, "Analyzing code"),
             new(AnalysisStage.Linking, "Linking"),
             new(AnalysisStage.Validating, "Validating"),
+            new(AnalysisStage.ReadingGitHistory, "Reading Git history"),
             new(AnalysisStage.Saving, "Saving"),
         ];
         RecentRepositories.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasRecentRepositories));
@@ -74,7 +79,8 @@ public sealed partial class StartPageViewModel : PageViewModel
 
     /// <summary>True while an import runs (shows the progress panel).</summary>
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(OpenLocalFolderCommand), nameof(ReanalyzeCommand), nameof(OpenRecentCommand), nameof(RequestRemoveCommand))]
+    [NotifyCanExecuteChangedFor(nameof(OpenLocalFolderCommand), nameof(ReanalyzeCommand), nameof(OpenRecentCommand), nameof(RequestRemoveCommand),
+        nameof(CloneCommand), nameof(ResolveExistingCloneCommand))]
     public partial bool IsImporting { get; private set; }
 
     /// <summary>Folder being imported.</summary>
@@ -151,6 +157,8 @@ public sealed partial class StartPageViewModel : PageViewModel
     private void CancelImport()
     {
         OpenLocalFolderCancelCommand.Execute(null);
+        CloneCancelCommand.Execute(null);
+        ResolveExistingCloneCancelCommand.Execute(null);
         ReanalyzeCancelCommand.Execute(null);
     }
 
@@ -226,7 +234,9 @@ public sealed partial class StartPageViewModel : PageViewModel
             }
             else
             {
-                StatusMessage = $"Removed the stored data of {item.Name}. The folder was not changed.";
+                StatusMessage = item.IsClone
+                    ? $"Removed the stored data and the clone of {item.Name}."
+                    : $"Removed the stored data of {item.Name}. The folder was not changed.";
             }
 
             if (_session.Current?.RepositoryId == item.Repository.RepositoryId)
@@ -303,7 +313,7 @@ public sealed partial class StartPageViewModel : PageViewModel
         await LoadRecentRepositoriesAsync();
     }
 
-    private void StartImport(string path)
+    private void StartImport(string path, string? operationTitle = null)
     {
         ErrorMessage = null;
         StatusMessage = null;
@@ -324,7 +334,7 @@ public sealed partial class StartPageViewModel : PageViewModel
 
         IsImporting = true;
         _operation?.Dispose();
-        _operation = _shell.BeginOperation($"Analyzing {Path.GetFileName(Path.TrimEndingDirectorySeparator(path))}");
+        _operation = _shell.BeginOperation(operationTitle ?? $"Analyzing {Path.GetFileName(Path.TrimEndingDirectorySeparator(path))}");
     }
 
     private void FinishImport(string? statusMessage = null, string? errorMessage = null)

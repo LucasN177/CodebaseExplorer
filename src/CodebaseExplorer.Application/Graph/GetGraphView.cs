@@ -1,4 +1,5 @@
 using CodebaseExplorer.Application.Common;
+using CodebaseExplorer.Application.Git;
 using CodebaseExplorer.Application.Repositories;
 using CodebaseExplorer.Contracts.Graph;
 using CodebaseExplorer.Domain.Common;
@@ -9,7 +10,7 @@ namespace CodebaseExplorer.Application.Graph;
 /// Use case: the graph view for an analyzed repository (USER_WORKFLOWS.md WF-03). Reads the current
 /// model from the <see cref="IArchitectureModelStore"/> (persisted since STORE-004) and projects it.
 /// </summary>
-public sealed class GetGraphView(IArchitectureModelStore store, IGraphProjector projector)
+public sealed class GetGraphView(IArchitectureModelStore store, IGitActivityStore gitStore, IGraphProjector projector)
 {
     public async Task<Result<GraphViewDto>> ExecuteAsync(GraphQuery query, CancellationToken cancellationToken)
     {
@@ -26,6 +27,9 @@ public sealed class GetGraphView(IArchitectureModelStore store, IGraphProjector 
             return ApplicationError.NotFound(RepositoryErrorCodes.NotAnalyzed, "The repository has not been analyzed yet.");
         }
 
-        return projector.Project(stored.Model, query);
+        var activity = query.IncludeActivity && await gitStore.LoadCurrentAsync(repositoryId, cancellationToken) is { } git
+            ? new GitActivityIndex(stored.Model, git)
+            : null;
+        return projector.Project(stored.Model, query, activity);
     }
 }

@@ -317,7 +317,8 @@ Implemented in GRAPH-005 (`styles.ts`, `elements.ts`, `highlight.ts` in the web 
 
 - **Kind:** project = rounded rectangle, external package = diamond. Module (rectangle) and type (ellipse) shapes are added with those node kinds in GRAPH-006.
 - **Ecosystem color** (Okabe–Ito based, each color ≥ 3:1 against its theme background, checked by `test/styles.test.ts`): .NET (`dotnet`, `nuget`, `dotnet-framework`) blue, Node (`node`, `npm`) green, Python (`python`, `pypi`) purple, everything else gray. A missing project keeps its own color (vermillion, dashed outline, translucent).
-- **Size:** node width/height × `min(2, 1 + log10(1 + size) / 3)` (size = owned files for projects). The Git-activity overlay follows in M5.
+- **Size:** node width/height × `min(2, 1 + log10(1 + size) / 3)` (size = owned files for projects).
+- **Git activity (GIT-005, optional overlay):** with `GraphQuery.IncludeActivity` nodes carry `metrics.changeCount` (file changes, GIT_INTEGRATION.md §5); the web view draws an orange halo behind the node (`underlay-*`, so borders for expandable, missing and selected nodes stay intact) whose opacity (0.15–0.75) and padding (2–12 px) grow with `heat = min(1, log10(1 + changes) / 3)` — absolute, reaching full strength at 1,000 file changes. Without Git data `heat = -1` and no halo is drawn. Toggled by *Git activity* in the explorer toolbar (not stored); toggling re-queries and sends a `graph/patch` with the changed nodes.
 - **Edges:** line style by `maxLevel`; width `min(7, 1.5 + log2(count))` px; triangle arrow for declared, `vee` for undeclared dependencies.
 - **Selection:** selected node gets a thick border, selected edge the selection color; everything that is neither selected nor directly connected to the selection is dimmed to 15 % opacity (pure view state, not reported to .NET).
 

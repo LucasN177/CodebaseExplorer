@@ -7,6 +7,7 @@ using CodebaseExplorer.Contracts.Repositories;
 using CodebaseExplorer.Desktop.Services;
 using CodebaseExplorer.Desktop.ViewModels.Pages;
 using CodebaseExplorer.TestRepositories;
+using CodebaseExplorer.TestRepositories.Git;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -283,6 +284,74 @@ public sealed class ArchitectureExplorerPageViewModelTests : IAsyncLifetime
         Assert.Null(_viewModel.ErrorMessage);
     }
 
+    [Fact]
+    public async Task ActivityToggle_PatchesFileChangesIn_AndOutAgain()
+    {
+        // GIT-005: a Git repository (builder) with one commit of the fixture: every project counts one change per file.
+        using var built = FixtureInGit();
+        var initial = await ImportFixtureAsync(built.WorkingDirectory);
+        _host.PatchGraphAsync(default!, Arg.Any<CancellationToken>()).ReturnsForAnyArgs(true);
+        Assert.All(initial.Nodes, n => Assert.Null(n.Metrics.ChangeCount));
+
+        _viewModel.ShowActivity = true;
+        await WaitUntilAsync(() => _host.ReceivedCalls().Any(c => c.GetMethodInfo().Name == nameof(IGraphViewHost.PatchGraphAsync)));
+        var withActivity = LastPatch();
+
+        Assert.Equal(2, withActivity.Nodes.Single(n => n.Label == "Shop.Web").Metrics.ChangeCount); // Program.cs + Shop.Web.csproj
+        Assert.All(withActivity.Nodes, n => Assert.NotNull(n.Metrics.ChangeCount));
+        Assert.Null(_viewModel.ActivityHint);
+
+        _viewModel.ShowActivity = false;
+        await WaitUntilAsync(() => _host.ReceivedCalls().Count(c => c.GetMethodInfo().Name == nameof(IGraphViewHost.PatchGraphAsync)) == 2);
+        Assert.All(LastPatch().Nodes, n => Assert.Null(n.Metrics.ChangeCount));
+    }
+
+    [Fact]
+    public async Task ActivityToggle_WithoutGitData_ShowsAHint()
+    {
+        using var copy = Security.ZeroExecutionHarness.CopyFixture("dotnet-layered");
+        await ImportFixtureAsync(copy.FullPath);
+        _host.PatchGraphAsync(default!, Arg.Any<CancellationToken>()).ReturnsForAnyArgs(true);
+
+        _viewModel.ShowActivity = true;
+        await WaitUntilAsync(() => _viewModel.ActivityHint is not null);
+
+        Assert.StartsWith("No Git activity", _viewModel.ActivityHint, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DescribeActivity_SummarizesTheNumbersAndTheWindow()
+    {
+        var text = ArchitectureExplorerPageViewModel.DescribeActivity(new Contracts.Inspector.ElementActivityDto
+        {
+            FileChanges = 12,
+            ChangedFiles = 3,
+            LinesAdded = 120,
+            LinesDeleted = 40,
+            LastChangeAt = new DateTimeOffset(2026, 3, 1, 23, 30, 0, TimeSpan.FromHours(-2)),
+            CommitsScanned = 412,
+            WindowStart = new DateTimeOffset(2025, 11, 18, 0, 0, 0, TimeSpan.Zero),
+            HeadCommitSha = "0123456789abcdef0123456789abcdef01234567",
+            Branch = "main",
+        });
+
+        Assert.Equal(
+            "12 file changes in 3 files · +120 −40 lines · last change 2026-03-02 · window: 412 commits since 2025-11-18 on main @ 0123456",
+            text);
+    }
+
+    private static GitTestRepository FixtureInGit()
+    {
+        var builder = GitRepositoryBuilder.Create();
+        var source = TestRepositoryCatalog.GetFixturePath("dotnet-layered");
+        foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
+        {
+            builder.Write(Path.GetRelativePath(source, file).Replace('\\', '/'), File.ReadAllText(file));
+        }
+
+        return builder.Commit("import").Build();
+    }
+
     private static async Task WaitUntilAsync(Func<bool> condition)
     {
         for (var waited = 0; !condition() && waited < 5000; waited += 20)
@@ -294,10 +363,10 @@ public sealed class ArchitectureExplorerPageViewModelTests : IAsyncLifetime
     private GraphViewDto LastPatch() =>
         (GraphViewDto)_host.ReceivedCalls().Last(c => c.GetMethodInfo().Name == nameof(IGraphViewHost.PatchGraphAsync)).GetArguments()[0]!;
 
-    private async Task<GraphViewDto> ImportFixtureAsync()
+    private async Task<GraphViewDto> ImportFixtureAsync(string? path = null)
     {
         var summary = (await _app.Services.GetRequiredService<ImportLocalRepository>().ExecuteAsync(
-            TestRepositoryCatalog.GetFixturePath("dotnet-layered"), null, TestContext.Current.CancellationToken)).Value;
+            path ?? TestRepositoryCatalog.GetFixturePath("dotnet-layered"), null, TestContext.Current.CancellationToken)).Value;
 
         // GetGraphView and the substituted host complete synchronously, so the load triggered by the session
         // has finished when SetCurrent returns; awaiting the explicit load would only repeat it.

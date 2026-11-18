@@ -1,4 +1,5 @@
 using CodebaseExplorer.Application.Common;
+using CodebaseExplorer.Application.Git;
 using CodebaseExplorer.Application.Graph;
 using CodebaseExplorer.Contracts.Graph;
 using CodebaseExplorer.Domain.Common;
@@ -19,12 +20,12 @@ namespace CodebaseExplorer.Graph.Projection;
 /// </summary>
 internal sealed class GraphProjector : IGraphProjector
 {
-    public Result<GraphViewDto> Project(ArchitectureModel model, GraphQuery query)
+    public Result<GraphViewDto> Project(ArchitectureModel model, GraphQuery query, GitActivityIndex? activity = null)
     {
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(query);
 
-        return Validate(model, query) is { } error ? error : ProjectView(model, query);
+        return Validate(model, query) is { } error ? error : ProjectView(model, query, activity);
     }
 
     public Result<GraphEdgeDetailsDto> DescribeEdge(ArchitectureModel model, GraphQuery query, string edgeId)
@@ -107,7 +108,7 @@ internal sealed class GraphProjector : IGraphProjector
         return null;
     }
 
-    private static Result<GraphViewDto> ProjectView(ArchitectureModel model, GraphQuery query)
+    private static Result<GraphViewDto> ProjectView(ArchitectureModel model, GraphQuery query, GitActivityIndex? activity)
     {
         // In neighborhood mode the whole graph (up to the maximum budget) is built first, then reduced to the neighborhood,
         // and only then is the requested budget applied — so a focus can reach elements an overview would aggregate.
@@ -145,13 +146,27 @@ internal sealed class GraphProjector : IGraphProjector
             // Parents before children (the web view adds nodes in order); roots sorted as before GRAPH-006.
             Nodes = [.. order.Select(id => tree.Nodes[id] with
             {
-                Metrics = tree.Nodes[id].Metrics with { FanIn = fanIn.GetValueOrDefault(id), FanOut = fanOut.GetValueOrDefault(id) },
+                Metrics = tree.Nodes[id].Metrics with
+                {
+                    FanIn = fanIn.GetValueOrDefault(id),
+                    FanOut = fanOut.GetValueOrDefault(id),
+                    ChangeCount = ChangeCountOf(activity, id),
+                },
             })],
             Edges = edges,
             Truncation = truncation,
             Breadcrumbs = breadcrumbs,
         };
     }
+
+    /// <summary>
+    /// File changes of a node (GIT-005); <see langword="null"/> without activity and for nodes that are no model element
+    /// (aggregate, group and folder nodes have non-element ids).
+    /// </summary>
+    private static int? ChangeCountOf(GitActivityIndex? activity, string nodeId) =>
+        activity is not null && nodeId is { Length: 32 } && Guid.TryParseExact(nodeId, "N", out var guid) && guid != Guid.Empty
+            ? activity.For(ElementId.Parse(nodeId))?.FileChanges
+            : null;
 
     /// <summary>The visible node for a focus id: a node of the view, or the deepest visible node of a model element.</summary>
     private static string? FocusNode(ArchitectureModel model, VisibleTree tree, string focus)

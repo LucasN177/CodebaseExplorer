@@ -19,6 +19,42 @@
               Classes="accent" />
       <TextBlock TextWrapping="Wrap" Opacity="0.7" FontSize="12"
                  Text="Currently .NET solutions and projects are recognized; other languages follow in later milestones." />
+      <!-- Clone a remote repository (UI-008, WF-01); HTTPS only, token masked and held in memory only -->
+      <Button Content="Clone remote repository…" Command="{Binding ShowCloneFormCommand}"
+              IsVisible="{Binding !IsCloneFormOpen}" />
+      <Border IsVisible="{Binding IsCloneFormOpen}"
+              BorderThickness="1" CornerRadius="6" Padding="16"
+              BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Clone a remote repository" FontWeight="SemiBold" />
+          <TextBlock Text="HTTPS address (GitHub, GitLab or another Git host)" Opacity="0.8" FontSize="12" />
+          <TextBox Text="{Binding CloneUrl}" PlaceholderText="https://github.com/owner/repository"
+                   AutomationProperties.Name="Repository address" />
+          <TextBlock Text="Branch (optional — default branch if empty)" Opacity="0.8" FontSize="12" />
+          <TextBox Text="{Binding CloneBranch}" PlaceholderText="main" AutomationProperties.Name="Branch" />
+          <TextBlock Text="Access token for private repositories (optional; kept in memory only, never stored)"
+                     Opacity="0.8" FontSize="12" TextWrapping="Wrap" />
+          <TextBox Text="{Binding CloneToken}" PasswordChar="•" RevealPassword="False"
+                   AutomationProperties.Name="Access token" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Clone and analyze" Classes="accent" Command="{Binding CloneCommand}" />
+            <Button Content="Close" Command="{Binding CloseCloneFormCommand}" />
+          </StackPanel>
+          <Border IsVisible="{Binding HasExistingClone}" BorderThickness="1" CornerRadius="6" Padding="12"
+                  BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+            <StackPanel Spacing="8">
+              <TextBlock TextWrapping="Wrap" Text="This repository was cloned before:" />
+              <TextBlock TextWrapping="Wrap" Opacity="0.7" FontSize="12" Text="{Binding ExistingClonePath}" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="Update existing clone" Command="{Binding ResolveExistingCloneCommand}" CommandParameter="update"
+                        ToolTip.Tip="Fetch the remote and check out the branch, then analyze" />
+                <Button Content="Clone again" Command="{Binding ResolveExistingCloneCommand}" CommandParameter="reclone"
+                        ToolTip.Tip="Delete the existing clone and clone it again, then analyze" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Border>
 
       <!-- Progress panel (WF-01 step 4) -->
       <Border IsVisible="{Binding IsImporting}"
@@ -81,7 +117,8 @@
                   </StackPanel>
                   <StackPanel Spacing="2" Margin="0,0,12,0">
                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                    <TextBlock Text="{Binding RootPath}" Opacity="0.7" FontSize="12" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding SourceText}" Opacity="0.7" FontSize="12" TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding RootPath}" />
                     <TextBlock Text="{Binding StatusText}" Opacity="0.7" FontSize="12" />
                   </StackPanel>
                 </DockPanel>
@@ -98,7 +135,7 @@
                               CommandParameter="{Binding}" />
                     </StackPanel>
                     <TextBlock TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"
-                               Text="Remove all stored analysis results of this repository? The folder itself is not changed." />
+                               Text="{Binding RemoveQuestion}" />
                   </DockPanel>
                 </Border>
               </StackPanel>

@@ -52,7 +52,10 @@
 ### Git
 - LibGit2Sharp adapter. Never run hooks; never invoke `git` CLI without the hardening of
   GIT_INTEGRATION.md §3 and an ADR.
-- No submodule recursion; reject `file://`, `ssh://`, `git://` URLs in the MVP.
+- No submodule recursion; accept only `https://` clone URLs in the MVP (`file://`, `ssh://`, `git://`, `http://`,
+  scp-like and local paths are rejected before they reach libgit2, whose SSH transport starts the system
+  `ssh` — GIT-006). Fetch, checkout and delete only in app-managed clones below the clones directory
+  (enforced by the cloner); a cloned repository is analyzed like any other untrusted folder.
 
 ### Storage
 - Database file in the user data directory with user-only permissions where the OS supports it
@@ -101,7 +104,7 @@
 
 | Check | Where |
 |---|---|
-| Hostile fixtures asserting that marker files are never created and no child process is spawned | .NET: MSBuild `Exec`, property functions, imported targets, analyzer/generator references, module initializer — **implemented (QA-003)**: fixture `dotnet-hostile`, `HostileDotNetFixtureTests` with the `ZeroExecutionHarness` (marker check + static process-API guard over the modules, TEST_STRATEGY.md §5.1) · npm — **implemented (ANALYSIS-009)**: fixture `node-hostile` (lifecycle scripts, `.npmrc` `script-shell`, node-gyp `binding.gyp` action, `file:` dependency with `postinstall`, module with a top-level side effect, TypeScript language-service plugin), `HostileNodeFixtureTests` · Python — **implemented (ANALYSIS-011)**: fixture `python-hostile` (`setup.py`, PEP 517 in-tree build backend, `conftest.py`, `sitecustomize.py`/`usercustomize.py`, `.pth` file, package `__init__`/`__main__`, `-e .` and index options in `requirements.txt`), `HostilePythonFixtureTests` · Git hooks and `core.fsmonitor` (GIT-001, M5) |
+| Hostile fixtures asserting that marker files are never created and no child process is spawned | .NET: MSBuild `Exec`, property functions, imported targets, analyzer/generator references, module initializer — **implemented (QA-003)**: fixture `dotnet-hostile`, `HostileDotNetFixtureTests` with the `ZeroExecutionHarness` (marker check + static process-API guard over the modules, TEST_STRATEGY.md §5.1) · npm — **implemented (ANALYSIS-009)**: fixture `node-hostile` (lifecycle scripts, `.npmrc` `script-shell`, node-gyp `binding.gyp` action, `file:` dependency with `postinstall`, module with a top-level side effect, TypeScript language-service plugin), `HostileNodeFixtureTests` · Python — **implemented (ANALYSIS-011)**: fixture `python-hostile` (`setup.py`, PEP 517 in-tree build backend, `conftest.py`, `sitecustomize.py`/`usercustomize.py`, `.pth` file, package `__init__`/`__main__`, `-e .` and index options in `requirements.txt`), `HostilePythonFixtureTests` · Git — **implemented (GIT-001)**: builder-created repositories whose `.git/config` defines `core.fsmonitor`, `core.sshCommand`, `core.pager`, filter/diff drivers, a credential helper and `remote.*.uploadpack`, plus hooks (`GitRepositoryReaderTests.HostileConfigurationAndHooks_ExecuteNothingAndChangeNothing`; GIT-006 covers commit/checkout too); the process-API guard runs over the Git module |
 | Path traversal / symlink escape | Analysis.Tests (REPO-001) |
 | XML bombs, deep JSON | Analysis.Tests (ANALYSIS-003; ANALYSIS-009: `SafeJsonTests` depth limit, `NodeProjectSystemAnalyzerTests` deep/oversized/invalid manifests) |
 | No network with AI disabled | IntegrationTests with a guarded `HttpMessageHandler` (AI-001) |

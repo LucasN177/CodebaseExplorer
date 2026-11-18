@@ -1,5 +1,6 @@
 using CodebaseExplorer.Application.Analysis;
 using CodebaseExplorer.Application.Common;
+using CodebaseExplorer.Application.Git;
 using CodebaseExplorer.Application.Repositories;
 using CodebaseExplorer.Contracts.Repositories;
 using CodebaseExplorer.Desktop.Services;
@@ -71,7 +72,7 @@ public sealed class RepositoryOverviewTests : IAsyncLifetime
         var analyzer = Substitute.For<IRepositoryAnalyzer>();
         analyzer.AnalyzeAsync(default!, default, Arg.Any<CancellationToken>()).ReturnsForAnyArgs(
             Task.FromResult<Result<RepositoryAnalysis>>(ApplicationError.Failure("analysis.failed", "boom")));
-        await new ImportLocalRepository(Get<IRepositoryRootValidator>(), analyzer, Get<IArchitectureModelStore>(), TimeProvider.System)
+        await new ImportLocalRepository(Get<IRepositoryRootValidator>(), analyzer, Get<IArchitectureModelStore>(), Get<IGitRepositoryReader>(), Get<IGitActivityStore>(), TimeProvider.System)
             .ExecuteAsync(FixturePath, null, Token);
 
         var overview = (await Get<GetRepositoryOverview>().ExecuteAsync(imported.RepositoryId, Token)).Value;

@@ -21,4 +21,7 @@ public sealed record RecentRepositoryDto
     public DateTimeOffset? LastRunAt { get; init; }
 
     public DateTimeOffset? LastOpenedAt { get; init; }
+
+    /// <summary>Remote URL (without credentials) of an app-managed clone (GIT-003); <see langword="null"/> for a local folder.</summary>
+    public string? RemoteUrl { get; init; }
 }

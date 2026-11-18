@@ -15,6 +15,14 @@ export function nodeScale(size: number): number {
 }
 
 /**
+ * Strength of the Git-activity overlay (GIT-005) from a node's file changes: -1 without Git data (no halo), otherwise
+ * 0 … 1 growing with log10(changes), reaching 1 at 1,000 file changes. Absolute, so values compare across views.
+ */
+export function activityHeat(changeCount: number | undefined): number {
+  return changeCount === undefined ? -1 : Math.min(1, Math.log10(1 + Math.max(0, changeCount)) / 3);
+}
+
+/**
  * Ecosystem family used for the node color. Projects use `dotnet`/`node`/`python`/`other`, packages
  * `nuget`/`npm`/`pypi`/`dotnet-framework`/`unknown` (Domain KindTokens); both map to one palette entry.
  */
@@ -47,6 +55,8 @@ export function nodeElement(node: GraphNode): ElementDefinition {
       ecosystem: ecosystemFamily(node.ecosystem),
       size: node.metrics.size,
       scale: nodeScale(node.metrics.size),
+      changes: node.metrics.changeCount ?? -1,
+      heat: activityHeat(node.metrics.changeCount),
       missing: node.badges.includes('missing') ? 1 : 0,
       expandable: node.isExpandable ? 1 : 0,
       expanded: node.isExpanded ? 1 : 0,

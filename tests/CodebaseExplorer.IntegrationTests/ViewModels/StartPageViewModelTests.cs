@@ -198,7 +198,7 @@ public sealed class StartPageViewModelTests : IAsyncLifetime
 
             Assert.Equal(
                 [ImportStageState.Done, ImportStageState.Done, ImportStageState.Active, ImportStageState.Pending,
-                 ImportStageState.Pending, ImportStageState.Pending, ImportStageState.Pending],
+                 ImportStageState.Pending, ImportStageState.Pending, ImportStageState.Pending, ImportStageState.Pending],
                 viewModel.Stages.Select(s => s.State));
             Assert.Equal("2 / 4", viewModel.ProgressText);
             Assert.Equal(50, viewModel.ProgressPercent);
@@ -299,7 +299,10 @@ public sealed class StartPageViewModelTests : IAsyncLifetime
             _app.Services.GetRequiredService<IRepositoryRootValidator>(),
             analyzer,
             _app.Services.GetRequiredService<IArchitectureModelStore>(),
+            _app.Services.GetRequiredService<CodebaseExplorer.Application.Git.IGitRepositoryReader>(),
+            _app.Services.GetRequiredService<CodebaseExplorer.Application.Git.IGitActivityStore>(),
             TimeProvider.System),
+        _app.Services.GetRequiredService<CodebaseExplorer.Application.Git.ImportRemoteRepository>(),
         _app.Services.GetRequiredService<ListRecentRepositories>(),
         _app.Services.GetRequiredService<OpenRepository>(),
         _app.Services.GetRequiredService<RemoveRepository>(),

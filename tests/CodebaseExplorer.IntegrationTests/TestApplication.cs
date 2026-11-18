@@ -57,9 +57,19 @@ internal sealed class TestApplication : IAsyncDisposable
         SqliteConnection.ClearAllPools();
         try
         {
+            // Clones (GIT-003) contain Git's read-only object files, which block deletion on Windows.
+            if (Directory.Exists(_root))
+            {
+                var options = new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint };
+                foreach (var file in Directory.EnumerateFiles(_root, "*", options))
+                {
+                    File.SetAttributes(file, FileAttributes.Normal);
+                }
+            }
+
             Directory.Delete(_root, recursive: true);
         }
-        catch (IOException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             // Best effort: a lingering handle must not fail the test.
         }

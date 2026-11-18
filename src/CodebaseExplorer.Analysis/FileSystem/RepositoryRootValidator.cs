@@ -57,8 +57,12 @@ internal sealed class RepositoryRootValidator(IApplicationPaths applicationPaths
                 "A file-system root cannot be analyzed; select the repository folder."), resolved);
         }
 
+        // App-managed clones (GIT-003) are the one kind of repository inside the data directory: a folder strictly
+        // below the clones directory is allowed, the clones directory itself and everything else is not.
         var dataDirectory = PathContainment.Normalize(applicationPaths.DataDirectory);
-        if (PathContainment.IsWithin(resolved, dataDirectory) || PathContainment.IsWithin(dataDirectory, resolved))
+        var clonesDirectory = PathContainment.Normalize(applicationPaths.ClonesDirectory);
+        var isClone = PathContainment.IsWithin(resolved, clonesDirectory) && !string.Equals(resolved, clonesDirectory, PathContainment.Comparison);
+        if (!isClone && (PathContainment.IsWithin(resolved, dataDirectory) || PathContainment.IsWithin(dataDirectory, resolved)))
         {
             return Error(ApplicationError.Validation(RepositoryErrorCodes.OverlapsAppData,
                 "The folder contains or lies inside Codebase Explorer's own data directory."), resolved);

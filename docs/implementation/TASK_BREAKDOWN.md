@@ -1,6 +1,6 @@
 # Task Breakdown — Codebase Explorer
 
-> Status: **living document** · Last reviewed: 2026-11-17
+> Status: **living document** · Last reviewed: 2026-11-18
 
 Tasks are small enough to be handed to a single Claude Code session. Work through them using the
 workflow in [DEVELOPMENT_GUIDE.md](../development/DEVELOPMENT_GUIDE.md#3-feature-workflow) and finish
@@ -25,7 +25,7 @@ Status overview (keep in sync):
 | M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 9 |
 | M4 Polyglot & scale | 11 | 11 |
-| M5 Git | 7 | 0 |
+| M5 Git | 7 | 7 |
 | M6 Export | 2 | 0 |
 | M7 Local AI | 7 | 0 |
 | M8 Hardening & release | 4 | 0 |
@@ -330,7 +330,7 @@ Status overview (keep in sync):
 - **Projects:** Application, Desktop
 - **Description:** Start page lists recent repositories (name, path, last run status/date); opening loads the stored model; "Re-analyze" action; "Remove" deletes data (cascade).
 - **Acceptance criteria:** Reopen shows the graph without running analysis; remove deletes all rows of the repository and, for app-managed clones (from M5), the clone directory after confirmation.
-- **Note:** Use cases `ListRecentRepositories`, `OpenRepository`, `RemoveRepository` (Contracts `RecentRepositoryDto`, `OpenRepositoryDto`, `RunStatuses`); store methods `ListRepositoriesAsync`, `MarkOpenedAsync`, `DeleteRepositoryAsync` (single `DELETE`, FK cascade; invalidates the model cache). A successful import also sets `LastOpenedAt`. Start page: list with name, path, last run status/date; *Open* (disabled without a stored model), *Re-analyze* (full import of the folder, cancellable), *Remove* with an inline confirmation (no dialog service needed); removing the open repository clears the session and the explorer returns to its empty state. `RepositorySession` now holds `OpenRepositoryDto`; `PageViewModel.ActivateAsync` refreshes a page when the shell shows it. App-managed clones do not exist before M5, so no clone directory is deleted yet. Reopening after a restart is covered by an integration test with a second composition root; manually verified on Windows (2026-11-18): list, Open, Re-analyze and the Remove confirmation (Keep) work against the real database.
+- **Note:** Use cases `ListRecentRepositories`, `OpenRepository`, `RemoveRepository` (Contracts `RecentRepositoryDto`, `OpenRepositoryDto`, `RunStatuses`); store methods `ListRepositoriesAsync`, `MarkOpenedAsync`, `DeleteRepositoryAsync` (single `DELETE`, FK cascade; invalidates the model cache). A successful import also sets `LastOpenedAt`. Start page: list with name, path, last run status/date; *Open* (disabled without a stored model), *Re-analyze* (full import of the folder, cancellable), *Remove* with an inline confirmation (no dialog service needed); removing the open repository clears the session and the explorer returns to its empty state. `RepositorySession` now holds `OpenRepositoryDto`; `PageViewModel.ActivateAsync` refreshes a page when the shell shows it. App-managed clones do not exist before M5; since GIT-003 removing a clone also deletes its clone directory. Reopening after a restart is covered by an integration test with a second composition root; manually verified on Windows (2026-11-18): list, Open, Re-analyze and the Remove confirmation (Keep) work against the real database.
 
 ### UI-004 — Repository overview page
 - **Priority:** P1 · **Milestone:** M2 · **Status:** done
@@ -540,53 +540,60 @@ Status overview (keep in sync):
 ## M5 — Git integration
 
 ### GIT-006 — Spike: LibGit2Sharp verification
-- **Priority:** P0 · **Milestone:** M5 · **Status:** todo · **Spike (time-box 1 day)**
+- **Priority:** P0 · **Milestone:** M5 · **Status:** done · **Spike (time-box 1 day)**
 - **Prerequisites:** —
 - **Projects:** Git (spike), docs
 - **Description:** Verify LibGit2Sharp 0.32.x: native binaries on all RIDs, no hook/fsmonitor execution, HTTPS clone with token, shallow clone, performance of history walk; SSH status (OPD-02).
 - **Acceptance criteria:** GIT_INTEGRATION.md §3 table updated with verified facts.
+- **Note:** Done 2026-11-18 (GIT_INTEGRATION.md §3.1). LibGit2Sharp 0.32.0 + NativeBinaries 2.0.324 confirmed: native binaries for all target RIDs (glibc and musl); hooks, fsmonitor, filter/diff drivers, credential helpers and `core.sshCommand` are not executed. **Finding:** the native build supports SSH by starting the system `ssh` executable, so SSH URLs must be rejected by the app (OPD-02 stays open, options updated in FEATURE_ROADMAP.md). Shallow clones work over HTTPS only (not the local transport); the product clones full history because activity statistics need it. HTTPS clone verified for GitHub and GitLab; token clone only through the opt-in test (no private test repository available). History walk on 2,837 commits: 1.4 s without, 26.5 s with line counts — GIT-004 counts lines without rename detection and in parallel. Proof code: `LibGit2SharpVerificationTests` (two opt-in `Category=Network` tests). Package referenced by the Git module.
 
 ### GIT-001 — Git ports and LibGit2Sharp adapter (detect, snapshot)
-- **Priority:** P0 · **Milestone:** M5 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M5 · **Status:** done
 - **Prerequisites:** GIT-006
 - **Projects:** Application (ports), Git, IntegrationTests, Directory.Packages.props
 - **Description:** `IGitRepositoryReader.TryOpenAsync/ReadSnapshotAsync`; worktrees and `.git` files supported; sanitized remotes.
 - **Acceptance criteria:** Tests with `GitRepositoryBuilder`; hostile `.git/config` executes nothing.
+- **Note:** Done 2026-11-18. Port `IGitRepositoryReader` (Application/Git): `OpenAsync(path)` discovers the working tree containing the folder (also a parent, linked worktrees, `.git` files) and returns `GitRepositoryInfo` with `RootPrefix` (analyzed folder relative to the working tree) — `git.not-a-repository` (NotFound, also for bare repositories) or `git.read-failed`; `ReadSnapshotAsync` returns HEAD (null when unborn), branch (null when detached), uncommitted changes (untracked count, ignored files do not) and remotes sanitized by `GitRemoteUrls.Sanitize` (user info, query, fragment and the scp user part removed). Adapter `LibGit2RepositoryReader` (registered by `AddGitModule`) runs LibGit2Sharp on the thread pool and never writes. Tests: `GitRepositoryReaderTests` (builder repositories incl. worktree, subfolder, bare, corrupt config, detached, unborn, dirty variants, remotes; hostile config + hooks: no marker, no file changed; process-API guard over the Git module), `GitRemoteUrlsTests`. The reader is not used by the import yet (GIT-005).
 
 ### GIT-002 — GitRepositoryBuilder test helper
-- **Priority:** P0 · **Milestone:** M5 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M5 · **Status:** done
 - **Prerequisites:** GIT-006
 - **Projects:** TestRepositories
 - **Description:** Fluent builder creating temporary Git repositories with commits, authors, branches, renames; cleans up reliably (read-only files on Windows).
 - **Acceptance criteria:** Used by GIT-001/003/004 tests; no nested `.git` committed.
+- **Note:** Done 2026-11-18. `TestRepositories/Git`: `GitRepositoryBuilder` (`Create`, `Write`/`WriteLines`/`Delete`/`Rename` + `Commit` with explicit `GitTestAuthor` and time — default one hour after the previous commit, starting 2026-01-01 —, `Branch`, `Checkout`, `Merge` (no fast-forward), `DetachHead`, `Remote`, `AppendConfig`, `Hook`, `Worktree`) and `GitTestRepository` (`Commits`, `WorktreePath`, `CreateBareClone` for local-transport clone tests; `Dispose` deletes everything incl. read-only object files). Repositories always start on `main`, independent of the machine's `init.defaultBranch`. Built with LibGit2Sharp (test-only reference of TestRepositories). `GitRepositoryBuilderTests`, including a check that no fixture contains a nested `.git`.
 
 ### GIT-003 — HTTPS clone of GitHub/GitLab remotes
-- **Priority:** P0 · **Milestone:** M5 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M5 · **Status:** done
 - **Prerequisites:** GIT-001
 - **Projects:** Application, Git, IntegrationTests
 - **Description:** URL validation/sanitization, clone into `<data>/clones/<host>/<owner>/<repo>`, progress and cancellation, token via credentials callback (in-memory only until OPD-03), update (fetch + checkout) for app-managed clones, no submodules.
 - **Acceptance criteria:** Rejected URL schemes tested; cancellation leaves no half-cloned directory registered.
+- **Note:** Done 2026-11-18. `GitRemoteUrls.ParseCloneUrl` (HTTPS only, safe segments, no query/fragment, credentials stripped and reported; github.com/gitlab.com recognized, everything else `OtherGitRemote`), port `IGitRemoteCloner` with adapter `Cloning/LibGit2RemoteCloner` (full clone into `<target>.partial`, renamed when complete; token only via the credentials callback, asked once; progress `Receiving`/`CheckingOut`; cancellation through the transfer callback; no submodules, their presence reported; update = fetch + forced checkout + hard reset; every path must lie inside the clones directory), use case `ImportRemoteRepository` (`ExistingCloneAction` Ask/Update/Reclone, then the regular import with `RepositoryLocation.Cloned`; Contracts `RemoteRepositoryImportDto`). The root validator now accepts folders below the clones directory (not the data directory otherwise). `RemoveRepository` deletes the clone directory of app-managed clones (the open part of REPO-005). Tests: `GitRemoteUrlsTests` (accepted/rejected URLs incl. `ext::`, scp-like, local paths), `GitRemoteClonerTests` (local transport, test-only: branches, unknown branch, unreachable remote, cancellation, stale partial, existing target, paths outside the clones directory, submodules, token never written, update, delete), `ImportRemoteRepositoryTests` (substituted cloner: registration as clone, nothing registered after cancel/failure, Ask/Update/Reclone, remove deletes clones only). Opt-in network test `RemoteImportNetworkTests`: clone → analyze → update of a public GitHub and GitLab repository, passed 2026-11-18. Private repositories with a token: not verified (no test token).
 
 ### GIT-004 — File activity statistics
-- **Priority:** P0 · **Milestone:** M5 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M5 · **Status:** done
 - **Prerequisites:** GIT-001, GIT-002
 - **Projects:** Git, IntegrationTests
 - **Description:** Single-pass history walk within `GitHistoryWindow`: per-file commit count, distinct authors (count only), first/last change, lines added/deleted.
 - **Acceptance criteria:** Correct numbers on builder-created histories; bounded runtime on the performance fixture.
+- **Note:** Done 2026-11-18. `IGitRepositoryReader.ReadFileActivityAsync(info, GitHistoryWindow, progress)` → `GitFileActivityReport` (files relative to the analyzed folder, `CommitsScanned`, `OldestCommitAt`, `ReachedCommitLimit`). `History/FileActivityWalker`: commits from HEAD in time order within the window (default 5,000 commits / 365 days, committer time), merge commits skipped, diffs against the first parent without rename detection, binary files count commits but no lines, distinct authors by case-insensitive e-mail (kept only during the walk); commits are diffed in parallel (≤ 8 workers, one `Repository` each) and merged deterministically. Tests: `GitFileActivityTests` (hand-computed numbers incl. rename = delete + add, merges, commit limit, since-date, subfolder, author e-mail case, binary, empty repository, 60-commit determinism + progress, cancellation). Runtime: 8.8 s on 2,511 commits of `libgit2/libgit2sharp` (TEST_STRATEGY.md §8). **Open:** "bounded runtime on the performance fixture" waits for QA-002 (M4); the window bounds the work meanwhile.
 
 ### GIT-005 — Persist Git data and activity overlay
-- **Priority:** P0 · **Milestone:** M5 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M5 · **Status:** done
 - **Prerequisites:** GIT-004, STORE-004
 - **Projects:** Storage, Application, Graph, Desktop
 - **Description:** `GitSnapshots`/`GitChanges` tables and migration; aggregation to projects/modules; activity overlay in graph and inspector.
 - **Acceptance criteria:** Overlay matches persisted numbers; repositories without Git work unchanged.
+- **Note:** Done 2026-11-18. Tables `GitSnapshots`/`GitChanges` (migration `AddGitActivity`, `GitActivityStore` behind the new port `IGitActivityStore`; statistics keyed by file id, so a model replacement cascades them away). `ImportLocalRepository` reads the snapshot before the analysis (run `CommitSha`/`Branch` — the run history now shows them) and the activity after it (stage `ReadingGitHistory`), stores both after the model; unreadable repositories add a `git.read-failed` warning, folders without Git nothing. The walker restricts diffs to the analyzed subfolder (pathspec). Aggregation `GitActivityIndex` (Application): **file changes** = sum of the files' commit counts per project / module (entity declarations of the subtree) / entity; shared by `GetGraphView` (`GraphQuery.IncludeActivity` → `GraphNodeMetricsDto.ChangeCount`) and `GetElementDetails` (`ElementDetailsDto.Activity`). Overlay: *Git activity* toggle in the explorer (not persisted), halo via Cytoscape `underlay-*` growing with `log10(1 + changes)`; inspector line "N file changes in M files · +a −d lines · last change … · window …". Tests: `GitActivityEndToEndTests` (persisted snapshot and numbers, overlay and inspector equal an independent recomputation from the stored rows incl. module and type nodes, no-Git folder unchanged, unreadable repository = warning, re-import replaces, remove deletes), explorer view-model tests (toggle patches in/out, hint without Git data, inspector text), Vitest `activityHeat` and palette contrast. **Not verified:** the overlay's look in the running app (no manual UI check in this session).
 
 ### UI-008 — Clone dialog
-- **Priority:** P0 · **Milestone:** M5 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M5 · **Status:** done
 - **Prerequisites:** GIT-003
 - **Projects:** Desktop
 - **Description:** URL, optional branch and token (masked), progress, cancel, existing-clone handling.
 - **Acceptance criteria:** Token never displayed after entry and never logged (log test).
+- **Note:** Done 2026-11-18. Implemented as an inline form on the start page (*Clone remote repository…*), like the inline remove confirmation of REPO-005 — there is no dialog service; a modal window can follow if wanted. `StartPageViewModel` (partial `StartPageViewModel.Clone.cs`) calls `ImportRemoteRepository`: address, optional branch, token in a masked `TextBox` (`PasswordChar`) that is emptied as soon as the clone starts (the token stays in a private field only for the update/re-clone choice and is dropped afterwards); credentials typed into the address are removed from the field as well; progress *Receiving objects / Checking out files* then the analysis stages in the shared panel; cancel; existing clone → *Update existing clone* / *Clone again*; status mentions removed URL credentials and uncloned submodules. Recent repositories show *Clone of <url>* and the remove confirmation says that the clone is deleted (`RecentRepositoryDto.RemoteUrl`). Logging: error codes and exception types only. Tests: `CloneFormViewModelTests` (success, token emptied at start, failures and an exception containing the token — token in no log entry, message, notification or field —, existing clone + update with the entered token, cancel registers nothing, invalid address, command state). **Not verified:** the form in the running app (no manual UI check in this session).
 
 ---
 

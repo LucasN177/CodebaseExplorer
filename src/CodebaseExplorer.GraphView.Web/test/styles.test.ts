@@ -19,9 +19,9 @@ function contrast(a: string, b: string): number {
 const modes: ThemeMode[] = ['light', 'dark'];
 
 describe('palettes', () => {
-  it.each(modes)('%s: node, missing and selection colors have at least 3:1 contrast to the background', (mode) => {
+  it.each(modes)('%s: node, missing, selection and activity colors have at least 3:1 contrast to the background', (mode) => {
     const p = palettes[mode];
-    for (const color of [...Object.values(p.ecosystems), p.missing, p.selection]) {
+    for (const color of [...Object.values(p.ecosystems), p.missing, p.selection, p.activity]) {
       expect(contrast(color, p.background), color).toBeGreaterThanOrEqual(3);
     }
     expect(contrast(p.text, p.background)).toBeGreaterThanOrEqual(4.5);
@@ -47,6 +47,7 @@ describe('stylesheet', () => {
       'node[ecosystem = "node"]',
       'node[ecosystem = "python"]',
       '.dimmed',
+      'node[heat >= 0]',
     ]));
   });
 });

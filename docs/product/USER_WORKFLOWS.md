@@ -11,7 +11,7 @@ capabilities ([MVP_SCOPE.md](MVP_SCOPE.md)) it depends on.
 
 ## WF-01 Import a local repository
 
-**Persona:** Nina (onboarding) · **Capabilities:** MVP-01, MVP-02, MVP-03 · **Status:** core flow (folder picker → progress with stages and cancel → overview → explorer) implemented (UI-002; no Git detection yet), *Recent repositories* with open (no re-analysis), re-analyze and remove implemented (REPO-005), overview page with *Open Architecture Explorer* implemented (UI-004; the app now navigates there after an import), *Clone from URL* and Git detection in M5
+**Persona:** Nina (onboarding) · **Capabilities:** MVP-01, MVP-02, MVP-03 · **Status:** core flow (folder picker → progress with stages and cancel → overview → explorer) implemented (UI-002; no Git detection yet), *Recent repositories* with open (no re-analysis), re-analyze and remove implemented (REPO-005), overview page with *Open Architecture Explorer* implemented (UI-004; the app now navigates there after an import), Git detection (run commit/branch, activity) implemented (GIT-005), *Clone from URL* see WF-02
 
 1. Nina starts Codebase Explorer. The start page shows *Open local folder*, *Clone from URL* and
    *Recent repositories*.
@@ -35,7 +35,7 @@ capabilities ([MVP_SCOPE.md](MVP_SCOPE.md)) it depends on.
 
 ## WF-02 Clone and import a remote repository
 
-**Persona:** Max (consultant) · **Capabilities:** MVP-01, MVP-11 · **Status:** planned (M5)
+**Persona:** Max (consultant) · **Capabilities:** MVP-01, MVP-11 · **Status:** implemented (GIT-003, UI-008): the start page has an inline *Clone remote repository…* form (address, optional branch, masked token) instead of a separate dialog window; progress (receiving objects, checking out, then the analysis stages) and cancel use the import progress panel; an existing clone offers *Update existing clone* or *Clone again*. Manually verified: not yet (UI tested through view-model tests only).
 
 1. Max chooses *Clone from URL* and pastes `https://github.com/org/repo.git` or a GitLab URL.
 2. Optional: branch name; for private repositories a personal access token (stored according to

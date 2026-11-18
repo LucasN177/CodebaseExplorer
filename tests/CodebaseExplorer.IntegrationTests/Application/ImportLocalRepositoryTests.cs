@@ -1,5 +1,6 @@
 using CodebaseExplorer.Application.Analysis;
 using CodebaseExplorer.Application.Common;
+using CodebaseExplorer.Application.Git;
 using CodebaseExplorer.Application.Graph;
 using CodebaseExplorer.Application.Repositories;
 using CodebaseExplorer.Contracts.Graph;
@@ -29,7 +30,7 @@ public sealed class ImportLocalRepositoryTests : IAsyncLifetime
         _validator.Validate(Arg.Any<string>()).Returns(Result<RepositoryRoot>.Success(new RepositoryRoot(FolderPath)));
         _analyzer.AnalyzeAsync(Arg.Any<AnalysisRequest>(), Arg.Any<IProgress<AnalysisProgress>?>(), Arg.Any<CancellationToken>())
             .Returns(call => Task.FromResult(EmptyAnalysis(call.Arg<AnalysisRequest>())));
-        _import = new ImportLocalRepository(_validator, _analyzer, Store, TimeProvider.System);
+        _import = new ImportLocalRepository(_validator, _analyzer, Store, _app.Services.GetRequiredService<IGitRepositoryReader>(), _app.Services.GetRequiredService<IGitActivityStore>(), TimeProvider.System);
     }
 
     private IArchitectureModelStore Store => _app.Services.GetRequiredService<IArchitectureModelStore>();
@@ -169,7 +170,7 @@ public sealed class ImportLocalRepositoryTests : IAsyncLifetime
     [Fact]
     public async Task GetGraphView_UnknownOrInvalidRepository_IsRejected()
     {
-        var getGraph = new GetGraphView(Store, Substitute.For<IGraphProjector>());
+        var getGraph = new GetGraphView(Store, _app.Services.GetRequiredService<IGitActivityStore>(), Substitute.For<IGraphProjector>());
 
         var notAnalyzed = await getGraph.ExecuteAsync(
             new GraphQuery { RepositoryId = Guid.NewGuid().ToString("N") }, TestContext.Current.CancellationToken);
@@ -188,7 +189,7 @@ public sealed class ImportLocalRepositoryTests : IAsyncLifetime
         var expected = new GraphViewDto { RepositoryId = summary.RepositoryId, Level = GraphLevels.Project };
         projector.Project(Arg.Any<ArchitectureModel>(), Arg.Any<GraphQuery>()).Returns(Result<GraphViewDto>.Success(expected));
 
-        var result = await new GetGraphView(Store, projector).ExecuteAsync(
+        var result = await new GetGraphView(Store, _app.Services.GetRequiredService<IGitActivityStore>(), projector).ExecuteAsync(
             new GraphQuery { RepositoryId = summary.RepositoryId }, TestContext.Current.CancellationToken);
 
         Assert.Same(expected, result.Value);

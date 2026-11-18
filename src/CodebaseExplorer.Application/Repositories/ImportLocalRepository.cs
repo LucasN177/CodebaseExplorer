@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using CodebaseExplorer.Application.Analysis;
 using CodebaseExplorer.Application.Common;
+using CodebaseExplorer.Application.Git;
 using CodebaseExplorer.Contracts.Repositories;
 using CodebaseExplorer.Domain.Model;
 using CodebaseExplorer.Domain.Repositories;
@@ -16,17 +17,33 @@ namespace CodebaseExplorer.Application.Repositories;
 /// <remarks>
 /// Failed and cancelled runs are recorded, but the stored model is left unchanged (a previous model of
 /// the folder stays available); on cancellation <see cref="OperationCanceledException"/> propagates.
+/// If the folder is inside a Git working tree (GIT-005, GIT_INTEGRATION.md §5), the run records HEAD and branch, and
+/// the snapshot and per-file activity are stored with the model. Git problems never fail the import: they become
+/// warnings of the run, and the model is saved without Git data.
 /// </remarks>
 public sealed class ImportLocalRepository(
     IRepositoryRootValidator rootValidator,
     IRepositoryAnalyzer analyzer,
     IArchitectureModelStore store,
+    IGitRepositoryReader gitReader,
+    IGitActivityStore gitStore,
     TimeProvider timeProvider)
 {
     private readonly ConcurrentDictionary<string, byte> _running = new(RootPathComparer.Instance);
 
-    public async Task<Result<RepositoryImportSummaryDto>> ExecuteAsync(
+    public Task<Result<RepositoryImportSummaryDto>> ExecuteAsync(
         string path,
+        IProgress<AnalysisProgress>? progress,
+        CancellationToken cancellationToken) =>
+        ExecuteAsync(path, location: null, progress, cancellationToken);
+
+    /// <summary>
+    /// Imports a folder; a repository registered for the first time gets <paramref name="location"/> (for app-managed
+    /// clones, GIT-003) or <see cref="RepositoryLocation.Local"/>.
+    /// </summary>
+    internal async Task<Result<RepositoryImportSummaryDto>> ExecuteAsync(
+        string path,
+        Func<RepositoryRoot, RepositoryLocation>? location,
         IProgress<AnalysisProgress>? progress,
         CancellationToken cancellationToken)
     {
@@ -44,7 +61,7 @@ public sealed class ImportLocalRepository(
 
         try
         {
-            return await ImportAsync(root, progress, cancellationToken);
+            return await ImportAsync(root, location, progress, cancellationToken);
         }
         finally
         {
@@ -53,20 +70,38 @@ public sealed class ImportLocalRepository(
     }
 
     private async Task<Result<RepositoryImportSummaryDto>> ImportAsync(
-        RepositoryRoot root, IProgress<AnalysisProgress>? progress, CancellationToken cancellationToken)
+        RepositoryRoot root, Func<RepositoryRoot, RepositoryLocation>? location, IProgress<AnalysisProgress>? progress, CancellationToken cancellationToken)
     {
         var started = timeProvider.GetUtcNow();
         var previous = await store.FindRepositoryByRootAsync(root.FullPath, cancellationToken);
         var repository = previous
-            ?? Repository.Register(NameOf(root), RepositoryLocation.Local(root.FullPath), started);
+            ?? Repository.Register(NameOf(root), location?.Invoke(root) ?? RepositoryLocation.Local(root.FullPath), started);
 
-        var run = AnalysisRun.Create(repository.Id, previous is null ? AnalysisTrigger.Initial : AnalysisTrigger.Manual, started);
+        var git = await ReadGitSnapshotAsync(root, cancellationToken);
+        var run = AnalysisRun.Create(
+            repository.Id, previous is null ? AnalysisTrigger.Initial : AnalysisTrigger.Manual, started, git.Snapshot?.HeadCommitSha, git.Snapshot?.Branch);
         run.Start();
 
         Result<RepositoryAnalysis> result;
+        GitFileActivityReport? activity = null;
         try
         {
             result = await analyzer.AnalyzeAsync(new AnalysisRequest(repository.Id, root, run.Id), progress, cancellationToken);
+            if (result.IsSuccess && git.Repository is not null && git.Snapshot?.HeadCommitSha is not null)
+            {
+                progress?.Report(new AnalysisProgress(AnalysisStage.ReadingGitHistory, 0, 1));
+                var read = await gitReader.ReadFileActivityAsync(git.Repository, GitHistoryWindow.Default(started), null, cancellationToken);
+                if (read.TryGetValue(out var report, out var readError))
+                {
+                    activity = report;
+                }
+                else
+                {
+                    git.Diagnostics.Add(GitWarning(readError));
+                }
+
+                progress?.Report(new AnalysisProgress(AnalysisStage.ReadingGitHistory, 1, 1));
+            }
         }
         catch (OperationCanceledException)
         {
@@ -90,14 +125,59 @@ public sealed class ImportLocalRepository(
         }
 
         run.Report(analysis.Diagnostics);
+        run.Report(git.Diagnostics);
         run.Complete(timeProvider.GetUtcNow(), analysis.Statistics);
         repository.MarkAnalyzed(run);
 
         progress?.Report(new AnalysisProgress(AnalysisStage.Saving, 0, 1));
         await store.SaveRunAsync(repository, run, analysis.Model, cancellationToken);
+        if (git.Snapshot is not null && activity is not null)
+        {
+            await gitStore.SaveAsync(repository.Id, run.Id, git.Snapshot, activity, started, cancellationToken);
+        }
+
         await store.MarkOpenedAsync(repository.Id, timeProvider.GetUtcNow(), cancellationToken);
         progress?.Report(new AnalysisProgress(AnalysisStage.Saving, 1, 1));
         return Summarize(repository, run, analysis.Model);
+    }
+
+    /// <summary>Detects the Git working tree and reads its snapshot; a folder without Git yields an empty context.</summary>
+    private async Task<GitContext> ReadGitSnapshotAsync(RepositoryRoot root, CancellationToken cancellationToken)
+    {
+        var context = new GitContext();
+        var opened = await gitReader.OpenAsync(root.FullPath, cancellationToken);
+        if (!opened.TryGetValue(out var repository, out var openError))
+        {
+            if (openError.Kind != ErrorKind.NotFound)
+            {
+                context.Diagnostics.Add(GitWarning(openError));
+            }
+
+            return context;
+        }
+
+        var snapshot = await gitReader.ReadSnapshotAsync(repository, cancellationToken);
+        if (!snapshot.TryGetValue(out var info, out var snapshotError))
+        {
+            context.Diagnostics.Add(GitWarning(snapshotError));
+            return context;
+        }
+
+        context.Repository = repository;
+        context.Snapshot = info;
+        return context;
+    }
+
+    private static AnalysisDiagnostic GitWarning(ApplicationError error) =>
+        new(DiagnosticSeverity.Warning, error.Code, $"Git data was not read: {error.Message}");
+
+    private sealed class GitContext
+    {
+        public GitRepositoryInfo? Repository { get; set; }
+
+        public GitSnapshotInfo? Snapshot { get; set; }
+
+        public List<AnalysisDiagnostic> Diagnostics { get; } = [];
     }
 
     private static RepositoryImportSummaryDto Summarize(Repository repository, AnalysisRun run, ArchitectureModel model) => new()

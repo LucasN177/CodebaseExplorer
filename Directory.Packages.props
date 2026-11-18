@@ -51,6 +51,11 @@
     <PackageVersion Include="Tomlyn" Version="2.11.1" />
   </ItemGroup>
 
+  <ItemGroup Label="Git">
+    <!-- In-process Git: runs no hooks, fsmonitor or credential helpers; HTTPS only, no SSH (GIT-006, GIT_INTEGRATION.md §3). -->
+    <PackageVersion Include="LibGit2Sharp" Version="0.32.0" />
+  </ItemGroup>
+
   <ItemGroup Label="Testing">
     <PackageVersion Include="xunit.v3" Version="4.0.3" />
     <PackageVersion Include="NSubstitute" Version="6.2.0" />

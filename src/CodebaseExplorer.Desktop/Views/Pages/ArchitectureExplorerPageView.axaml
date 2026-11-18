@@ -27,6 +27,9 @@
                    IsVisible="{Binding RepositoryName, Converter={x:Static ObjectConverters.IsNotNull}}" />
         <!-- Layout switcher (GRAPH-005); the choice is stored in the user settings -->
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasGraph}">
+          <!-- Git-activity overlay (GIT-005): halo by file changes; off by default, not stored -->
+          <ToggleSwitch IsChecked="{Binding ShowActivity}" OnContent="Git activity" OffContent="Git activity"
+                        AutomationProperties.Name="Show Git activity" />
           <!-- Back and the repository level (GRAPH-009) -->
           <Button Content="‹ Back" Command="{Binding BackCommand}" ToolTip.Tip="Restore the previous view (expansions, filters, neighborhood)"
                   AutomationProperties.Name="Back" />
@@ -38,6 +41,8 @@
                     AutomationProperties.Name="Graph layout" />
         </StackPanel>
       </DockPanel>
+      <TextBlock Text="{Binding ActivityHint}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"
+                 IsVisible="{Binding ActivityHint, Converter={x:Static ObjectConverters.IsNotNull}}" />
       <!-- Search (Ctrl/Cmd+K), filters and neighborhood view (GRAPH-007) -->
       <DockPanel IsVisible="{Binding HasGraph}" Margin="0,8,0,0">
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" Margin="8,0,0,0">
@@ -182,6 +187,10 @@
                    IsVisible="{Binding InspectorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
         <StackPanel Spacing="8" IsVisible="{Binding HasDetails}">
           <TextBlock Text="{Binding InspectorMetrics}" Opacity="0.8" FontSize="12" />
+          <StackPanel IsVisible="{Binding HasInspectorActivity}">
+            <TextBlock Text="Git activity" Opacity="0.6" FontSize="11" />
+            <TextBlock Text="{Binding InspectorActivity}" TextWrapping="Wrap" FontSize="12" />
+          </StackPanel>
           <ItemsControl ItemsSource="{Binding InspectorFacts}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="pages:InspectorFact">

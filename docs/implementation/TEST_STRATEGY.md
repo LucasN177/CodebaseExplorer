@@ -66,7 +66,8 @@ Location: `tests/CodebaseExplorer.TestRepositories/Repositories/<name>/`; locate
 - Fixtures are **data**: excluded from compilation, never built/restored/executed.
 - Each fixture has `EXPECTED.md` (projects, modules, entities, relationships with locations,
   external dependencies, expected diagnostics).
-- Git histories are generated at test time (`GitRepositoryBuilder`, GIT-002).
+- Git histories are generated at test time (`GitRepositoryBuilder` in `TestRepositories/Git`, GIT-002): explicit
+  authors and commit times, branches, merges, renames, worktrees, hostile config and hooks; no `.git` is committed.
 - Large performance repositories are **generated** (QA-002), never committed.
 
 Planned fixtures:
@@ -102,7 +103,8 @@ Planned fixtures:
 ### 5.1 Hostile fixtures and the zero-execution harness (QA-003)
 
 Every ecosystem that can carry executable build or install logic gets a hostile fixture whose payloads only
-write `MARKER-*.txt` files when executed (`dotnet-hostile` for .NET, `node-hostile` for npm since ANALYSIS-009, `python-hostile` since ANALYSIS-011; Git follows in GIT-001). Tests use `ZeroExecutionHarness`
+write `MARKER-*.txt` files when executed (`dotnet-hostile` for .NET, `node-hostile` for npm since ANALYSIS-009, `python-hostile` since ANALYSIS-011, builder-created Git repositories with hostile `.git/config` and
+hooks since GIT-001 — Git histories are never committed as fixtures). Tests use `ZeroExecutionHarness`
 (`tests/CodebaseExplorer.IntegrationTests/Security`):
 
 1. `CopyFixture(name)` copies the fixture to a temporary folder (fixtures stay read-only);
@@ -128,7 +130,8 @@ The tests are ordinary integration tests and run in CI on Windows, macOS and Lin
 - Tests never depend on the developer machine's state (installed SDK packs, Git config, Ollama) —
   where a dependency is optional (e.g. SDK reference packs), tests cover both presence and absence
   via injectable locators.
-- Network tests are opt-in (trait `Category=Network`) and excluded from default runs.
+- Network tests are opt-in (`[Fact(Explicit = true)]` with trait `Category=Network`) and excluded from default runs;
+  run them with `--explicit only` (first ones: `LibGit2SharpVerificationTests`, GIT-006).
 
 ## 7. Quality gates
 
@@ -172,6 +175,7 @@ dotnet test --solution CodebaseExplorer.slnx --coverlet --coverlet-output-format
 |---|---|---|---|
 | 2026-11-17 | Scanner, 10,000 small files in 100 directories (`RepositoryScannerTests.Scan_TenThousandFiles_CompletesWithinFiveSeconds`, explicit test) | 2.7 s | Debug build, Windows 11, local SSD; target < 5 s (REPO-002). Run: `dotnet test --project tests/CodebaseExplorer.Analysis.Tests --filter-method "*Scan_TenThousandFiles*" --explicit only --output Detailed` |
 | 2026-11-18 | Save 1,000,000 synthetic relationships (+ 1,000,000 evidence) with `ArchitectureModelStore` (`ArchitectureModelStoreBenchmarks.SaveOneMillionRelationships_StaysBelowOnePointFiveGigabytes`, explicit test) | peak working set **1,331 MB** with `System.GC.ConserveMemory=9`; save 147 s; DB 1.4 GB | Release, Windows 11; target < 1.5 GB (STORE-004). The model alone is 914 MB live; the store adds ~18 MB live, but with default GC settings uncollected batch garbage raised the peak to 1,951 MB (level 5: 1,762 MB, 7: 1,505 MB, 9: 1,331 MB at ~20 % more save time). The app sets level 9 (Desktop csproj). Run: `dotnet test --project tests/CodebaseExplorer.Storage.Tests -c Release --filter-method "*SaveOneMillionRelationships*" --explicit only --output Detailed` |
+| 2026-11-18 | Git file activity (`GitFileActivityTests.Walk_Benchmark_OnRepositoryFromEnvironment`, explicit test) on a full clone of `libgit2/libgit2sharp` (2,837 commits, 2,511 without merges, 2,952 paths) | **8.8 s** | Release, Windows 11, 16 logical CPUs (8 workers), local SSD (GIT-004). Sequential walk with line counts was 26.5 s in GIT-006; without line counts 1.4 s. Line totals equal `git log --no-merges --no-renames --numstat`. Not yet measured on the performance fixture (QA-002). Run: set `CODEBASE_EXPLORER_BENCH_GIT_REPO`, then `dotnet test --project tests/CodebaseExplorer.IntegrationTests -c Release --filter-method "*Walk_Benchmark*" --explicit only --output Detailed` |
 
 | 2026-11-18 | QA-002: 100 generated .NET projects (602 files) imported through the composition root (`PerformanceBenchmarks.DotNet_100Projects_FirstGraphWithin30Seconds`) | import **5.2 s**, first graph 0.37 s → **5.6 s** to the first graph; peak 265 MB | Release, Windows 11, local SSD; target < 30 s (PRODUCT_CONCEPT.md §8) **met**. 2,281 relationships. |
 | 2026-11-18 | QA-002: 2,000 generated .NET projects (12,002 files, 45,969 relationships) (`…DotNet_2000Projects_FirstGraphWithin3Minutes`) | import **74.2 s**, first graph 7.3 s (cold model load + projection; cached projection 120 ms) → **81.5 s**; peak 783 MB | Target < 3 min **met**; the graph is capped at 500 nodes (`node-budget`, GRAPH-008). Memory budget 4 GB (ANALYSIS_ENGINE.md §7) met. |

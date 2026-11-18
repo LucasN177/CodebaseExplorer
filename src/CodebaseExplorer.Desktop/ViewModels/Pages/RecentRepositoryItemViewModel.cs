@@ -13,6 +13,17 @@ public sealed partial class RecentRepositoryItemViewModel(RecentRepositoryDto re
 
     public string RootPath => Repository.RootPath;
 
+    /// <summary>True for an app-managed clone (UI-008): removing it also deletes the clone directory.</summary>
+    public bool IsClone => Repository.RemoteUrl is not null;
+
+    /// <summary>Where the repository comes from: the remote URL of a clone, otherwise the folder.</summary>
+    public string SourceText => Repository.RemoteUrl is { } url ? $"Clone of {url}" : Repository.RootPath;
+
+    /// <summary>Question of the inline remove confirmation.</summary>
+    public string RemoveQuestion => IsClone
+        ? "Remove all stored analysis results of this repository and delete its clone?"
+        : "Remove all stored analysis results of this repository? The folder itself is not changed.";
+
     /// <summary>True if the stored model can be opened without a new analysis.</summary>
     public bool CanOpen => Repository.HasModel;
 
