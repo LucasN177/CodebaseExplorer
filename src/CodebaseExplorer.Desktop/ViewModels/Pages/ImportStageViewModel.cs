@@ -3,14 +3,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace CodebaseExplorer.Desktop.ViewModels.Pages;
 
-/// <summary>State of one analysis stage in the import progress panel.</summary>
-public enum ImportStageState
-{
-    Pending,
-    Active,
-    Done,
-}
-
 /// <summary>One row of the import progress panel (USER_WORKFLOWS.md WF-01 step 4).</summary>
 public sealed partial class ImportStageViewModel(AnalysisStage stage, string name) : ViewModelBase
 {

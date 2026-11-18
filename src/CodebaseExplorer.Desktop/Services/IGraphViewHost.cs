@@ -3,27 +3,6 @@ using CodebaseExplorer.Contracts.Graph;
 
 namespace CodebaseExplorer.Desktop.Services;
 
-/// <summary>Theme of the graph web view (<c>view/theme</c>).</summary>
-public enum GraphThemeMode
-{
-    Light,
-    Dark,
-}
-
-/// <summary>Current selection in the graph web view (element ids of the loaded graph).</summary>
-public sealed record GraphSelection(IReadOnlyList<string> NodeIds, IReadOnlyList<string> EdgeIds)
-{
-    public static GraphSelection Empty { get; } = new([], []);
-
-    public bool IsEmpty => NodeIds.Count == 0 && EdgeIds.Count == 0;
-}
-
-/// <summary>Event data for a request concerning one graph element (e.g. <c>node/openInspector</c>).</summary>
-public sealed class GraphElementEventArgs(string elementId) : EventArgs
-{
-    public string ElementId { get; } = elementId;
-}
-
 /// <summary>
 /// What ViewModels see of the graph web view (GRAPH_ENGINE.md §1, "Graph host"). ViewModels never
 /// touch the WebView; they send Contracts DTOs and observe selection through this abstraction.
