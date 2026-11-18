@@ -4,8 +4,10 @@ using CodebaseExplorer.Analysis.Scanning;
 using CodebaseExplorer.Application.Analysis;
 using CodebaseExplorer.Application.Common;
 using CodebaseExplorer.Application.Repositories;
+using CodebaseExplorer.Domain.Common;
 using CodebaseExplorer.Domain.Evidence;
 using CodebaseExplorer.Domain.Model;
+using CodebaseExplorer.Domain.Relationships;
 using CodebaseExplorer.Domain.Runs;
 
 namespace CodebaseExplorer.Analysis.Pipeline;
@@ -20,8 +22,12 @@ internal sealed class AnalysisPipeline(
     IRepositoryFileReader fileReader,
     IEnumerable<IProjectSystemAnalyzer> projectSystemAnalyzers,
     IEnumerable<ILanguageAnalyzer> languageAnalyzers,
-    TimeProvider timeProvider) : IRepositoryAnalyzer
+    TimeProvider timeProvider,
+    IEnumerable<IRepositoryLanguageAnalyzer>? repositoryLanguageAnalyzers = null) : IRepositoryAnalyzer
 {
+    private readonly IRepositoryLanguageAnalyzer[] _repositoryLanguageAnalyzers =
+        [.. (repositoryLanguageAnalyzers ?? []).OrderBy(a => a.Descriptor.Id.Value, StringComparer.Ordinal)];
+
     private const string ScannerVersion = "1.0.0";
 
     private readonly IProjectSystemAnalyzer[] _projectSystemAnalyzers =
@@ -153,9 +159,33 @@ internal sealed class AnalysisPipeline(
             where files.Length > 0
             select (analyzer, project, files)).ToArray();
 
-        progress?.Report(new AnalysisProgress(AnalysisStage.AnalyzingCode, 0, work.Length));
+        var repositoryWork = _repositoryLanguageAnalyzers
+            .Select(analyzer => (Analyzer: analyzer, Inputs: projects
+                .Select(p => new ProjectInput(p, [.. filesByProject[p.Id].Where(f => analyzer.Supports(f.Language))]))
+                .Where(input => input.Files.Count > 0)
+                .ToArray()))
+            .Where(w => w.Inputs.Length > 0)
+            .ToArray();
+
+        var total = work.Length + repositoryWork.Sum(w => w.Inputs.Length);
+        progress?.Report(new AnalysisProgress(AnalysisStage.AnalyzingCode, 0, total));
 
         var completed = 0;
+        var repositoryResults = new List<(AnalyzerFragment Fragment, AnalysisDiagnostic? Failure)>();
+        if (repositoryWork.Length > 0)
+        {
+            var references = ProjectReferencesOf(projectSystemFragments);
+            foreach (var (analyzer, inputs) in repositoryWork)
+            {
+                var context = new RepositoryLanguageContext(
+                    request.RepositoryId, request.AnalysisRunId, request.Root, inputs, references, request.Limits, fileReader,
+                    projectName => progress?.Report(new AnalysisProgress(
+                        AnalysisStage.AnalyzingCode, Interlocked.Increment(ref completed), total, projectName)));
+                repositoryResults.Add(await RunIsolatedAsync(analyzer.Descriptor, scope: null, () => analyzer.AnalyzeAsync(context, cancellationToken)));
+                versions[analyzer.Descriptor.Id.Value] = analyzer.Descriptor.Version;
+            }
+        }
+
         var results = new (AnalyzerFragment Fragment, AnalysisDiagnostic? Failure)[work.Length];
         var options = new ParallelOptions
         {
@@ -171,7 +201,7 @@ internal sealed class AnalysisPipeline(
 
             results[index] = await RunIsolatedAsync(analyzer.Descriptor, project.Name, () => analyzer.AnalyzeProjectAsync(context, token));
             progress?.Report(new AnalysisProgress(
-                AnalysisStage.AnalyzingCode, Interlocked.Increment(ref completed), work.Length, project.Name));
+                AnalysisStage.AnalyzingCode, Interlocked.Increment(ref completed), total, project.Name));
         });
 
         foreach (var analyzer in work.Select(w => w.analyzer).Distinct())
@@ -179,9 +209,18 @@ internal sealed class AnalysisPipeline(
             versions[analyzer.Descriptor.Id.Value] = analyzer.Descriptor.Version;
         }
 
-        diagnostics.AddRange(results.SelectMany(r => r.Failure is null ? [] : new[] { r.Failure }));
-        return [.. results.Select(r => r.Fragment)];
+        var all = repositoryResults.Concat(results).ToArray();
+        diagnostics.AddRange(all.SelectMany(r => r.Failure is null ? [] : new[] { r.Failure }));
+        return [.. all.Select(r => r.Fragment)];
     }
+
+    /// <summary>Referenced project ids per project, from the stage-2 <c>ProjectReference</c> relationships.</summary>
+    private static Dictionary<ElementId, IReadOnlyList<ElementId>> ProjectReferencesOf(IReadOnlyList<AnalyzerFragment> fragments) =>
+        fragments
+            .SelectMany(f => f.Relationships)
+            .Where(r => r.Kind == RelationshipKind.ProjectReference)
+            .GroupBy(r => r.Source.Id)
+            .ToDictionary(g => g.Key, g => (IReadOnlyList<ElementId>)[.. g.Select(r => r.Target.Id).Distinct()]);
 
     private static async Task<(AnalyzerFragment Fragment, AnalysisDiagnostic? Failure)> RunIsolatedAsync(
         AnalyzerDescriptor descriptor,

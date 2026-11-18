@@ -28,9 +28,10 @@ creates, backs up and migrates the database at startup (STORE-003; `dotnet tool 
 DEVELOPMENT_GUIDE §6), and saves every run and the current model in SQLite (`IArchitectureModelStore`, STORE-004;
 the whole model is read and cached per run, slice queries follow in M4), and stores user settings such as the theme
 (`IUserSettingsStore`, STORE-005); rolling file logs with redaction and global exception handling exist (CORE-007);
+the Roslyn C# analyzer extracts namespaces, types and members with embedded reference assemblies (ANALYSIS-005, ADR-011);
 the start page lists recent repositories to reopen without re-analysis, re-analyze or remove (REPO-005), a run history page
 shows runs and diagnostics (UI-005), and an overview page (languages, projects, dependencies) opens after an import (UI-004);
-test projects without tests fail the run (CORE-010). No language analyzer, Git or AI
+test projects without tests fail the run (CORE-010). No Tree-sitter analyzer, Git or AI
 functionality exists yet. Next: the open M1 tasks and M3
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 

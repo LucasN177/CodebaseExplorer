@@ -23,7 +23,7 @@ Status overview (keep in sync):
 | M0 Foundation | (initialization) | ✅ |
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
-| M3 Deep C# & Inspector | 9 | 1 |
+| M3 Deep C# & Inspector | 9 | 2 |
 | M4 Polyglot & scale | 11 | 0 |
 | M5 Git | 7 | 0 |
 | M6 Export | 2 | 0 |
@@ -369,11 +369,12 @@ Status overview (keep in sync):
 ## M3 — Deep C# analysis and Component Inspector
 
 ### ANALYSIS-005 — Roslyn syntax analysis (modules and entities)
-- **Priority:** P0 · **Milestone:** M3 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M3 · **Status:** done
 - **Prerequisites:** ANALYSIS-004
 - **Projects:** Analysis, Analysis.Tests, Directory.Packages.props
 - **Description:** Add `Microsoft.CodeAnalysis.CSharp` (re-verify 5.x version; **not** `Workspaces.MSBuild`). Parse project `.cs` files; namespaces → `CodeModule` (hierarchy), types and members → `CodeEntity` with declarations (partial types merged).
 - **Acceptance criteria:** Fixture expectations for modules/entities met; symbol keys are documentation-comment IDs; no assemblies loaded from the repository.
+- **Note:** Microsoft.CodeAnalysis.CSharp 5.12.0 (re-verified). **Decided with the user (ADR-011):** compilations reference the embedded .NET 10 reference assemblies of `Basic.Reference.Assemblies.Net100` 1.8.15 and never SDK packs or NuGet assemblies, because Roslyn formats resolved and unresolved types differently in documentation comment IDs (verified) and entity ids must not depend on the machine (fixture V-1). New pipeline seam `IRepositoryLanguageAnalyzer`: `CSharpAnalyzer` analyzes all C# projects in topological order with `CompilationReference`s to referenced projects (cycles broken with a warning, failures isolated per project). `DeclarationCollector` creates namespace modules (with enclosing namespaces) and entities for types and source-declared members (EXPECTED.md §8.2 rules; global-namespace types go to module `(global)`; top-level statements produce no entity). Implicit usings follow the SDK defaults. Tests: all 7 modules and 41 entities of `dotnet-advanced` match EXPECTED.md §8 exactly (key, kind, visibility, modifiers, declarations, containment), keys are stable across runs, references are in-memory, no assembly is loaded from the repository; `dotnet-layered` is analyzed without errors.
 
 ### ANALYSIS-006 — Roslyn semantic relationships without build
 - **Priority:** P0 · **Milestone:** M3 · **Status:** todo

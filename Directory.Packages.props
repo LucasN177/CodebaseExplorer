@@ -40,6 +40,13 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.15" />
   </ItemGroup>
 
+  <ItemGroup Label="Analysis">
+    <!-- Roslyn compiler APIs only; never Workspaces.MSBuild or Microsoft.Build.Locator (ADR-004). -->
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.12.0" />
+    <!-- .NET 10 reference assemblies embedded as resources: symbol keys must not depend on the machine (ADR-004 amendment, ANALYSIS-005). -->
+    <PackageVersion Include="Basic.Reference.Assemblies.Net100" Version="1.8.15" />
+  </ItemGroup>
+
   <ItemGroup Label="Testing">
     <PackageVersion Include="xunit.v3" Version="4.0.3" />
     <PackageVersion Include="NSubstitute" Version="6.2.0" />

@@ -1,6 +1,6 @@
 # ADR-004: Static Analysis Strategy (Roslyn without MSBuild, Tree-sitter, Manifest Parsers)
 
-- **Status:** Accepted (Tree-sitter binding choice pending spike ANALYSIS-008)
+- **Status:** Accepted (Tree-sitter binding choice pending spike ANALYSIS-008); the reference-assembly source in decision 2 is superseded by [ADR-011](ADR-011-embedded-reference-assemblies.md)
 - **Date:** 2026-11-17
 
 ## Context

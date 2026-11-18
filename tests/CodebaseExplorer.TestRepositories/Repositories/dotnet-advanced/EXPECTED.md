@@ -173,16 +173,16 @@ The placeholder `Advanced.Plugins` has no modules.
 | `M:Advanced.Services.Customers.InMemoryCustomerRepository.Find(System.Guid)` | Method | Public | — | `src/Advanced.Services/Customers/InMemoryCustomerRepository.cs:10:22` |
 | `M:Advanced.Services.Customers.InMemoryCustomerRepository.Add(Advanced.Core.Entities.Customer)` | Method | Public | — | `src/Advanced.Services/Customers/InMemoryCustomerRepository.cs:12:17` |
 | `T:Advanced.Services.ServiceCollectionExtensions` | Class | Public | Static | `src/Advanced.Services/ServiceCollectionExtensions.cs:8:21` |
-| `M:Advanced.Services.ServiceCollectionExtensions.AddAdvancedServices(…)` — see V-1 | Method | Public | Static | `src/Advanced.Services/ServiceCollectionExtensions.cs:10:38` |
+| `M:Advanced.Services.ServiceCollectionExtensions.AddAdvancedServices(IServiceCollection)` (V-1) | Method | Public | Static | `src/Advanced.Services/ServiceCollectionExtensions.cs:10:38` |
 | `T:Advanced.Services.ServiceCollectionExtensions.Catalog` | Class | Private | Sealed | `src/Advanced.Services/ServiceCollectionExtensions.cs:23:26` (contained in `ServiceCollectionExtensions`) |
 | `M:Advanced.Services.ServiceCollectionExtensions.Catalog.AddSingleton(System.String)` | Method | Public | — | `src/Advanced.Services/ServiceCollectionExtensions.cs:25:21` |
 
-**Verification item V-1 (decided by ANALYSIS-005):** the parameter type of `AddAdvancedServices` is
-`Microsoft.Extensions.DependencyInjection.IServiceCollection` from a NuGet package that cannot be resolved
-without `obj/project.assets.json`. The fixture does not prescribe how an unresolved type appears in the
-documentation comment ID; ANALYSIS-005 must define it so that the key is the same on every machine (with
-or without SDK reference packs) and record the rule here. The same applies to framework types such as
-`System.Guid` if no reference packs are available: symbol keys must not depend on the machine.
+**Verification item V-1 — decided in ANALYSIS-005 (ADR-011):** symbol keys must not depend on the
+machine. Every C# compilation references the same embedded .NET 10 reference assemblies
+(`Basic.Reference.Assemblies.Net100`) and never NuGet assemblies. Framework types are therefore always
+resolved (`System.Guid`), and package types are never resolved: Roslyn writes an unresolved type as it is
+named in source, so the parameter of `AddAdvancedServices` appears as `IServiceCollection` (not
+`Microsoft.Extensions.DependencyInjection.IServiceCollection`) — on every machine, restored or not.
 
 ## 9. Semantic relationships (ANALYSIS-006)
 
@@ -224,8 +224,8 @@ the service type definition) and `lifetime`. Evidence location: start of the inv
 
 | Source | Target | `serviceType` | `lifetime` | Evidence |
 |---|---|---|---|---|
-| `AddAdvancedServices(…)` (V-1) | `T:Advanced.Services.Customers.CustomerService` | `T:Advanced.Services.Customers.ICustomerService` | `scoped` | `src/Advanced.Services/ServiceCollectionExtensions.cs:12:9` |
-| `AddAdvancedServices(…)` (V-1) | `T:Advanced.Services.Customers.InMemoryCustomerRepository` | ``T:Advanced.Core.Abstractions.IRepository`1`` | `singleton` | `src/Advanced.Services/ServiceCollectionExtensions.cs:13:9` |
+| `M:Advanced.Services.ServiceCollectionExtensions.AddAdvancedServices(IServiceCollection)` | `T:Advanced.Services.Customers.CustomerService` | `T:Advanced.Services.Customers.ICustomerService` | `scoped` | `src/Advanced.Services/ServiceCollectionExtensions.cs:12:9` |
+| `M:Advanced.Services.ServiceCollectionExtensions.AddAdvancedServices(IServiceCollection)` | `T:Advanced.Services.Customers.InMemoryCustomerRepository` | ``T:Advanced.Core.Abstractions.IRepository`1`` | `singleton` | `src/Advanced.Services/ServiceCollectionExtensions.cs:13:9` |
 
 **Negative cases — no `RegistersService`:** the commented-out call (line 16), the string literal (line
 17) and `new Catalog().AddSingleton(example)` (line 18: an instance method of an in-repository class with

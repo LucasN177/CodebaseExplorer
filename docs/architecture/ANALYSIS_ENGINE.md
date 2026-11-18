@@ -1,7 +1,7 @@
 # Analysis Engine — Codebase Explorer
 
 > Status: **accepted (specification)** · Last reviewed: 2026-11-17
-> Implementation status: **not implemented** (module seam `AddAnalysisModule()` exists).
+> Implementation status: **partially implemented** — pipeline, scanner, .NET project-system analyzer (M1); Roslyn C# declarations (ANALYSIS-005: namespaces → modules, types and members → entities); semantic relationships follow with ANALYSIS-006.
 > Related: [ADR-004](../decisions/ADR-004-static-analysis-strategy.md),
 > [ADR-007](../decisions/ADR-007-evidence-based-analysis.md),
 > [ADR-009](../decisions/ADR-009-incremental-analysis.md), [SECURITY.md](SECURITY.md).
@@ -184,19 +184,24 @@ Run in parallel, one per ecosystem, each over the scanned file list.
 Run per project with bounded parallelism. Each analyzer receives only the files of its language
 belonging to that project (plus read access to the scanned file list for resolution hints).
 
-**C# (`csharp.roslyn`)** — details in ADR-004.
+**C# (`csharp.roslyn`)** — details in ADR-004 and ADR-011. Runs as a repository-level analyzer
+(`IRepositoryLanguageAnalyzer`): it receives all C# projects with the stage-2 project references and
+analyzes them in topological order, because a project's compilation references those of its referenced
+projects. Failures are isolated per project (`csharp.project.failed`); reference cycles are broken with a
+warning (`csharp.project.reference-cycle`).
 
-1. Parse all `.cs` files of the project with `CSharpSyntaxTree.ParseText` (preprocessor symbols
-   from statically resolved `DefineConstants` where available, plus `NET`, `NETCOREAPP`).
+1. Parse all `.cs` files of the project with `CSharpSyntaxTree.ParseText` (language version preview;
+   preprocessor symbols from statically resolved `DefineConstants` where available, plus `NET`,
+   `NETCOREAPP`). With `ImplicitUsings=enable` the SDK's default global usings are added as an extra
+   tree (Microsoft.NET.Sdk, plus the Web SDK list for `Microsoft.NET.Sdk.Web`). Files that cannot be read
+   (size limit, …) are skipped with `csharp.file.not-read`.
 2. Create a `CSharpCompilation` with **metadata references only**:
-   - reference assemblies of the target framework from the locally installed .NET SDK packs
-     (`<dotnet root>/packs/Microsoft.NETCore.App.Ref/<version>/ref/<tfm>/*.dll`) if present —
-     read as metadata, never loaded for execution;
-   - compilations of referenced in-repository projects (as `CompilationReference`s), built in
+   - the embedded .NET 10 reference assemblies of `Basic.Reference.Assemblies.Net100` — the same on every
+     machine, so symbol keys and entity ids do not depend on an installed SDK (ADR-011);
+   - compilations of referenced in-repository projects (as `CompilationReference`s, transitive), built in
      topological order;
-   - NuGet packages **only if** they are already present in the local NuGet cache and an
-     `obj/project.assets.json` exists (read-only; no restore). Otherwise package types remain
-     unresolved.
+   - **no NuGet assemblies** (ADR-011): package types remain unresolved everywhere.
+   *Implemented (ANALYSIS-005):* steps 1–2 and the declaration part of step 3.
 3. Walk the semantic model: declared namespaces → `CodeModule`s; types and members →
    `CodeEntity`s; base types, interfaces, type usages, object creations, invocations →
    relationships.

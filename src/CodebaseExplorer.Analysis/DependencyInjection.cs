@@ -1,4 +1,5 @@
 using CodebaseExplorer.Analysis.FileSystem;
+using CodebaseExplorer.Analysis.Languages.CSharp;
 using CodebaseExplorer.Analysis.Pipeline;
 using CodebaseExplorer.Analysis.ProjectSystems.DotNet;
 using CodebaseExplorer.Analysis.Scanning;
@@ -27,6 +28,7 @@ public static class DependencyInjection
 
         // Project-system analyzers (stage 2) and language analyzers (stage 3).
         services.AddSingleton<IProjectSystemAnalyzer, DotNetProjectSystemAnalyzer>();
+        services.AddSingleton<IRepositoryLanguageAnalyzer, CSharpAnalyzer>();
 
         return services;
     }
