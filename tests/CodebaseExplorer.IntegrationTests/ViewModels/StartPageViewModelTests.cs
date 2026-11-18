@@ -219,12 +219,90 @@ public sealed class StartPageViewModelTests : IAsyncLifetime
         }
     }
 
+    [Fact]
+    public async Task Activate_ListsStoredRepositories()
+    {
+        await ImportFixtureAsync();
+        var viewModel = CreateViewModel(_analyzer);
+
+        await viewModel.ActivateAsync();
+
+        var item = Assert.Single(viewModel.RecentRepositories);
+        Assert.Equal("dotnet-layered", item.Name);
+        Assert.Equal(TestRepositoryCatalog.GetFixturePath("dotnet-layered"), item.RootPath);
+        Assert.True(item.CanOpen);
+        Assert.StartsWith("Succeeded · ", item.StatusText, StringComparison.Ordinal);
+        Assert.True(viewModel.HasRecentRepositories);
+    }
+
+    [Fact]
+    public async Task OpenRecent_SetsTheStoredRepositoryWithoutAnalysis()
+    {
+        var imported = await ImportFixtureAsync();
+        var viewModel = CreateViewModel(_analyzer);
+        await viewModel.ActivateAsync();
+
+        await viewModel.OpenRecentCommand.ExecuteAsync(viewModel.RecentRepositories[0]);
+
+        await _analyzer.DidNotReceiveWithAnyArgs().AnalyzeAsync(default!, default, Arg.Any<CancellationToken>());
+        Assert.Equal(imported.RepositoryId, _session.Current?.RepositoryId);
+        Assert.Equal(imported.AnalysisRunId, _session.Current?.AnalysisRunId);
+        Assert.Null(viewModel.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task Reanalyze_RunsANewAnalysisOfTheFolder()
+    {
+        await ImportFixtureAsync();
+        var viewModel = CreateViewModel(_app.Services.GetRequiredService<IRepositoryAnalyzer>());
+        await viewModel.ActivateAsync();
+        var previousRun = viewModel.RecentRepositories[0].Repository;
+
+        await viewModel.ReanalyzeCommand.ExecuteAsync(viewModel.RecentRepositories[0]);
+
+        Assert.Equal(previousRun.RepositoryId, _session.Current?.RepositoryId);
+        Assert.StartsWith("Analyzed dotnet-layered", viewModel.StatusMessage, StringComparison.Ordinal);
+        Assert.Single(viewModel.RecentRepositories);
+    }
+
+    [Fact]
+    public async Task Remove_AsksFirst_ThenDeletesAndClosesTheRepository()
+    {
+        var imported = await ImportFixtureAsync();
+        var viewModel = CreateViewModel(_analyzer);
+        await viewModel.ActivateAsync();
+        await viewModel.OpenRecentCommand.ExecuteAsync(viewModel.RecentRepositories[0]);
+        var item = viewModel.RecentRepositories[0];
+
+        viewModel.RequestRemoveCommand.Execute(item);
+        Assert.True(item.IsConfirmingRemove);
+        viewModel.CancelRemoveCommand.Execute(item);
+        Assert.False(item.IsConfirmingRemove);
+        Assert.Single(viewModel.RecentRepositories);
+
+        viewModel.RequestRemoveCommand.Execute(item);
+        await viewModel.ConfirmRemoveCommand.ExecuteAsync(item);
+
+        Assert.Empty(viewModel.RecentRepositories);
+        Assert.Null(_session.Current);
+        Assert.Equal("Removed the stored data of dotnet-layered. The folder was not changed.", viewModel.StatusMessage);
+        var store = _app.Services.GetRequiredService<IArchitectureModelStore>();
+        Assert.Null(await store.FindRepositoryAsync(new Domain.Common.RepositoryId(Guid.ParseExact(imported.RepositoryId, "N")), TestContext.Current.CancellationToken));
+    }
+
+    private async Task<Contracts.Repositories.RepositoryImportSummaryDto> ImportFixtureAsync() =>
+        (await _app.Services.GetRequiredService<ImportLocalRepository>().ExecuteAsync(
+            TestRepositoryCatalog.GetFixturePath("dotnet-layered"), null, TestContext.Current.CancellationToken)).Value;
+
     private StartPageViewModel CreateViewModel(IRepositoryAnalyzer analyzer) => new(
         new ImportLocalRepository(
             _app.Services.GetRequiredService<IRepositoryRootValidator>(),
             analyzer,
             _app.Services.GetRequiredService<IArchitectureModelStore>(),
             TimeProvider.System),
+        _app.Services.GetRequiredService<ListRecentRepositories>(),
+        _app.Services.GetRequiredService<OpenRepository>(),
+        _app.Services.GetRequiredService<RemoveRepository>(),
         _picker,
         _session,
         _shell,

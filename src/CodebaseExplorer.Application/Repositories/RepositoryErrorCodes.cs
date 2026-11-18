@@ -12,6 +12,7 @@ public static class RepositoryErrorCodes
     public const string ImportInProgress = "repository.import-in-progress";
     public const string NotAnalyzed = "repository.not-analyzed";
     public const string IdInvalid = "repository.id-invalid";
+    public const string NotFound = "repository.not-found";
 
     public const string FileOutsideRoot = "repository-file.outside-root";
     public const string FileNotFound = "repository-file.not-found";

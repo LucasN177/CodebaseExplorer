@@ -104,6 +104,14 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
     {
         if (_session.Current is not { } repository)
         {
+            // The repository was closed (removed): back to the empty state; late results of a running load are dropped.
+            ++_loadNumber;
+            _query = null;
+            RepositoryName = null;
+            ErrorMessage = null;
+            HasGraph = false;
+            IsLoading = false;
+            UpdateSelection();
             return;
         }
 

@@ -95,6 +95,7 @@ public sealed class ImportLocalRepository(
 
         progress?.Report(new AnalysisProgress(AnalysisStage.Saving, 0, 1));
         await store.SaveRunAsync(repository, run, analysis.Model, cancellationToken);
+        await store.MarkOpenedAsync(repository.Id, timeProvider.GetUtcNow(), cancellationToken);
         progress?.Report(new AnalysisProgress(AnalysisStage.Saving, 1, 1));
         return Summarize(repository, run, analysis.Model);
     }

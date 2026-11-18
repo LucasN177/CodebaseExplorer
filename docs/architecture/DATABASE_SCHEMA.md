@@ -81,7 +81,7 @@ Legend: **PK** primary key, **FK** foreign key, **NN** not null, **UQ** unique.
 | RemoteUrl | TEXT | | Sanitized (no credentials). |
 | SourceKind | TEXT | NN | `RepositorySourceKind` |
 | AddedAt | TEXT | NN | |
-| LastOpenedAt | TEXT | | For "recent repositories". |
+| LastOpenedAt | TEXT | | For "recent repositories"; set when a repository is opened or successfully imported (REPO-005). |
 | LastAnalysisRunId | BLOB(16) | FK → AnalysisRuns.Id (SET NULL) | Current model's run. |
 
 Indexes: `UX_Repositories_LocalPath`, `IX_Repositories_LastOpenedAt`.

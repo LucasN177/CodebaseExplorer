@@ -8,4 +8,10 @@ public abstract class PageViewModel : ViewModelBase
 
     /// <summary>Short text glyph used as navigation icon.</summary>
     public abstract string Glyph { get; }
+
+    /// <summary>
+    /// Called by the shell each time the page becomes the current page, to refresh its data. Must not throw:
+    /// pages handle and show their own errors.
+    /// </summary>
+    public virtual Task ActivateAsync() => Task.CompletedTask;
 }

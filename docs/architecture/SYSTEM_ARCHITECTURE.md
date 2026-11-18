@@ -184,6 +184,13 @@ cancelled runs leave the previous model intact. One import per folder at a time
 folder keeps its `RepositoryId`. The use cases return Contracts DTOs (`RepositoryImportSummaryDto`,
 `GraphViewDto`), so ViewModels never see Domain types.
 
+**Implemented (REPO-005):** `ListRecentRepositories` (`IArchitectureModelStore.ListRepositoriesAsync`, ordered
+by last use), `OpenRepository` (stored model, no analysis; sets `LastOpenedAt` via `MarkOpenedAsync`, as does a
+successful import) and `RemoveRepository` (`DeleteRepositoryAsync`: one `DELETE` on `Repositories`, the
+foreign keys cascade to runs, diagnostics and all model tables; the analyzed folder is never touched).
+The Desktop `RepositorySession` holds an `OpenRepositoryDto`; pages refresh via `PageViewModel.ActivateAsync`
+when the shell shows them.
+
 Principles:
 
 - **Async all the way** for I/O; every long-running call accepts a `CancellationToken` and an

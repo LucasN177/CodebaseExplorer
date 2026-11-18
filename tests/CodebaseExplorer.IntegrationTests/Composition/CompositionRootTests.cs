@@ -54,13 +54,12 @@ public sealed class CompositionRootTests : IAsyncLifetime
         var provider = _app.Services;
         var shell = provider.GetRequiredService<MainWindowViewModel>();
 
-        provider.GetRequiredService<RepositorySession>().SetCurrent(new Contracts.Repositories.RepositoryImportSummaryDto
+        provider.GetRequiredService<RepositorySession>().SetCurrent(new Contracts.Repositories.OpenRepositoryDto
         {
             RepositoryId = new string('a', 32),
             Name = "repo",
             RootPath = Path.GetTempPath(),
             AnalysisRunId = new string('b', 32),
-            Status = "succeeded",
         });
 
         Assert.Equal("Architecture Explorer", shell.CurrentPage.Title);

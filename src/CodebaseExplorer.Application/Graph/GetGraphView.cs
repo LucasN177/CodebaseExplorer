@@ -16,12 +16,12 @@ public sealed class GetGraphView(IArchitectureModelStore store, IGraphProjector 
         ArgumentNullException.ThrowIfNull(query);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!Guid.TryParseExact(query.RepositoryId, "N", out var guid) || guid == Guid.Empty)
+        if (!RepositoryContractMapping.TryParseRepositoryId(query.RepositoryId, out var repositoryId))
         {
             return ApplicationError.Validation(RepositoryErrorCodes.IdInvalid, "The repository id is not a valid id.");
         }
 
-        if (await store.LoadCurrentModelAsync(new RepositoryId(guid), cancellationToken) is not { } stored)
+        if (await store.LoadCurrentModelAsync(repositoryId, cancellationToken) is not { } stored)
         {
             return ApplicationError.NotFound(RepositoryErrorCodes.NotAnalyzed, "The repository has not been analyzed yet.");
         }

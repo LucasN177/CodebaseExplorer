@@ -55,6 +55,48 @@ internal sealed class ArchitectureModelStore(IDbContextFactory<CodebaseExplorerD
         return record is null ? null : RecordMapper.ToDomain(record);
     }
 
+    public async Task<IReadOnlyList<RepositoryListEntry>> ListRepositoriesAsync(CancellationToken cancellationToken)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        var repositories = await context.Repositories.AsNoTracking().ToListAsync(cancellationToken);
+
+        // Run headers only (no statistics, no diagnostics); the latest run per repository is picked in memory.
+        var runs = await context.AnalysisRuns.AsNoTracking()
+            .Select(r => new { r.RepositoryId, r.Status, r.StartedAt, r.CompletedAt })
+            .ToListAsync(cancellationToken);
+        var latest = runs
+            .GroupBy(r => r.RepositoryId)
+            .ToDictionary(g => g.Key, g => g.MaxBy(r => r.StartedAt)!);
+
+        return [.. repositories.Select(record =>
+        {
+            var run = latest.GetValueOrDefault(record.Id);
+            return new RepositoryListEntry(RecordMapper.ToDomain(record), record.LastOpenedAt, run?.Status, run is null ? null : run.CompletedAt ?? run.StartedAt);
+        })];
+    }
+
+    public async Task MarkOpenedAsync(RepositoryId repositoryId, DateTimeOffset openedAt, CancellationToken cancellationToken)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        await context.Repositories
+            .Where(r => r.Id == repositoryId.Value)
+            .ExecuteUpdateAsync(s => s.SetProperty(r => r.LastOpenedAt, openedAt), cancellationToken);
+    }
+
+    public async Task<bool> DeleteRepositoryAsync(RepositoryId repositoryId, CancellationToken cancellationToken)
+    {
+        int deleted;
+        await using (var context = await contextFactory.CreateDbContextAsync(cancellationToken))
+        {
+            // Runs, diagnostics and all model tables reference the repository with ON DELETE CASCADE
+            // (DATABASE_SCHEMA.md §2); the foreign keys are enforced on every connection (SqliteConnectionPragmas).
+            deleted = await context.Repositories.Where(r => r.Id == repositoryId.Value).ExecuteDeleteAsync(cancellationToken);
+        }
+
+        await InvalidateAsync(repositoryId);
+        return deleted > 0;
+    }
+
     public async Task SaveRunAsync(Repository repository, AnalysisRun run, ArchitectureModel? model, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(repository);

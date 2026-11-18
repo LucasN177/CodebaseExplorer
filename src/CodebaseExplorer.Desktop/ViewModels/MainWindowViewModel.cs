@@ -22,8 +22,24 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         CurrentPage = start;
         Shell = shell;
 
-        // A successful import opens the explorer (UI-002, WF-01 step 5).
-        session.CurrentChanged += (_, _) => CurrentPage = architectureExplorer;
+        // A successful import or opening a stored repository opens the explorer (UI-002, REPO-005).
+        session.CurrentChanged += (_, _) =>
+        {
+            if (session.Current is not null)
+            {
+                CurrentPage = architectureExplorer;
+            }
+        };
+    }
+
+    // Pages refresh their data whenever they are shown (e.g. the start page's recent repositories).
+    partial void OnCurrentPageChanged(PageViewModel value)
+    {
+        // The navigation list may report no selection while it updates.
+        if (value is not null)
+        {
+            _ = value.ActivateAsync();
+        }
     }
 
     public IReadOnlyList<PageViewModel> Pages { get; }

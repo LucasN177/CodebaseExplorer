@@ -44,7 +44,7 @@
             <TextBlock Text="{Binding ProgressText}" Opacity="0.8" />
             <TextBlock Text="{Binding CurrentItem}" Opacity="0.6" TextTrimming="CharacterEllipsis" MaxWidth="520" />
           </StackPanel>
-          <Button Content="Cancel" Command="{Binding OpenLocalFolderCancelCommand}" />
+          <Button Content="Cancel" Command="{Binding CancelImportCommand}" />
         </StackPanel>
       </Border>
 
@@ -56,6 +56,56 @@
               Background="{DynamicResource ErrorBackgroundBrush}">
         <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
       </Border>
+
+      <!-- Recent repositories (REPO-005, WF-01 step 1) -->
+      <TextBlock Text="Recent repositories" FontSize="18" FontWeight="SemiBold" Margin="0,16,0,0"
+                 IsVisible="{Binding HasRecentRepositories}" />
+      <ItemsControl ItemsSource="{Binding RecentRepositories}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="pages:RecentRepositoryItemViewModel">
+            <Border BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,8"
+                    BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+              <StackPanel Spacing="8">
+                <DockPanel>
+                  <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Content="Open" IsEnabled="{Binding CanOpen}"
+                            ToolTip.Tip="Show the stored analysis result without analyzing again"
+                            Command="{Binding $parent[UserControl].((pages:StartPageViewModel)DataContext).OpenRecentCommand}"
+                            CommandParameter="{Binding}" />
+                    <Button Content="Re-analyze"
+                            Command="{Binding $parent[UserControl].((pages:StartPageViewModel)DataContext).ReanalyzeCommand}"
+                            CommandParameter="{Binding}" />
+                    <Button Content="Remove"
+                            Command="{Binding $parent[UserControl].((pages:StartPageViewModel)DataContext).RequestRemoveCommand}"
+                            CommandParameter="{Binding}" />
+                  </StackPanel>
+                  <StackPanel Spacing="2" Margin="0,0,12,0">
+                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding RootPath}" Opacity="0.7" FontSize="12" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding StatusText}" Opacity="0.7" FontSize="12" />
+                  </StackPanel>
+                </DockPanel>
+                <Border IsVisible="{Binding IsConfirmingRemove}" BorderThickness="1" CornerRadius="6" Padding="12"
+                        BorderBrush="{DynamicResource ErrorBorderBrush}"
+                        Background="{DynamicResource ErrorBackgroundBrush}">
+                  <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                      <Button Content="Remove data"
+                              Command="{Binding $parent[UserControl].((pages:StartPageViewModel)DataContext).ConfirmRemoveCommand}"
+                              CommandParameter="{Binding}" />
+                      <Button Content="Keep"
+                              Command="{Binding $parent[UserControl].((pages:StartPageViewModel)DataContext).CancelRemoveCommand}"
+                              CommandParameter="{Binding}" />
+                    </StackPanel>
+                    <TextBlock TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"
+                               Text="Remove all stored analysis results of this repository? The folder itself is not changed." />
+                  </DockPanel>
+                </Border>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

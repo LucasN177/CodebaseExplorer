@@ -11,7 +11,7 @@ capabilities ([MVP_SCOPE.md](MVP_SCOPE.md)) it depends on.
 
 ## WF-01 Import a local repository
 
-**Persona:** Nina (onboarding) · **Capabilities:** MVP-01, MVP-02, MVP-03 · **Status:** core flow (folder picker → progress with stages and cancel → explorer) implemented (UI-002; no Git detection yet), *Recent repositories* and overview page in M2, *Clone from URL* and Git detection in M5
+**Persona:** Nina (onboarding) · **Capabilities:** MVP-01, MVP-02, MVP-03 · **Status:** core flow (folder picker → progress with stages and cancel → explorer) implemented (UI-002; no Git detection yet), *Recent repositories* with open (no re-analysis), re-analyze and remove implemented (REPO-005), overview page in M2, *Clone from URL* and Git detection in M5
 
 1. Nina starts Codebase Explorer. The start page shows *Open local folder*, *Clone from URL* and
    *Recent repositories*.
@@ -129,7 +129,7 @@ If an expansion would exceed the budget, the app offers a filtered or neighborho
 
 ## WF-10 Re-analyze after changes
 
-**Persona:** Tom · **Capabilities:** MVP-01, MVP-08 · **Status:** planned (M2; incremental post-MVP)
+**Persona:** Tom · **Capabilities:** MVP-01, MVP-08 · **Status:** *Re-analyze* on the start page implemented (REPO-005; full run); run history in M2 (UI-005); incremental post-MVP
 
 1. Tom pulls new commits in his own Git client and clicks *Re-analyze*.
 2. MVP: a full analysis run replaces the stored model; the run history shows both runs with

@@ -20,6 +20,18 @@ public interface IArchitectureModelStore
     /// <summary>Finds the repository registered for an analyzed folder (path as returned by root validation).</summary>
     Task<Repository?> FindRepositoryByRootAsync(string rootPath, CancellationToken cancellationToken);
 
+    /// <summary>All registered repositories with their last opening and most recent run (REPO-005), in no particular order.</summary>
+    Task<IReadOnlyList<RepositoryListEntry>> ListRepositoriesAsync(CancellationToken cancellationToken);
+
+    /// <summary>Records that the user opened (or imported) the repository; unknown ids are ignored.</summary>
+    Task MarkOpenedAsync(RepositoryId repositoryId, DateTimeOffset openedAt, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Deletes the repository with all its runs, diagnostics and model data (cascade, REPO-005).
+    /// Returns <see langword="false"/> if the repository is unknown.
+    /// </summary>
+    Task<bool> DeleteRepositoryAsync(RepositoryId repositoryId, CancellationToken cancellationToken);
+
     /// <summary>
     /// Records a finished run. The repository is registered if it is new; the run and its diagnostics are
     /// always stored. Only a run that produced a model (<see cref="AnalysisRun.ProducedModel"/>) replaces the

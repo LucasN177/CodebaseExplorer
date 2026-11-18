@@ -19,6 +19,9 @@ public static class DependencyInjection
 
         // Singletons: ImportLocalRepository tracks running imports across calls.
         services.AddSingleton<ImportLocalRepository>();
+        services.AddSingleton<ListRecentRepositories>();
+        services.AddSingleton<OpenRepository>();
+        services.AddSingleton<RemoveRepository>();
         services.AddSingleton<GetGraphView>();
         services.AddSingleton<GetGraphEdgeDetails>();
 

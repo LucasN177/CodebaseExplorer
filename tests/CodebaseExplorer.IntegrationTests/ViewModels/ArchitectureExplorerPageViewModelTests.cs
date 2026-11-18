@@ -195,7 +195,13 @@ public sealed class ArchitectureExplorerPageViewModelTests : IAsyncLifetime
 
         // GetGraphView and the substituted host complete synchronously, so the load triggered by the session
         // has finished when SetCurrent returns; awaiting the explicit load would only repeat it.
-        _session.SetCurrent(summary);
+        _session.SetCurrent(new OpenRepositoryDto
+        {
+            RepositoryId = summary.RepositoryId,
+            Name = summary.Name,
+            RootPath = summary.RootPath,
+            AnalysisRunId = summary.AnalysisRunId,
+        });
 
         var call = Assert.Single(_host.ReceivedCalls(), c => c.GetMethodInfo().Name == nameof(IGraphViewHost.ShowGraphAsync));
         return (GraphViewDto)call.GetArguments()[0]!;
@@ -208,12 +214,11 @@ public sealed class ArchitectureExplorerPageViewModelTests : IAsyncLifetime
         _host.PropertyChanged += Raise.Event<PropertyChangedEventHandler>(_host, new PropertyChangedEventArgs(nameof(IGraphViewHost.Selection)));
     }
 
-    private static RepositoryImportSummaryDto Summary(string repositoryId) => new()
+    private static OpenRepositoryDto Summary(string repositoryId) => new()
     {
         RepositoryId = repositoryId,
         Name = "unknown",
         RootPath = Path.GetTempPath(),
         AnalysisRunId = new string('d', 32),
-        Status = "succeeded",
     };
 }

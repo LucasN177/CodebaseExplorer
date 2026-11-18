@@ -22,7 +22,7 @@ Status overview (keep in sync):
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
 | M1 Vertical slice | 22 | 16 |
-| M2 Persistence | 10 | 7 |
+| M2 Persistence | 10 | 8 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
 | M5 Git | 7 | 0 |
@@ -325,11 +325,12 @@ Status overview (keep in sync):
 - **Note:** Port `IUserSettingsStore` (Application `Settings/`, string values, keys in `UserSettingKeys`) with `UserSettingsStore` (Storage; value stored as JSON string, unreadable rows read as missing) and migration `AddUserSettings`. `IThemeService` got `RestoreAsync` (called in `App.StartAsync` after the database is ready, before the main window) and `ChangeAsync` (applies, then stores; a failed save shows a notification). Restart verified by an integration test with a second composition root on the same data directory (`TestApplication.Restart`).
 
 ### REPO-005 — Recent repositories and reopen without re-analysis
-- **Priority:** P0 · **Milestone:** M2 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M2 · **Status:** done
 - **Prerequisites:** STORE-004
 - **Projects:** Application, Desktop
 - **Description:** Start page lists recent repositories (name, path, last run status/date); opening loads the stored model; "Re-analyze" action; "Remove" deletes data (cascade).
 - **Acceptance criteria:** Reopen shows the graph without running analysis; remove deletes all rows of the repository and, for app-managed clones (from M5), the clone directory after confirmation.
+- **Note:** Use cases `ListRecentRepositories`, `OpenRepository`, `RemoveRepository` (Contracts `RecentRepositoryDto`, `OpenRepositoryDto`, `RunStatuses`); store methods `ListRepositoriesAsync`, `MarkOpenedAsync`, `DeleteRepositoryAsync` (single `DELETE`, FK cascade; invalidates the model cache). A successful import also sets `LastOpenedAt`. Start page: list with name, path, last run status/date; *Open* (disabled without a stored model), *Re-analyze* (full import of the folder, cancellable), *Remove* with an inline confirmation (no dialog service needed); removing the open repository clears the session and the explorer returns to its empty state. `RepositorySession` now holds `OpenRepositoryDto`; `PageViewModel.ActivateAsync` refreshes a page when the shell shows it. App-managed clones do not exist before M5, so no clone directory is deleted yet. Reopening after a restart is covered by an integration test with a second composition root; not manually verified in the running app.
 
 ### UI-004 — Repository overview page
 - **Priority:** P1 · **Milestone:** M2 · **Status:** todo
