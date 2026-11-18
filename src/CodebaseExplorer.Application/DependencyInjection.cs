@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddSingleton<OpenRepository>();
         services.AddSingleton<RemoveRepository>();
         services.AddSingleton<GetRunHistory>();
+        services.AddSingleton<GetRepositoryOverview>();
         services.AddSingleton<GetGraphView>();
         services.AddSingleton<GetGraphEdgeDetails>();
 

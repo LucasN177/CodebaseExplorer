@@ -34,7 +34,7 @@ public sealed class CompositionRootTests : IAsyncLifetime
 
         var shell = provider.GetRequiredService<MainWindowViewModel>();
 
-        Assert.Equal(["Start", "Architecture Explorer", "Run History", "Settings"], shell.Pages.Select(p => p.Title));
+        Assert.Equal(["Start", "Overview", "Architecture Explorer", "Run History", "Settings"], shell.Pages.Select(p => p.Title));
         Assert.Same(shell.Pages[0], shell.CurrentPage);
     }
 
@@ -49,7 +49,7 @@ public sealed class CompositionRootTests : IAsyncLifetime
     }
 
     [Fact]
-    public void SuccessfulImport_NavigatesTheShellToTheExplorer()
+    public void SuccessfulImport_NavigatesTheShellToTheOverview()
     {
         var provider = _app.Services;
         var shell = provider.GetRequiredService<MainWindowViewModel>();
@@ -62,7 +62,7 @@ public sealed class CompositionRootTests : IAsyncLifetime
             AnalysisRunId = new string('b', 32),
         });
 
-        Assert.Equal("Architecture Explorer", shell.CurrentPage.Title);
+        Assert.Equal("Overview", shell.CurrentPage.Title);
     }
 
     [Fact]

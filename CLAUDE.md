@@ -23,15 +23,15 @@ graph host control with its message bridge (`IGraphViewHost`, GRAPH-004), and th
 the Architecture Explorer with the project graph and a selection panel (UI-003; manually verified on Windows only),
 the shell status bar and notifications (`ShellStatus`, UI-001), edge evidence in the side panel
 (`GetGraphEdgeDetails`, GRAPH-010), and CI on Windows/macOS/Linux (QA-001).
-M2 in progress: the EF Core SQLite context with all model tables and Domain mapping exists (STORE-001/002), the app
+M2 tasks all implemented (manual check of the new pages pending): the EF Core SQLite context with all model tables and Domain mapping exists (STORE-001/002), the app
 creates, backs up and migrates the database at startup (STORE-003; `dotnet tool restore` + `dotnet ef`, see
 DEVELOPMENT_GUIDE §6), and saves every run and the current model in SQLite (`IArchitectureModelStore`, STORE-004;
 the whole model is read and cached per run, slice queries follow in M4), and stores user settings such as the theme
 (`IUserSettingsStore`, STORE-005); rolling file logs with redaction and global exception handling exist (CORE-007);
 the start page lists recent repositories to reopen without re-analysis, re-analyze or remove (REPO-005), a run history page
-shows runs and diagnostics (UI-005);
+shows runs and diagnostics (UI-005), and an overview page (languages, projects, dependencies) opens after an import (UI-004);
 test projects without tests fail the run (CORE-010). No language analyzer, Git or AI
-functionality exists yet. Next: the remaining M2
+functionality exists yet. Next: the open M1 tasks and M3
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 
 ## Commands

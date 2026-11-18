@@ -22,7 +22,7 @@ Status overview (keep in sync):
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
 | M1 Vertical slice | 22 | 16 |
-| M2 Persistence | 10 | 9 |
+| M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
 | M5 Git | 7 | 0 |
@@ -333,11 +333,12 @@ Status overview (keep in sync):
 - **Note:** Use cases `ListRecentRepositories`, `OpenRepository`, `RemoveRepository` (Contracts `RecentRepositoryDto`, `OpenRepositoryDto`, `RunStatuses`); store methods `ListRepositoriesAsync`, `MarkOpenedAsync`, `DeleteRepositoryAsync` (single `DELETE`, FK cascade; invalidates the model cache). A successful import also sets `LastOpenedAt`. Start page: list with name, path, last run status/date; *Open* (disabled without a stored model), *Re-analyze* (full import of the folder, cancellable), *Remove* with an inline confirmation (no dialog service needed); removing the open repository clears the session and the explorer returns to its empty state. `RepositorySession` now holds `OpenRepositoryDto`; `PageViewModel.ActivateAsync` refreshes a page when the shell shows it. App-managed clones do not exist before M5, so no clone directory is deleted yet. Reopening after a restart is covered by an integration test with a second composition root; not manually verified in the running app.
 
 ### UI-004 — Repository overview page
-- **Priority:** P1 · **Milestone:** M2 · **Status:** todo
+- **Priority:** P1 · **Milestone:** M2 · **Status:** done
 - **Prerequisites:** STORE-004
 - **Projects:** Application (query), Contracts, Desktop
 - **Description:** Languages (file counts/lines), projects by ecosystem, external dependency count, last run info, warnings count; link to explorer.
 - **Acceptance criteria:** Values match fixture expectations; no EF types in ViewModels.
+- **Note:** Use case `GetRepositoryOverview` (Contracts `RepositoryOverviewDto` with `LanguageStatisticsDto`, `EcosystemStatisticsDto`, `RunInfoDto`), computed from the stored model: files and lines per language, projects per ecosystem (placeholders for missing project files counted separately), external dependencies, relationships, the run of the current model with its warnings/errors, and a newer run that did not replace the result (failed/cancelled re-analysis). New navigation page *Overview*; after an import or opening a stored repository the shell now navigates to the overview (WF-01 step 5), whose *Open Architecture Explorer* button opens the graph. Shows a hint when no projects were recognized. The fixture test checks the oracle values of `dotnet-layered` (EXPECTED.md: 5 projects + 1 placeholder, 5 external dependencies, 13 relationships, 1 warning) and file/line counts against the files on disk; ViewModels use only Contracts DTOs. Not manually verified in the running app (the app would migrate the real user database; the new pages were checked by ViewModel tests and compiled bindings only).
 
 ### UI-005 — Analysis run history and diagnostics
 - **Priority:** P0 · **Milestone:** M2 · **Status:** done

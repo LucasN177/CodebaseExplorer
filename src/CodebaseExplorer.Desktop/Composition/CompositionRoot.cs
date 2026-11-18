@@ -66,6 +66,7 @@ public static class CompositionRoot
         services.AddSingleton<IGraphViewHost>(provider => provider.GetRequiredService<GraphViewBridge>());
 
         services.AddSingleton<StartPageViewModel>();
+        services.AddSingleton<OverviewPageViewModel>();
         services.AddSingleton<ArchitectureExplorerPageViewModel>();
         services.AddSingleton<RunHistoryPageViewModel>();
         services.AddSingleton<SettingsPageViewModel>();

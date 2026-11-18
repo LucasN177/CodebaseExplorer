@@ -195,6 +195,10 @@ when the shell shows them.
 diagnostics) returns `AnalysisRunDto`s; diagnostic file paths are resolved against the current model, so a
 file that only existed in an older (replaced) model keeps its line but loses its path.
 
+**Implemented (UI-004):** `GetRepositoryOverview` computes `RepositoryOverviewDto` from the stored model
+(languages, projects per ecosystem without placeholders, external dependencies, run of the model, newer
+unsuccessful run). The shell shows the overview after an import or opening (WF-01 step 5).
+
 Principles:
 
 - **Async all the way** for I/O; every long-running call accepts a `CancellationToken` and an

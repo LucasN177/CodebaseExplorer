@@ -13,22 +13,24 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 {
     public MainWindowViewModel(
         StartPageViewModel start,
+        OverviewPageViewModel overview,
         ArchitectureExplorerPageViewModel architectureExplorer,
         RunHistoryPageViewModel runHistory,
         SettingsPageViewModel settings,
         RepositorySession session,
         ShellStatus shell)
     {
-        Pages = [start, architectureExplorer, runHistory, settings];
+        Pages = [start, overview, architectureExplorer, runHistory, settings];
         CurrentPage = start;
         Shell = shell;
+        overview.ExplorerRequested += (_, _) => CurrentPage = architectureExplorer;
 
-        // A successful import or opening a stored repository opens the explorer (UI-002, REPO-005).
+        // A successful import or opening a stored repository shows the overview (WF-01 step 5, UI-004), which links to the explorer.
         session.CurrentChanged += (_, _) =>
         {
             if (session.Current is not null)
             {
-                CurrentPage = architectureExplorer;
+                CurrentPage = overview;
             }
         };
     }

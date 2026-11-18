@@ -1,0 +1,73 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pages="using:CodebaseExplorer.Desktop.ViewModels.Pages"
+             x:Class="CodebaseExplorer.Desktop.Views.Pages.OverviewPageView"
+             x:DataType="pages:OverviewPageViewModel">
+  <ScrollViewer>
+    <StackPanel Spacing="16" MaxWidth="880" HorizontalAlignment="Left">
+      <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold" IsVisible="{Binding !HasOverview}" />
+      <TextBlock IsVisible="{Binding ShowEmptyState}" TextWrapping="Wrap" Opacity="0.8"
+                 Text="Open or import a repository on the start page to see its overview." />
+      <Border IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
+              BorderThickness="1" CornerRadius="6" Padding="12"
+              BorderBrush="{DynamicResource ErrorBorderBrush}"
+              Background="{DynamicResource ErrorBackgroundBrush}">
+        <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
+      </Border>
+
+      <StackPanel Spacing="16" IsVisible="{Binding HasOverview}">
+        <DockPanel>
+          <Button DockPanel.Dock="Right" Classes="accent" VerticalAlignment="Center"
+                  Content="Open Architecture Explorer" Command="{Binding OpenExplorerCommand}" />
+          <StackPanel Spacing="4" Margin="0,0,16,0">
+            <TextBlock Text="{Binding Name}" FontSize="24" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+            <SelectableTextBlock Text="{Binding RootPath}" Opacity="0.7" TextWrapping="Wrap" />
+          </StackPanel>
+        </DockPanel>
+
+        <!-- Key figures -->
+        <ItemsControl ItemsSource="{Binding Tiles}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="pages:OverviewTile">
+              <Border BorderThickness="1" CornerRadius="6" Padding="16,10" Margin="0,0,12,12" MinWidth="130"
+                      BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{Binding Value}" FontSize="22" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Label}" FontSize="12" Opacity="0.7" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <TextBlock IsVisible="{Binding HasNoProjects}" TextWrapping="Wrap" Opacity="0.8"
+                   Text="No projects were recognized in this folder. Only file and language statistics are available; currently .NET solutions and projects are detected." />
+
+        <Grid ColumnDefinitions="*,24,*">
+          <StackPanel Grid.Column="0" Spacing="6">
+            <TextBlock Text="Languages" FontWeight="SemiBold" />
+            <ItemsControl ItemsSource="{Binding Languages}" />
+          </StackPanel>
+          <StackPanel Grid.Column="2" Spacing="6">
+            <TextBlock Text="Projects by ecosystem" FontWeight="SemiBold" />
+            <ItemsControl ItemsSource="{Binding Ecosystems}" />
+            <TextBlock Text="{Binding MissingProjectsText}" TextWrapping="Wrap" Opacity="0.7" FontSize="12"
+                       IsVisible="{Binding MissingProjectsText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+          </StackPanel>
+        </Grid>
+
+        <StackPanel Spacing="6">
+          <TextBlock Text="Analysis" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding ModelRunText}" />
+          <TextBlock Text="{Binding NewerRunText}" TextWrapping="Wrap" Opacity="0.8"
+                     IsVisible="{Binding NewerRunText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        </StackPanel>
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

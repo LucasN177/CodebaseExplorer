@@ -18,6 +18,9 @@
     <DataTemplate DataType="pages:StartPageViewModel">
       <views:StartPageView />
     </DataTemplate>
+    <DataTemplate DataType="pages:OverviewPageViewModel">
+      <views:OverviewPageView />
+    </DataTemplate>
     <DataTemplate DataType="pages:ArchitectureExplorerPageViewModel">
       <views:ArchitectureExplorerPageView />
     </DataTemplate>
