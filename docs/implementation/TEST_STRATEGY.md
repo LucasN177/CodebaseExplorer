@@ -75,6 +75,7 @@ Planned fixtures:
 |---|---|---|
 | `dotnet-layered` | REPO-004 (**exists**) | 5-project clean-architecture solution; M1 oracle. |
 | `dotnet-advanced` | REPO-006 (**exists**) | Partial and nested types, generics, multi-targeting, true/false/unsupported conditions, CPM `VersionOverride`, missing project reference, DI registrations with negative cases; oracle for ANALYSIS-005 … 007, regression input for the M1 parsers (`DotnetAdvancedFixtureTests`). |
+| `dotnet-hostile` | QA-003 (**exists**) | MSBuild `Exec`, property functions, imported targets, analyzer/generator references, module initializer; payloads write markers (§5.1). |
 | `ts-monorepo-workspaces` | REPO-007 | npm/pnpm workspaces, tsconfig paths and project references. |
 | `js-commonjs` | REPO-007 | `require`, `module.exports`, index resolution. |
 | `python-src-layout` | REPO-007 | `pyproject.toml`, `src/` layout, relative imports. |
@@ -94,6 +95,26 @@ Planned fixtures:
 | ViewModel | Command enable/disable, state transitions, error display, with NSubstitute doubles. |
 | Security-relevant code | Negative tests (traversal, oversized input, hostile content). |
 | Web view (TS) | Vitest for message validation and label handling. |
+
+### 5.1 Hostile fixtures and the zero-execution harness (QA-003)
+
+Every ecosystem that can carry executable build or install logic gets a hostile fixture whose payloads only
+write `MARKER-*.txt` files when executed (`dotnet-hostile` for .NET; npm, Python and Git follow in
+ANALYSIS-009, ANALYSIS-011, GIT-001). Tests use `ZeroExecutionHarness`
+(`tests/CodebaseExplorer.IntegrationTests/Security`):
+
+1. `CopyFixture(name)` copies the fixture to a temporary folder (fixtures stay read-only);
+2. `Snapshot(root)` records path + SHA-256 of every file;
+3. run the **full** import through the real composition root (`TestApplication`);
+4. assert `Changes(root, snapshot)` is empty and `Markers(dir)` finds nothing in the copy, the test output
+   directory and the app's data directory; assert no assembly was loaded from the copy;
+5. `ProcessApiUsages(assembly)` is the **process-spawn guard**: .NET offers no cross-platform hook to observe
+   child processes, so the guard checks statically that the IL of the modules reading repository content
+   references neither `System.Diagnostics.Process`/`ProcessStartInfo` nor P/Invoke process-creation
+   functions (`CreateProcess*`, `ShellExecute*`, `fork`, `exec*`, `posix_spawn*`, `system`, `popen`).
+   A harness self-test proves that markers, file changes and process references are detected.
+
+The tests are ordinary integration tests and run in CI on Windows, macOS and Linux.
 
 ## 6. Conventions
 

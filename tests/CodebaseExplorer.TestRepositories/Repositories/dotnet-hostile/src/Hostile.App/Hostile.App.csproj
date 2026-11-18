@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="hostile.targets" />
+
+  <PropertyGroup>
+    <MarkerFromProjectFunction>$([System.IO.File]::WriteAllText('$(MSBuildProjectDirectory)/MARKER-project-property-function.txt', 'executed'))</MarkerFromProjectFunction>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Hostile.Analyzers" Version="1.0.0" PrivateAssets="all" OutputItemType="Analyzer" />
+    <Analyzer Include="../../tools/Hostile.Generator.dll" />
+  </ItemGroup>
+
+  <Target Name="HostileBeforeBuild" BeforeTargets="BeforeBuild;CoreCompile;ResolveAssemblyReferences">
+    <Exec Command="echo executed &gt; &quot;$(MSBuildProjectDirectory)/MARKER-build-exec.txt&quot;" />
+  </Target>
+
+</Project>

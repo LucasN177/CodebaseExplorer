@@ -1,0 +1,6 @@
+<Project>
+  <!-- HOSTILE FIXTURE (QA-003): an imported target with a task that writes a marker if MSBuild ever runs it. -->
+  <Target Name="HostileImportedTarget" AfterTargets="Build;Restore;GetTargetPath">
+    <WriteLinesToFile File="$(MSBuildThisFileDirectory)MARKER-imported-target.txt" Lines="executed" />
+  </Target>
+</Project>

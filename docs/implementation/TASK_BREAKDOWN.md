@@ -23,7 +23,7 @@ Status overview (keep in sync):
 | M0 Foundation | (initialization) | ✅ |
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
-| M3 Deep C# & Inspector | 9 | 4 |
+| M3 Deep C# & Inspector | 9 | 5 |
 | M4 Polyglot & scale | 11 | 0 |
 | M5 Git | 7 | 0 |
 | M6 Export | 2 | 0 |
@@ -404,11 +404,12 @@ Status overview (keep in sync):
 - **Note:** `tests/CodebaseExplorer.TestRepositories/Repositories/dotnet-advanced` (16 files, LF). EXPECTED.md §1–7 (files, solution, projects incl. placeholder `Advanced.Plugins`, references, conditions, diagnostics) are asserted by `DotnetAdvancedFixtureTests` and already pass with the M1 parsers. §8 (modules and entities with documentation-comment IDs and identifier locations), §9 (minimum set of semantic relationships incl. cross-project) and §10 (DI registrations and negative cases) are the oracle for ANALYSIS-005 … 007. Open verification item V-1 for ANALYSIS-005: symbol keys must not depend on whether NuGet or SDK reference assemblies are present (unresolved parameter types).
 
 ### QA-003 — Hostile .NET fixtures proving zero execution
-- **Priority:** P0 · **Milestone:** M3 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M3 · **Status:** done
 - **Prerequisites:** ANALYSIS-006
 - **Projects:** TestRepositories, IntegrationTests
 - **Description:** .NET hostile fixtures: MSBuild `Exec` in targets and `Directory.Build.props`, property functions, analyzer/source-generator package references, all writing marker files if executed. Integration tests run the full pipeline and assert that no marker file exists and no child process was started. Provides a reusable harness (marker check + process-spawn guard) for the ecosystem-specific hostile tests in ANALYSIS-009 (npm), ANALYSIS-011 (Python) and GIT-001 (Git hooks/fsmonitor).
 - **Acceptance criteria:** Tests run in CI on all OSes; SECURITY.md §6 references them; harness documented in TEST_STRATEGY.md.
+- **Note:** Fixture `dotnet-hostile` (property functions in `Directory.Build.props` and the project, `Exec` before `Restore` and `CoreCompile`, an imported target with `WriteLinesToFile`, analyzer/generator references incl. a fake `.dll`, a `[ModuleInitializer]`); no solution file, so IDEs do not pick it up. `HostileDotNetFixtureTests` runs the full import through the real composition root on a copy and asserts: success, project and entity found, copy byte-identical, no marker in the copy, the test output or the data directory, no assembly loaded from the copy. **Process-spawn guard:** .NET has no cross-platform API to observe child processes, so the guard is static — `ZeroExecutionHarness.ProcessApiUsages` checks the IL of Analysis, Storage, Git, AI, Graph, Application, Domain and Contracts for `Process`/`ProcessStartInfo` references and process-creation P/Invokes; a self-test proves detection. Runs in the normal CI jobs (all three OSes); verified locally on Windows.
 
 ### GRAPH-005 — Layouts and visual encoding
 - **Priority:** P0 · **Milestone:** M3 · **Status:** todo

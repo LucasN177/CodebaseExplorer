@@ -26,6 +26,7 @@ and integration tests (see `docs/implementation/TEST_STRATEGY.md`, section "Test
 |---|---|---|
 | `dotnet-layered` | REPO-004 | 5-project layered .NET solution (`.sln` + `.slnx`), central package management with a `VersionOverride`, a false MSBuild condition, a reference to a missing project, a `FrameworkReference`, multi-targeting. Oracle for ANALYSIS-002 … ANALYSIS-004. |
 | `dotnet-advanced` | REPO-006 | 2-project .NET solution (`.slnx`): multi-targeting core with partial, nested and generic types, struct, enum, delegate; services project with a `VersionOverride`, true, false and unsupported (`Exists()`) conditions, a missing project reference and DI registrations including negative cases. Oracle for ANALYSIS-005 … ANALYSIS-007 and regression input for ANALYSIS-002 … ANALYSIS-004. |
+| `dotnet-hostile` | QA-003 | Hostile .NET repository: MSBuild `Exec` targets in `Directory.Build.props` and the project, property functions, an imported target, analyzer/source-generator references (incl. a fake `.dll`) and a `[ModuleInitializer]` — every payload only writes a `MARKER-*.txt` file. Proves that the import executes nothing (`HostileDotNetFixtureTests`, `ZeroExecutionHarness`). |
 
 Fixture files use LF line endings and are stored byte-exact (`.gitattributes`), because
 `EXPECTED.md` documents exact line/column positions.

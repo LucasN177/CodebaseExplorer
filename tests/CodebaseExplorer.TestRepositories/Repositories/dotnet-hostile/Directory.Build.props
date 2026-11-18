@@ -1,0 +1,11 @@
+<Project>
+  <!-- HOSTILE FIXTURE (QA-003): every payload below only writes a marker file if it is ever executed. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <MarkerFromPropertyFunction>$([System.IO.File]::WriteAllText('$(MSBuildThisFileDirectory)MARKER-property-function.txt', 'executed'))</MarkerFromPropertyFunction>
+  </PropertyGroup>
+
+  <Target Name="HostileBeforeRestore" BeforeTargets="Restore;CollectPackageReferences;_GenerateRestoreGraph">
+    <Exec Command="echo executed &gt; &quot;$(MSBuildThisFileDirectory)MARKER-restore-exec.txt&quot;" />
+  </Target>
+</Project>

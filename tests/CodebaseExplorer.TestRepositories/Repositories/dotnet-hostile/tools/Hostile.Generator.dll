@@ -1,0 +1,3 @@
+HOSTILE FIXTURE (QA-003): not a real assembly. A project references this file as an analyzer/source
+generator. Codebase Explorer must never load analyzers or generators from a repository; if anything tried
+to load this file as an assembly, it would fail with a BadImageFormatException.
