@@ -5,7 +5,7 @@
 > (GRAPH-002); **graph web view implemented** (GRAPH-003: `graph/load`, `graph/focus`, `view/theme`,
 > `ready`, `selection/changed`, `node/openInspector`, `error`); **host control and message bridge
 > implemented** (GRAPH-004, §6.1; verified on Windows/WebView2). The other levels are not, and the
-> Architecture Explorer page is still a placeholder (the host is placed on it in UI-003).
+> Architecture Explorer page shows the L1 graph of the imported repository (UI-003).
 > Related: [ADR-006](../decisions/ADR-006-cytoscape-visualization.md).
 
 ## 1. Components

@@ -8,7 +8,7 @@
 > language/marker detection, `dotnet-layered` fixture tests, analysis pipeline, solution and
 > project-file parsers, the .NET project-system analyzer, graph projection and graph JSON
 > round-trips, and the import/graph use cases including an end-to-end test over `dotnet-layered`
-> — and the graph host bridge, navigation policy and app manifest (GRAPH-004), and the Start page import ViewModel (UI-002) — 751 tests in total (4 skipped on
+> — and the graph host bridge, navigation policy and app manifest (GRAPH-004), and the Start page import ViewModel (UI-002) and the Architecture Explorer ViewModel (UI-003) — 759 tests in total (4 skipped on
 > this Windows machine: 3 symbolic-link tests without link permission, 1 explicit benchmark).
 
 ## 1. Goals

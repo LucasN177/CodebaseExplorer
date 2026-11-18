@@ -1,0 +1,166 @@
+using System.ComponentModel;
+using CodebaseExplorer.Application.Graph;
+using CodebaseExplorer.Application.Repositories;
+using CodebaseExplorer.Contracts.Graph;
+using CodebaseExplorer.Contracts.Repositories;
+using CodebaseExplorer.Desktop.Composition;
+using CodebaseExplorer.Desktop.Services;
+using CodebaseExplorer.Desktop.ViewModels.Pages;
+using CodebaseExplorer.TestRepositories;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using NSubstitute;
+
+namespace CodebaseExplorer.IntegrationTests.ViewModels;
+
+/// <summary>
+/// UI-003: the explorer loads the project graph of the current repository into the graph host and
+/// shows name and kind of the selection. Real use cases, substituted graph host (no WebView).
+/// </summary>
+public sealed class ArchitectureExplorerPageViewModelTests : IDisposable
+{
+    private readonly ServiceProvider _services = CompositionRoot.BuildServiceProvider();
+    private readonly IGraphViewHost _host = Substitute.For<IGraphViewHost>();
+    private readonly RepositorySession _session = new();
+    private readonly ArchitectureExplorerPageViewModel _viewModel;
+
+    public ArchitectureExplorerPageViewModelTests()
+    {
+        _host.ShowGraphAsync(default!, Arg.Any<CancellationToken>()).ReturnsForAnyArgs(true);
+        _host.Selection.Returns(GraphSelection.Empty);
+        _viewModel = new ArchitectureExplorerPageViewModel(
+            _host, _services.GetRequiredService<GetGraphView>(), _session, NullLogger<ArchitectureExplorerPageViewModel>.Instance);
+    }
+
+    public void Dispose() => _services.Dispose();
+
+    [Fact]
+    public void WithoutRepository_ShowsEmptyState()
+    {
+        Assert.False(_viewModel.HasGraph);
+        Assert.True(_viewModel.ShowEmptyState);
+        Assert.Null(_viewModel.RepositoryName);
+        _host.DidNotReceiveWithAnyArgs().ShowGraphAsync(default!, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Import_LoadsTheProjectGraphIntoTheHost()
+    {
+        var view = await ImportFixtureAsync();
+
+        Assert.True(_viewModel.HasGraph);
+        Assert.False(_viewModel.IsLoading);
+        Assert.Null(_viewModel.ErrorMessage);
+        Assert.Equal("dotnet-layered", _viewModel.RepositoryName);
+        Assert.Equal(GraphLevels.Project, view.Level);
+        Assert.Equal(
+            ["Shop.Application", "Shop.Domain", "Shop.Infrastructure", "Shop.Legacy", "Shop.Tests", "Shop.Web"],
+            view.Nodes.Select(n => n.Label));
+        Assert.Equal(8, view.Edges.Count);
+    }
+
+    [Fact]
+    public async Task UnknownRepository_ShowsErrorInsteadOfGraph()
+    {
+        _session.SetCurrent(Summary(new string('c', 32)));
+        await Task.Yield();
+
+        Assert.False(_viewModel.HasGraph);
+        Assert.Equal("The repository has not been analyzed in this session.", _viewModel.ErrorMessage);
+        await _host.DidNotReceiveWithAnyArgs().ShowGraphAsync(default!, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HostRejectsGraph_ShowsError()
+    {
+        _host.ShowGraphAsync(default!, Arg.Any<CancellationToken>()).ReturnsForAnyArgs(false);
+
+        await ImportFixtureAsync();
+
+        Assert.True(_viewModel.HasGraph);
+        Assert.Equal("The graph view did not accept the graph. Details are in the application log.", _viewModel.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task NodeSelection_ShowsNameAndKind()
+    {
+        var view = await ImportFixtureAsync();
+        var web = view.Nodes.Single(n => n.Label == "Shop.Web");
+
+        Select(view, [web.Id], []);
+
+        Assert.True(_viewModel.HasSelection);
+        Assert.Equal("Shop.Web", _viewModel.SelectionName);
+        Assert.Equal("Project", _viewModel.SelectionKind);
+        Assert.Equal(web.Sublabel, _viewModel.SelectionDetail);
+        Assert.Null(_viewModel.SelectionCountText);
+    }
+
+    [Fact]
+    public async Task MissingProjectSelection_SaysTheProjectFileIsMissing()
+    {
+        var view = await ImportFixtureAsync();
+
+        Select(view, [view.Nodes.Single(n => n.Label == "Shop.Legacy").Id], []);
+
+        Assert.Equal("Project (project file missing)", _viewModel.SelectionKind);
+    }
+
+    [Fact]
+    public async Task EdgeSelection_ShowsEndpointsAndRelationshipCount()
+    {
+        var view = await ImportFixtureAsync();
+        var labels = view.Nodes.ToDictionary(n => n.Id, n => n.Label);
+        var edge = view.Edges.Single(e => labels[e.Source] == "Shop.Web" && labels[e.Target] == "Shop.Application");
+
+        Select(view, [], [edge.Id]);
+
+        Assert.Equal("Shop.Web → Shop.Application", _viewModel.SelectionName);
+        Assert.Equal("Dependency", _viewModel.SelectionKind);
+        Assert.Equal("1 relationship", _viewModel.SelectionDetail);
+    }
+
+    [Fact]
+    public async Task MultipleSelection_ShowsFirstNodeAndCount_AndClearingResetsThePanel()
+    {
+        var view = await ImportFixtureAsync();
+
+        Select(view, [view.Nodes[0].Id, view.Nodes[1].Id], [view.Edges[0].Id]);
+        Assert.Equal(view.Nodes[0].Label, _viewModel.SelectionName);
+        Assert.Equal("3 elements selected", _viewModel.SelectionCountText);
+
+        Select(view, [], []);
+        Assert.False(_viewModel.HasSelection);
+        Assert.Null(_viewModel.SelectionKind);
+        Assert.Null(_viewModel.SelectionCountText);
+    }
+
+    private async Task<GraphViewDto> ImportFixtureAsync()
+    {
+        var summary = (await _services.GetRequiredService<ImportLocalRepository>().ExecuteAsync(
+            TestRepositoryCatalog.GetFixturePath("dotnet-layered"), null, TestContext.Current.CancellationToken)).Value;
+
+        // GetGraphView and the substituted host complete synchronously, so the load triggered by the session
+        // has finished when SetCurrent returns; awaiting the explicit load would only repeat it.
+        _session.SetCurrent(summary);
+
+        var call = Assert.Single(_host.ReceivedCalls(), c => c.GetMethodInfo().Name == nameof(IGraphViewHost.ShowGraphAsync));
+        return (GraphViewDto)call.GetArguments()[0]!;
+    }
+
+    private void Select(GraphViewDto view, IReadOnlyList<string> nodeIds, IReadOnlyList<string> edgeIds)
+    {
+        _host.CurrentGraph.Returns(view);
+        _host.Selection.Returns(new GraphSelection(nodeIds, edgeIds));
+        _host.PropertyChanged += Raise.Event<PropertyChangedEventHandler>(_host, new PropertyChangedEventArgs(nameof(IGraphViewHost.Selection)));
+    }
+
+    private static RepositoryImportSummaryDto Summary(string repositoryId) => new()
+    {
+        RepositoryId = repositoryId,
+        Name = "unknown",
+        RootPath = Path.GetTempPath(),
+        AnalysisRunId = new string('d', 32),
+        Status = "succeeded",
+    };
+}

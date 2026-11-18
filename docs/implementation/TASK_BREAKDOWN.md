@@ -247,13 +247,14 @@ Status overview (keep in sync):
 - **Note:** The tests use the real `ImportLocalRepository` with a substituted `IRepositoryAnalyzer` port (the use case is a sealed class; no extra interface). The use case runs via `Task.Run`; a test asserts the command returns while the analyzer blocks. The current repository is held by `RepositorySession` (Desktop/Services); the shell navigates to the explorer when it changes. Git detection (WF-01 step 3) is not part of M1.
 
 ### UI-003 — Architecture Explorer page with project graph
-- **Priority:** P0 · **Milestone:** M1 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M1 · **Status:** in progress
 - **Prerequisites:** GRAPH-004, UI-002
 - **Projects:** Desktop
 - **Description:** Replace the placeholder with the graph host; load the L1 graph for the current repository; show selected node name and kind in a simple side panel (full inspector in UI-006).
 - **Acceptance criteria:**
   - Manual test on all three OSes with `dotnet-layered`: 5 project nodes, correct edges, selection works.
   - Theme switch updates the graph.
+- **Note (2026-11-18):** Implemented; ViewModel tests cover loading, errors and the selection panel. **Manual test on Windows passed:** `dotnet-layered` shows the 5 projects plus the placeholder `Shop.Legacy` (missing project file, see EXPECTED.md §4) with 8 edges, selection updates the panel, and switching the app theme recolors the graph. **Remaining:** the same manual test on macOS and Linux (together with GRAPH-001).
 
 ### QA-001 — Continuous integration
 - **Priority:** P1 · **Milestone:** M1 · **Status:** todo

@@ -1,19 +1,53 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:pages="using:CodebaseExplorer.Desktop.ViewModels.Pages"
+             xmlns:controls="using:CodebaseExplorer.Desktop.Controls"
              x:Class="CodebaseExplorer.Desktop.Views.Pages.ArchitectureExplorerPageView"
              x:DataType="pages:ArchitectureExplorerPageViewModel">
   <DockPanel>
-    <TextBlock DockPanel.Dock="Top" Text="{Binding Title}"
-               FontSize="24" FontWeight="SemiBold" Margin="0,0,0,16" />
-    <!-- Placeholder: the Cytoscape.js graph host (WebView) and the Component Inspector replace this border. -->
-    <Border BorderThickness="1" CornerRadius="6"
+    <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,16">
+      <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold" />
+      <TextBlock Text="{Binding RepositoryName}" Opacity="0.7"
+                 IsVisible="{Binding RepositoryName, Converter={x:Static ObjectConverters.IsNotNull}}" />
+      <Border IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
+              BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,8,0,0"
+              BorderBrush="{DynamicResource SystemFillColorCriticalBrush}"
+              Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}">
+        <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
+      </Border>
+    </StackPanel>
+
+    <!-- Selection panel (name and kind; the full Component Inspector follows in UI-006) -->
+    <Border DockPanel.Dock="Right" Width="260" Margin="16,0,0,0" Padding="16"
+            IsVisible="{Binding HasGraph}"
+            BorderThickness="1" CornerRadius="6"
             BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
-      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
-        <TextBlock Text="Architecture graph" FontSize="18" HorizontalAlignment="Center" />
-        <TextBlock Opacity="0.7" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="420"
-                   Text="Open a local folder on the Start page to analyze it. Showing the analyzed project graph here is not implemented yet." />
+      <StackPanel Spacing="8">
+        <TextBlock Text="Selection" FontWeight="SemiBold" />
+        <TextBlock Text="Select a node or edge in the graph." Opacity="0.7" TextWrapping="Wrap"
+                   IsVisible="{Binding !HasSelection}" />
+        <StackPanel Spacing="4" IsVisible="{Binding HasSelection}">
+          <TextBlock Text="{Binding SelectionName}" FontSize="16" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding SelectionKind}" Opacity="0.8" />
+          <TextBlock Text="{Binding SelectionDetail}" Opacity="0.7" TextWrapping="Wrap"
+                     IsVisible="{Binding SelectionDetail, Converter={x:Static ObjectConverters.IsNotNull}}" />
+          <TextBlock Text="{Binding SelectionCountText}" Opacity="0.6" FontSize="12"
+                     IsVisible="{Binding SelectionCountText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        </StackPanel>
       </StackPanel>
+    </Border>
+
+    <Border BorderThickness="1" CornerRadius="6" ClipToBounds="True"
+            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+      <Grid>
+        <controls:GraphHostControl Host="{Binding Graph}" IsVisible="{Binding HasGraph}" />
+        <StackPanel IsVisible="{Binding ShowEmptyState}"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
+          <TextBlock Text="Architecture graph" FontSize="18" HorizontalAlignment="Center" />
+          <TextBlock Opacity="0.7" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="420"
+                     Text="No repository has been analyzed yet. Open a local folder on the Start page; its project graph is shown here." />
+        </StackPanel>
+      </Grid>
     </Border>
   </DockPanel>
 </UserControl>

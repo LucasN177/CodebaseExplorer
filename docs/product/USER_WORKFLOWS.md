@@ -49,7 +49,7 @@ repository already cloned (offer *update* = fetch + checkout of the selected bra
 
 ## WF-03 Explore the architecture graph
 
-**Persona:** all · **Capabilities:** MVP-09, MVP-10 · **Status:** placeholder page exists; graph planned (M1/M4)
+**Persona:** all · **Capabilities:** MVP-09, MVP-10 · **Status:** project-level graph with a selection panel implemented (UI-003, M1); drill-down, layouts, filters, search planned (M2–M4)
 
 1. The explorer opens at the **project level**: one node per project/package, grouped by
    ecosystem or solution folder; edges are aggregated project dependencies with counts.

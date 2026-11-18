@@ -10,7 +10,8 @@ quickly — without uploading code and without executing it.
 > **Project status: milestone M1 (vertical slice) in progress.**
 > The repository contains the complete product and architecture documentation, a buildable .NET 10
 > solution and an application in which a local folder can be imported and its .NET projects analyzed.
-> **The graph is not shown in the app yet, and there are no Git, AI or persistence features.** See [Project status](#project-status).
+> Its project-level dependency graph is shown in the Architecture Explorer (verified on Windows).
+> **There are no Git, AI or persistence features yet, and no code-level (C#/TypeScript/Python) analysis.** See [Project status](#project-status).
 
 ---
 
@@ -34,13 +35,13 @@ analysis. Full vision: [docs/product/VISION.md](docs/product/VISION.md).
 | Feature | Status |
 |---|---|
 | App shell: navigation, Start page, Settings (theme System/Light/Dark, local data directory) | ✅ available |
-| Architecture Explorer page | 🧩 placeholder only (no graph yet) |
+| Architecture Explorer: project-level graph of the imported repository, selection panel, light/dark theme | ✅ available (verified on Windows; macOS/Linux not yet tested) |
 | Import a local folder (folder picker, progress with stages, cancel) | ✅ available (results kept in memory for the session) |
 | Clone GitHub/GitLab remotes | ⏳ planned (M5) |
 | Repository scanner, language and project detection | 🟡 partial (scanner and .NET project analysis available; other ecosystems M4) |
 | C# analysis with Roslyn (no build required) | ⏳ planned (M1 projects, M3 types) |
 | TypeScript, JavaScript and Python analysis (Tree-sitter, manifests) | ⏳ planned (M4) |
-| Interactive, hierarchical architecture graph (Cytoscape.js) | ⏳ planned (M1–M4) |
+| Hierarchical drill-down, layouts, filters and search in the graph (Cytoscape.js) | ⏳ planned (M2–M4) |
 | Component Inspector with evidence and source snippets | ⏳ planned (M3) |
 | Local persistence (SQLite) and analysis history | ⏳ planned (M2) |
 | Git metadata and change-activity overlays | ⏳ planned (M5) |
@@ -126,7 +127,7 @@ ANALYSIS-004), the project-level graph projection with its JSON wire format (GRA
 use cases that tie them together — import a local folder, then query its project graph (CORE-006;
 models are kept in memory for the session until persistence arrives in M2). The Start page imports a
 local folder with a progress panel and cancel (UI-002). The graph web view (TypeScript + Cytoscape.js, GRAPH-003) is built and
-shipped with the app, and the host control that embeds it in the window (GRAPH-004, verified on Windows) exists, but it is not yet placed on the Architecture Explorer page (UI-003).
+shipped with the app; the host control embeds it in the window (GRAPH-004), and the Architecture Explorer shows the project graph of the imported repository with a selection panel (UI-003, verified on Windows).
 
 ## Roadmap
 
