@@ -23,6 +23,7 @@ public sealed class ArchitectureExplorerPageViewModelTests : IAsyncLifetime
     private readonly IGraphViewHost _host = Substitute.For<IGraphViewHost>();
     private readonly RepositorySession _session = new();
     private readonly ShellStatus _shell = new(TimeProvider.System);
+    private readonly IClipboardService _clipboard = Substitute.For<IClipboardService>();
     private readonly ArchitectureExplorerPageViewModel _viewModel;
 
     public ArchitectureExplorerPageViewModelTests()
@@ -31,6 +32,7 @@ public sealed class ArchitectureExplorerPageViewModelTests : IAsyncLifetime
         _host.Selection.Returns(GraphSelection.Empty);
         _viewModel = new ArchitectureExplorerPageViewModel(
             _host, _app.Services.GetRequiredService<GetGraphView>(), _app.Services.GetRequiredService<GetGraphEdgeDetails>(),
+            _app.Services.GetRequiredService<CodebaseExplorer.Application.Source.GetSourceSnippet>(), _clipboard,
             _session, Substitute.For<IUserSettingsStore>(), _shell, NullLogger<ArchitectureExplorerPageViewModel>.Instance);
     }
 
@@ -147,6 +149,35 @@ public sealed class ArchitectureExplorerPageViewModelTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task SelectedEvidence_ShowsTheSourceSnippet_AndCopiesThePath()
+    {
+        // UI-007
+        var view = await ImportFixtureAsync();
+        var labels = view.Nodes.ToDictionary(n => n.Id, n => n.Label);
+        var edge = view.Edges.Single(e => labels[e.Source] == "Shop.Web" && labels[e.Target] == "Shop.Application");
+        Select(view, [], [edge.Id]);
+
+        _viewModel.SelectedEvidence = Assert.Single(_viewModel.SelectionEvidence);
+        await WaitUntilAsync(() => _viewModel.HasSnippet); // the file is read asynchronously
+
+        Assert.True(_viewModel.HasSnippet);
+        Assert.Equal("src/Shop.Web/Shop.Web.csproj", _viewModel.SnippetPath);
+        Assert.Null(_viewModel.SnippetMessage);
+        Assert.Equal([13], _viewModel.SnippetLines.Where(l => l.IsEvidence).Select(l => l.Number));
+        Assert.Equal(Enumerable.Range(8, 10), _viewModel.SnippetLines.Select(l => l.Number)); // 13 ± 5, file has 17 lines
+        Assert.Contains("Shop.Application.csproj", _viewModel.SnippetLines.Single(l => l.IsEvidence).Text, StringComparison.Ordinal);
+
+        Assert.True(_viewModel.CopyPathCommand.CanExecute(null));
+        await _viewModel.CopyPathCommand.ExecuteAsync(null);
+        await _clipboard.Received(1).SetTextAsync(Arg.Is<string>(p => p.EndsWith(Path.Combine("src", "Shop.Web", "Shop.Web.csproj"), StringComparison.Ordinal)));
+
+        Select(view, [view.Nodes[0].Id], []);
+        Assert.Null(_viewModel.SelectedEvidence);
+        Assert.False(_viewModel.HasSnippet);
+        Assert.Null(_viewModel.SnippetPath);
+    }
+
+    [Fact]
     public async Task EdgeToMissingProject_ShowsSyntacticEvidence()
     {
         var view = await ImportFixtureAsync();
@@ -214,6 +245,14 @@ public sealed class ArchitectureExplorerPageViewModelTests : IAsyncLifetime
             System.Text.Json.JsonSerializer.Serialize(initial, GraphJsonContext.Default.GraphViewDto),
             System.Text.Json.JsonSerializer.Serialize(collapsed, GraphJsonContext.Default.GraphViewDto));
         Assert.Null(_viewModel.ErrorMessage);
+    }
+
+    private static async Task WaitUntilAsync(Func<bool> condition)
+    {
+        for (var waited = 0; !condition() && waited < 5000; waited += 20)
+        {
+            await Task.Delay(20, TestContext.Current.CancellationToken);
+        }
     }
 
     private GraphViewDto LastPatch() =>

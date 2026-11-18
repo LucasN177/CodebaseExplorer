@@ -65,7 +65,7 @@ If an expansion would exceed the budget, the app offers a filtered or neighborho
 
 ## WF-04 Inspect a component and its evidence
 
-**Persona:** Tom (tech lead) · **Capabilities:** MVP-07, MVP-10 · **Status:** planned (M3; Git activity M5, *Open in editor* M8)
+**Persona:** Tom (tech lead) · **Capabilities:** MVP-07, MVP-10 · **Status:** step 4 implemented for graph edges in the explorer side panel (UI-007: evidence list, read-only snippet ± 5 lines, *Copy path*); the inspector (steps 2, 3, 5) follows with UI-006; Git activity M5, *Open in editor* M8
 
 1. Tom selects the node `Billing.Application` (project).
 2. The inspector shows: kind, ecosystem, language, path, target frameworks, size metrics,

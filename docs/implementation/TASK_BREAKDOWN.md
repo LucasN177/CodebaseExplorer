@@ -23,7 +23,7 @@ Status overview (keep in sync):
 | M0 Foundation | (initialization) | ✅ |
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
-| M3 Deep C# & Inspector | 9 | 7 |
+| M3 Deep C# & Inspector | 9 | 8 |
 | M4 Polyglot & scale | 11 | 0 |
 | M5 Git | 7 | 0 |
 | M6 Export | 2 | 0 |
@@ -435,11 +435,12 @@ Status overview (keep in sync):
 - **Acceptance criteria:** Works for projects, modules, entities, external dependencies and aggregated edges.
 
 ### UI-007 — Evidence list and source snippet view
-- **Priority:** P0 · **Milestone:** M3 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M3 · **Status:** done
 - **Prerequisites:** UI-006
 - **Projects:** Application, Desktop
 - **Description:** Evidence records with analyzer, rule, level, location; read-only snippet (± 5 lines) read through `IRepositoryFileReader`; copy path; plain-text rendering.
 - **Acceptance criteria:** Snippet shows the exact line range; missing/changed files are reported, not crashed.
+- **Note:** Implemented **before UI-006** at the user's request: the evidence list and snippet live in the Architecture Explorer's selection panel (evidence of a selected edge, GRAPH-010) and move into the inspector with UI-006. Use case `GetSourceSnippet` (Application `Source/`, Contracts `SourceSnippetDto`): only files of the stored model, read through `IRepositoryFileReader` (containment, 2 MB), evidence range ± 5 lines (clamped), lines over 500 characters shortened; changed content (SHA-256 vs. stored hash) → shown with `ChangedSinceAnalysis`; file shorter than the range → `RangeTruncated` or `source.lines-missing`; deleted file → `source.file-missing`; missing folder → `source.folder-missing`; foreign paths → `source.file-not-in-model`. Desktop: evidence `ListBox` with selection, snippet as plain-text lines with line numbers (evidence lines highlighted, monospace, selectable), *Copy path* via `IClipboardService` (absolute path). Snippet text is never logged. Tests: use case against a mutable copy of `dotnet-layered` (exact range, multi-line, changed, shortened, deleted, missing folder, invalid requests) and the ViewModel (selection → snippet, copy path, clearing). **Manually verified on Windows:** snippet of `Shop.Infrastructure.csproj:6` with line 6 highlighted, *Copy path* puts the absolute path on the clipboard (a disabled-button bug found there was fixed).
 
 ---
 

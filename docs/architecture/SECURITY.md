@@ -81,6 +81,7 @@
 - Git personal access tokens and cloud AI API keys: **open decision OPD-03** (OS credential store
   vs. library vs. no persistence). Until decided: tokens are held in memory for the duration of
   the operation only.
+- Source snippets (UI-007, `GetSourceSnippet`) are read only through `IRepositoryFileReader` (containment, 2 MB limit), only for files of the stored model (other paths are rejected), shown as plain text and never logged or sent anywhere.
 - Secrets are never logged; logging uses redaction for known patterns. **Implemented (CORE-007):**
   `LogRedactor` masks every file-log entry (message and exception text) with `***` for credentials in
   URLs (`https://user:token@host`), `Authorization`/`Proxy-Authorization` values, secret parameters

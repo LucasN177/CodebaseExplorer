@@ -1,9 +1,11 @@
 using System.ComponentModel;
 using CodebaseExplorer.Application.Graph;
+using CodebaseExplorer.Application.Source;
 using CodebaseExplorer.Application.Settings;
 using CodebaseExplorer.Contracts.Graph;
 using CodebaseExplorer.Desktop.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 
 namespace CodebaseExplorer.Desktop.ViewModels.Pages;
@@ -21,6 +23,10 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
 
     private readonly GetGraphView _getGraphView;
     private readonly GetGraphEdgeDetails _getEdgeDetails;
+    private readonly GetSourceSnippet _getSnippet;
+    private readonly IClipboardService _clipboard;
+    private int _snippetNumber;
+    private string? _snippetAbsolutePath;
     private readonly RepositorySession _session;
     private readonly IUserSettingsStore _settings;
     private readonly ShellStatus _shell;
@@ -34,6 +40,8 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         IGraphViewHost graph,
         GetGraphView getGraphView,
         GetGraphEdgeDetails getEdgeDetails,
+        GetSourceSnippet getSnippet,
+        IClipboardService clipboard,
         RepositorySession session,
         IUserSettingsStore settings,
         ShellStatus shell,
@@ -42,6 +50,8 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         Graph = graph;
         _getGraphView = getGraphView;
         _getEdgeDetails = getEdgeDetails;
+        _getSnippet = getSnippet;
+        _clipboard = clipboard;
         _session = session;
         _settings = settings;
         _shell = shell;
@@ -56,6 +66,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         Graph.ExpandRequested += (_, e) => _ = SetExpandedAsync(e.ElementId, expanded: true);
         Graph.CollapseRequested += (_, e) => _ = SetExpandedAsync(e.ElementId, expanded: false);
         SelectionEvidence.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasEvidence));
+        SnippetLines.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasSnippet));
     }
 
     public override string Title => "Architecture Explorer";
@@ -325,6 +336,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
     private async Task LoadEvidenceAsync(string edgeId)
     {
         var evidenceNumber = ++_evidenceNumber;
+        SelectedEvidence = null;
         SelectionEvidence.Clear();
         if (_query is not { } query)
         {
@@ -371,9 +383,92 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
     private void ClearEvidence()
     {
         ++_evidenceNumber;
+        SelectedEvidence = null;
         SelectionEvidence.Clear();
         EvidenceMessage = null;
     }
+
+    /// <summary>The evidence record whose source snippet is shown (UI-007).</summary>
+    [ObservableProperty]
+    public partial EvidenceItem? SelectedEvidence { get; set; }
+
+    /// <summary>Lines of the source snippet around <see cref="SelectedEvidence"/> (plain text).</summary>
+    public System.Collections.ObjectModel.ObservableCollection<SnippetLine> SnippetLines { get; } = [];
+
+    public bool HasSnippet => SnippetLines.Count > 0;
+
+    /// <summary>Repository-relative path of the snippet's file.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CopyPathCommand))]
+    public partial string? SnippetPath { get; private set; }
+
+    /// <summary>A warning (file changed since the analysis) or why no snippet can be shown (file missing, …).</summary>
+    [ObservableProperty]
+    public partial string? SnippetMessage { get; private set; }
+
+    partial void OnSelectedEvidenceChanged(EvidenceItem? value) => _ = LoadSnippetAsync(value);
+
+    /// <summary>Loads the snippet of an evidence record; late results of a previous selection are dropped.</summary>
+    private async Task LoadSnippetAsync(EvidenceItem? evidence)
+    {
+        var snippetNumber = ++_snippetNumber;
+        SnippetLines.Clear();
+        SnippetPath = null;
+        SnippetMessage = null;
+        _snippetAbsolutePath = null;
+        if (evidence is not { HasSource: true } || _query is not { } query)
+        {
+            return;
+        }
+
+        try
+        {
+            var result = await _getSnippet.ExecuteAsync(query.RepositoryId, evidence.Path!, evidence.StartLine!.Value, evidence.EndLine, CancellationToken.None);
+            if (snippetNumber != _snippetNumber)
+            {
+                return;
+            }
+
+            if (!result.TryGetValue(out var snippet, out var error))
+            {
+                _logger.LogWarning("Source snippet failed with {ErrorCode}", error.Code); // never the content
+                SnippetPath = evidence.Path;
+                SnippetMessage = error.Message;
+                return;
+            }
+
+            _snippetAbsolutePath = snippet.AbsolutePath; // before SnippetPath: setting it re-evaluates CopyPathCommand
+            SnippetPath = snippet.Path;
+            foreach (var line in snippet.Lines)
+            {
+                SnippetLines.Add(new SnippetLine(line.Number, line.Text, line.IsEvidence));
+            }
+
+            SnippetMessage = snippet.ChangedSinceAnalysis
+                ? "The file changed since the analysis; the lines may have moved. Re-analyze to update the evidence."
+                : snippet.RangeTruncated ? "The file is shorter now than the evidence range; only the existing lines are shown." : null;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.LogError(exception, "Loading a source snippet failed unexpectedly");
+            if (snippetNumber == _snippetNumber)
+            {
+                SnippetMessage = "The source could not be shown. Details are in the application log.";
+            }
+        }
+    }
+
+    /// <summary>Copies the absolute path of the snippet's file to the clipboard.</summary>
+    [RelayCommand(CanExecute = nameof(CanCopyPath))]
+    private async Task CopyPathAsync()
+    {
+        if (_snippetAbsolutePath is { } path)
+        {
+            await _clipboard.SetTextAsync(path);
+        }
+    }
+
+    private bool CanCopyPath() => SnippetPath is not null && _snippetAbsolutePath is not null;
 
     private static EvidenceItem ToItem(GraphEdgeDetailsDto edge, GraphRelationshipDto relationship, GraphEvidenceDto evidence)
     {
@@ -386,7 +481,8 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             : evidence.EndLine is { } end && end > start ? $"{evidence.Path}:{start}–{end}"
             : $"{evidence.Path}:{start}";
 
-        return new EvidenceItem($"{relationship.Kind} · {evidence.Level}{endpoints}", location, $"{evidence.Analyzer} · {evidence.Rule}");
+        return new EvidenceItem($"{relationship.Kind} · {evidence.Level}{endpoints}", location, $"{evidence.Analyzer} · {evidence.Rule}",
+            evidence.Path, evidence.StartLine, evidence.EndLine);
     }
 
     private static string KindText(GraphNodeDto node)

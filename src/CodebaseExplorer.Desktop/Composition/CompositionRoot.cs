@@ -56,6 +56,7 @@ public static class CompositionRoot
     {
         services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<IFolderPicker, FolderPicker>();
+        services.AddSingleton<IClipboardService, ClipboardService>();
         services.AddSingleton<RepositorySession>();
         services.AddSingleton<ShellStatus>();
         services.AddSingleton<GlobalExceptionHandler>();

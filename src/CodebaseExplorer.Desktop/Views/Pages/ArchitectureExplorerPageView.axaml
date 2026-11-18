@@ -4,6 +4,12 @@
              xmlns:controls="using:CodebaseExplorer.Desktop.Controls"
              x:Class="CodebaseExplorer.Desktop.Views.Pages.ArchitectureExplorerPageView"
              x:DataType="pages:ArchitectureExplorerPageViewModel">
+  <UserControl.Styles>
+    <!-- Evidence lines of a source snippet (UI-007); the color is not the only cue: the lines are also selected in the list. -->
+    <Style Selector="Border.evidence">
+      <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentLowBrush}" />
+    </Style>
+  </UserControl.Styles>
   <DockPanel>
     <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,16">
       <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold" />
@@ -43,25 +49,53 @@
                      IsVisible="{Binding SelectionCountText, Converter={x:Static ObjectConverters.IsNotNull}}" />
         </StackPanel>
 
-        <!-- Evidence of the selected edge (GRAPH-010; full evidence list and snippets in UI-007) -->
+        <!-- Evidence of the selected edge (GRAPH-010); select a record to see its source (UI-007) -->
         <TextBlock Text="Evidence" FontWeight="SemiBold" Margin="0,8,0,0"
                    IsVisible="{Binding HasEvidence}" />
-        <ScrollViewer MaxHeight="420" IsVisible="{Binding HasEvidence}">
-          <ItemsControl ItemsSource="{Binding SelectionEvidence}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="pages:EvidenceItem">
-                <StackPanel Spacing="2" Margin="0,0,0,10">
-                  <TextBlock Text="{Binding Title}" TextWrapping="Wrap" />
-                  <TextBlock Text="{Binding Location}"
-                             Opacity="0.8" TextWrapping="Wrap" FontSize="12" />
-                  <TextBlock Text="{Binding Source}" Opacity="0.6" TextWrapping="Wrap" FontSize="12" />
-                </StackPanel>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </ScrollViewer>
+        <ListBox MaxHeight="260" IsVisible="{Binding HasEvidence}" Background="Transparent"
+                 ItemsSource="{Binding SelectionEvidence}" SelectedItem="{Binding SelectedEvidence}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="pages:EvidenceItem">
+              <StackPanel Spacing="2">
+                <TextBlock Text="{Binding Title}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Location}"
+                           Opacity="0.8" TextWrapping="Wrap" FontSize="12" />
+                <TextBlock Text="{Binding Source}" Opacity="0.6" TextWrapping="Wrap" FontSize="12" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
         <TextBlock Text="{Binding EvidenceMessage}" Opacity="0.7" TextWrapping="Wrap" FontSize="12"
                    IsVisible="{Binding EvidenceMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+        <!-- Source snippet of the selected evidence (UI-007): read-only plain text, evidence lines highlighted -->
+        <StackPanel Spacing="6" Margin="0,8,0,0"
+                    IsVisible="{Binding SnippetPath, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Content="Copy path" FontSize="12" Padding="8,2"
+                    Command="{Binding CopyPathCommand}" />
+            <TextBlock Text="{Binding SnippetPath}" FontWeight="SemiBold" FontSize="12"
+                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+          </DockPanel>
+          <TextBlock Text="{Binding SnippetMessage}" TextWrapping="Wrap" FontSize="12"
+                     Foreground="{DynamicResource ErrorBorderBrush}"
+                     IsVisible="{Binding SnippetMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+          <ScrollViewer MaxHeight="260" HorizontalScrollBarVisibility="Auto" IsVisible="{Binding HasSnippet}">
+            <ItemsControl ItemsSource="{Binding SnippetLines}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="pages:SnippetLine">
+                  <Border Classes.evidence="{Binding IsEvidence}" Padding="2,0">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <TextBlock Text="{Binding NumberText}" Width="36" TextAlignment="Right" Opacity="0.5"
+                                 FontFamily="Cascadia Mono, Consolas, Menlo, monospace" FontSize="12" />
+                      <SelectableTextBlock Text="{Binding Text}" FontFamily="Cascadia Mono, Consolas, Menlo, monospace" FontSize="12" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </StackPanel>
       </StackPanel>
     </Border>
 
