@@ -34,6 +34,11 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.15" />
   </ItemGroup>
 
+  <ItemGroup Label="Storage">
+    <!-- EF Core 10.0.x: EF Core 11 targets net11.0 only (ADR-005). -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.15" />
+  </ItemGroup>
+
   <ItemGroup Label="Testing">
     <PackageVersion Include="xunit.v3" Version="4.0.3" />
     <PackageVersion Include="NSubstitute" Version="6.2.0" />

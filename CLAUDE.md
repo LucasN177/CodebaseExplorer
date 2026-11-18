@@ -23,7 +23,8 @@ graph host control with its message bridge (`IGraphViewHost`, GRAPH-004), and th
 the Architecture Explorer with the project graph and a selection panel (UI-003; manually verified on Windows only),
 the shell status bar and notifications (`ShellStatus`, UI-001), edge evidence in the side panel
 (`GetGraphEdgeDetails`, GRAPH-010), and CI on Windows/macOS/Linux (QA-001).
-No language analyzer, persistence, Git or AI functionality exists yet. Next: the remaining M1
+M2 in progress: the EF Core SQLite context with the core tables and Domain mapping exists (STORE-001), but the app
+does not persist anything yet (STORE-003/004). No language analyzer, Git or AI functionality exists yet. Next: the remaining M2
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 
 ## Commands

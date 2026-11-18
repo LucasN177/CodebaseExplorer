@@ -43,7 +43,7 @@ analysis. Full vision: [docs/product/VISION.md](docs/product/VISION.md).
 | TypeScript, JavaScript and Python analysis (Tree-sitter, manifests) | ⏳ planned (M4) |
 | Hierarchical drill-down, layouts, filters and search in the graph (Cytoscape.js) | ⏳ planned (M2–M4) |
 | Component Inspector with evidence and source snippets | ⏳ planned (M3) |
-| Local persistence (SQLite) and analysis history | ⏳ planned (M2) |
+| Local persistence (SQLite) and analysis history | 🚧 in progress (M2: database schema for the core tables exists; nothing is stored yet) |
 | Git metadata and change-activity overlays | ⏳ planned (M5) |
 | Markdown/Mermaid architecture export | ⏳ planned (M6) |
 | Optional local AI (Ollama) with cited answers | ⏳ planned (M7) |

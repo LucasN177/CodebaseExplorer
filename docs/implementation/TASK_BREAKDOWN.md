@@ -280,13 +280,14 @@ Status overview (keep in sync):
 ## M2 — Persistence and analysis runs
 
 ### STORE-001 — DbContext and persistence for core tables
-- **Priority:** P0 · **Milestone:** M2 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M2 · **Status:** done
 - **Prerequisites:** CORE-004
 - **Projects:** Storage, Storage.Tests, Directory.Packages.props
 - **Description:** Add EF Core SQLite (10.0.x, re-verify), `CodebaseExplorerDbContext`, persistence entities and configurations for `Repositories`, `AnalysisRuns`, `AnalysisDiagnostics`, `Files`, `Projects`, `Modules`; BLOB Guid converters; connection pragmas; `IDbContextFactory` registration.
 - **Acceptance criteria:**
   - Mapping tests (Domain → record → Domain round-trip) for each table.
   - EF entities are `internal`.
+- **Note:** EF Core SQLite 10.0.15 (re-verified). Decided: timestamps as fixed-width ISO-8601 UTC TEXT (`UtcIsoTextConverter`) because EF cannot order `DateTimeOffset` in SQLite; `AnalysisDiagnostics` got `Ordinal`, `StartColumn`, `EndColumn` so diagnostics round-trip exactly; the cyclic FKs (Files↔Projects, Repositories↔AnalysisRuns) need the insert order documented in DATABASE_SCHEMA.md §2. Schema is created with `EnsureCreated` in tests until migrations exist (STORE-003); the app does not read or write the database yet (STORE-004).
 
 ### STORE-002 — Persistence for entities, relationships, evidence, dependencies
 - **Priority:** P0 · **Milestone:** M2 · **Status:** todo

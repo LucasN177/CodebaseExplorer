@@ -11,6 +11,7 @@
 | Git | any recent version | |
 | Node.js + npm | required from task GRAPH-003 on, only for the graph web view | Version pinned in GRAPH-003. |
 | Platform runtimes | WebView runtime per OS (determined in GRAPH-001) | e.g. WebView2 on Windows. |
+| Database | none to install | SQLite is embedded (EF Core + bundled native SQLite, ADR-005); the database is a file in the app data directory, tests use temporary files. No database server or container is needed. |
 
 ## 2. Getting started
 

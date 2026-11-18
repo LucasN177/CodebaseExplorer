@@ -1,7 +1,9 @@
 # Database Schema — Codebase Explorer
 
 > Status: **accepted (specification)** · Last reviewed: 2026-11-17
-> Implementation status: **not implemented**. Implemented by STORE-001 … STORE-005 (core and
+> Implementation status: **core tables implemented** (STORE-001: `Repositories`, `AnalysisRuns`,
+> `AnalysisDiagnostics`, `Files`, `Projects`, `Modules` — DbContext, records, mapping; schema created
+> by migrations from STORE-003, nothing is read or written by the app yet). Implemented by STORE-001 … STORE-005 (core and
 > settings tables), GIT-005 (Git tables), AI-003 and AI-006 (search index and AI tables) in
 > `src/CodebaseExplorer.Storage` using EF Core with the SQLite provider
 > ([ADR-005](../decisions/ADR-005-sqlite-storage.md)).
@@ -15,7 +17,7 @@
 | Naming | Tables plural PascalCase; columns PascalCase; FK columns `<Target>Id`; indexes `IX_<Table>_<Columns>`. |
 | IDs | `RepositoryId`, `AnalysisRunId`: `Guid` (v7). `ElementId`: deterministic 128-bit, stored as `Guid`. **All Guid columns are stored as 16-byte BLOBs** via EF value converters (EF's SQLite default is TEXT; BLOB halves index size for multi-million-row tables). |
 | Enums | Stored as `TEXT` (enum name) for readability and safe evolution. |
-| Timestamps | `DateTimeOffset` stored as `TEXT` ISO-8601 UTC (EF SQLite default behavior); compared only for ordering. To be confirmed during STORE-001 against EF Core 10 SQLite type mapping. |
+| Timestamps | `DateTimeOffset` stored as fixed-width `TEXT` ISO-8601 UTC (`yyyy-MM-ddTHH:mm:ss.fffffffZ`, `UtcIsoTextConverter`). **Decided in STORE-001:** EF Core 10 cannot translate `ORDER BY` on `DateTimeOffset` for SQLite; the converter makes the column plain text whose lexicographic order is chronological. The offset is not kept (reads return UTC). |
 | JSON | Small dictionaries/lists (properties, statistics) as `TEXT` JSON columns, never queried with JSON functions in hot paths. |
 | Ownership | Every top-level model table carries `RepositoryId` to allow cheap per-repository deletion and partitioned queries. Pure child tables reached only through a cascading FK (`CodeEntityDeclarations`, `GitChanges`, `AnalysisDiagnostics`, `AIMessages`) are exempt. |
 | Deletes | `ON DELETE CASCADE` from `Repositories` down to all model data. |
@@ -30,6 +32,11 @@
 - A failed/cancelled run never touches the current model.
 - Architecture history (model per commit) is post-MVP; the schema keeps the door open via
   `LastSeenRunId` and the `GitSnapshots` table (OPD-07, ADR-009).
+
+- **Insert order (found in STORE-001):** `Files.ProjectId` ↔ `Projects.ProjectFileId` and
+  `Repositories.LastAnalysisRunId` ↔ `AnalysisRuns.RepositoryId` reference each other. A model is written
+  repository → run → files (without project) → projects → file-project links and modules → current run of
+  the repository; EF cannot save both sides of such a cycle in one step.
 
 ## 3. Entity-relationship overview
 
@@ -102,7 +109,8 @@ Indexes: `IX_AnalysisRuns_RepositoryId_StartedAt`.
 | Message | TEXT | NN |
 | AnalyzerId | TEXT | |
 | FileId | BLOB(16) | (no FK; file may not exist in the current model) |
-| StartLine / EndLine | INTEGER | |
+| StartLine / StartColumn / EndLine / EndColumn | INTEGER | | 
+| Ordinal | INTEGER | NN — report order within the run (added in STORE-001, like the columns, so diagnostics round-trip exactly) |
 
 Index: `IX_AnalysisDiagnostics_AnalysisRunId_Severity`.
 
