@@ -11,9 +11,11 @@ namespace CodebaseExplorer.Graph.Projection;
 
 /// <summary>
 /// Pure projection of an <see cref="ArchitectureModel"/> into a <see cref="GraphViewDto"/>
-/// (GRAPH_ENGINE.md §2). Supports the project level (L1): one node per project (and optionally per
-/// external dependency); every relationship is attributed to the projects that own its endpoints and
-/// aggregated into one edge per ordered node pair.
+/// (GRAPH_ENGINE.md §2). The root level is the project level (L1): one node per project (and optionally
+/// per external dependency). Expanded projects show their namespaces (L2), expanded modules their
+/// sub-namespaces and types (L3) as child nodes (mixed levels, GRAPH-006). Every relationship is
+/// attributed to the deepest visible node containing each endpoint and aggregated into one edge per
+/// ordered node pair; relationships inside one node or between a node and its own ancestor are dropped.
 /// </summary>
 internal sealed class GraphProjector : IGraphProjector
 {
@@ -22,7 +24,7 @@ internal sealed class GraphProjector : IGraphProjector
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(query);
 
-        return Validate(model, query) is { } error ? error : ProjectLevel(model, query);
+        return Validate(model, query) is { } error ? error : ProjectView(model, query);
     }
 
     public Result<GraphEdgeDetailsDto> DescribeEdge(ArchitectureModel model, GraphQuery query, string edgeId)
@@ -36,8 +38,9 @@ internal sealed class GraphProjector : IGraphProjector
             return error;
         }
 
-        // Same attribution as the view, so the details always match the edge the user selected.
-        var group = GroupRelationships(model, query.IncludeExternalDependencies)
+        // Same visibility and attribution as the view, so the details always match the edge the user selected.
+        var tree = VisibleTree.Build(model, query);
+        var group = GroupRelationships(model, tree)
             .FirstOrDefault(g => string.Equals(EdgeId(g.Key.Source, g.Key.Target), edgeId, StringComparison.OrdinalIgnoreCase));
         if (group.Value is null)
         {
@@ -47,8 +50,8 @@ internal sealed class GraphProjector : IGraphProjector
         return new GraphEdgeDetailsDto
         {
             EdgeId = EdgeId(group.Key.Source, group.Key.Target),
-            SourceLabel = NodeLabel(model, group.Key.Source),
-            TargetLabel = NodeLabel(model, group.Key.Target),
+            SourceLabel = tree.Nodes[group.Key.Source].Label,
+            TargetLabel = tree.Nodes[group.Key.Target].Label,
             Relationships = [.. group.Value
                 .Select(relationship => new GraphRelationshipDto
                 {
@@ -92,71 +95,29 @@ internal sealed class GraphProjector : IGraphProjector
         return null;
     }
 
-    private static GraphViewDto ProjectLevel(ArchitectureModel model, GraphQuery query)
+    private static GraphViewDto ProjectView(ArchitectureModel model, GraphQuery query)
     {
-        var edges = AggregateEdges(model, query.IncludeExternalDependencies);
+        var tree = VisibleTree.Build(model, query);
+        var edges = AggregateEdges(GroupRelationships(model, tree));
 
         var fanOut = edges.GroupBy(e => e.Source).ToDictionary(g => g.Key, g => g.Select(e => e.Target).Distinct().Count());
         var fanIn = edges.GroupBy(e => e.Target).ToDictionary(g => g.Key, g => g.Select(e => e.Source).Distinct().Count());
-        var filesPerProject = model.Files
-            .Where(f => f.ProjectId is not null)
-            .GroupBy(f => f.ProjectId!.Value)
-            .ToDictionary(g => g.Key, g => g.Count());
-        var topLevelModules = model.Modules
-            .Where(m => m.ParentModuleId is null)
-            .GroupBy(m => m.ProjectId)
-            .ToDictionary(g => g.Key, g => g.Count());
-
-        var nodes = new List<GraphNodeDto>();
-        foreach (var project in model.Projects)
-        {
-            var id = project.Id.ToString();
-            nodes.Add(new GraphNodeDto
-            {
-                Id = id,
-                Kind = GraphNodeKinds.Project,
-                Label = project.Name,
-                Sublabel = project.RootDirectory.ToString(),
-                Language = project.PrimaryLanguage.Value,
-                Ecosystem = project.Ecosystem.ToKeyToken(),
-                ChildCount = topLevelModules.GetValueOrDefault(project.Id),
-                // Expansion into modules is implemented by GRAPH-006; until then nothing is expandable.
-                IsExpandable = false,
-                Metrics = new GraphNodeMetricsDto(fanIn.GetValueOrDefault(id), fanOut.GetValueOrDefault(id), filesPerProject.GetValueOrDefault(project.Id)),
-                Badges = project.IsPlaceholder() ? [GraphBadges.Missing] : [],
-            });
-        }
-
-        if (query.IncludeExternalDependencies)
-        {
-            foreach (var dependency in model.ExternalDependencies)
-            {
-                var id = dependency.Id.ToString();
-                nodes.Add(new GraphNodeDto
-                {
-                    Id = id,
-                    Kind = GraphNodeKinds.ExternalDependency,
-                    Label = dependency.DisplayName,
-                    Ecosystem = dependency.Ecosystem.ToKeyToken(),
-                    Metrics = new GraphNodeMetricsDto(fanIn.GetValueOrDefault(id), fanOut.GetValueOrDefault(id), 0),
-                });
-            }
-        }
 
         return new GraphViewDto
         {
             RepositoryId = model.RepositoryId.ToString(),
             Level = GraphLevels.Project,
-            Nodes = [.. nodes
-                .OrderBy(n => n.Kind == GraphNodeKinds.Project ? 0 : 1)
-                .ThenBy(n => n.Label, StringComparer.Ordinal)
-                .ThenBy(n => n.Id, StringComparer.Ordinal)],
+            // Parents before children (the web view adds nodes in order); roots sorted as before GRAPH-006.
+            Nodes = [.. tree.Order.Select(id => tree.Nodes[id] with
+            {
+                Metrics = tree.Nodes[id].Metrics with { FanIn = fanIn.GetValueOrDefault(id), FanOut = fanOut.GetValueOrDefault(id) },
+            })],
             Edges = edges,
         };
     }
 
-    private static List<GraphEdgeDto> AggregateEdges(ArchitectureModel model, bool includeExternalDependencies) =>
-        [.. GroupRelationships(model, includeExternalDependencies)
+    private static List<GraphEdgeDto> AggregateEdges(Dictionary<(string Source, string Target), List<CodeRelationship>> groups) =>
+        [.. groups
             .Select(group =>
             {
                 var levels = group.Value.SelectMany(r => r.Evidence).Select(e => e.Level).ToArray();
@@ -179,19 +140,18 @@ internal sealed class GraphProjector : IGraphProjector
             })
             .OrderBy(e => e.Id, StringComparer.Ordinal)];
 
-    /// <summary>Every relationship attributed to the ordered pair of visible nodes owning its endpoints.</summary>
-    private static Dictionary<(string Source, string Target), List<CodeRelationship>> GroupRelationships(
-        ArchitectureModel model, bool includeExternalDependencies)
+    /// <summary>Every relationship attributed to the ordered pair of the deepest visible nodes containing its endpoints.</summary>
+    private static Dictionary<(string Source, string Target), List<CodeRelationship>> GroupRelationships(ArchitectureModel model, VisibleTree tree)
     {
         var groups = new Dictionary<(string Source, string Target), List<CodeRelationship>>();
 
         foreach (var relationship in model.Relationships)
         {
-            var source = VisibleNode(model, relationship.Source, includeExternalDependencies);
-            var target = VisibleNode(model, relationship.Target, includeExternalDependencies);
-            if (source is null || target is null || source == target)
+            var source = tree.VisibleNodeOf(relationship.Source);
+            var target = tree.VisibleNodeOf(relationship.Target);
+            if (source is null || target is null || source == target || tree.IsAncestor(source, target) || tree.IsAncestor(target, source))
             {
-                continue; // not visible at this level, or internal to one node
+                continue; // not visible, internal to one node, or between a compound node and its own content
             }
 
             var key = (source, target);
@@ -209,12 +169,6 @@ internal sealed class GraphProjector : IGraphProjector
     /// <summary>Deterministic aggregate edge id (GRAPH_ENGINE.md §5).</summary>
     private static string EdgeId(string source, string target) => $"{source}|{target}";
 
-    private static string NodeLabel(ArchitectureModel model, string nodeId)
-    {
-        var id = ElementId.Parse(nodeId);
-        return model.FindProject(id)?.Name ?? model.FindExternalDependency(id)?.DisplayName ?? nodeId;
-    }
-
     /// <summary>A readable name for a relationship endpoint (project, file path, module, entity, package).</summary>
     private static string ElementLabel(ArchitectureModel model, ElementReference reference) =>
         reference.Kind switch
@@ -226,18 +180,6 @@ internal sealed class GraphProjector : IGraphProjector
             ElementKind.ExternalDependency => model.FindExternalDependency(reference.Id)?.DisplayName,
             _ => null,
         } ?? reference.Id.ToString();
-
-    /// <summary>The id of the visible node an endpoint belongs to, or <see langword="null"/> if it is not shown.</summary>
-    private static string? VisibleNode(ArchitectureModel model, ElementReference reference, bool includeExternalDependencies) =>
-        reference.Kind switch
-        {
-            ElementKind.Project => reference.Id.ToString(),
-            ElementKind.File => model.FindFile(reference.Id)?.ProjectId?.ToString(),
-            ElementKind.Module => model.FindModule(reference.Id)?.ProjectId.ToString(),
-            ElementKind.Entity => model.FindEntity(reference.Id)?.ProjectId.ToString(),
-            ElementKind.ExternalDependency => includeExternalDependencies ? reference.Id.ToString() : null,
-            _ => null,
-        };
 
     private static string Token(EvidenceLevel level) => level switch
     {

@@ -22,11 +22,23 @@ public interface IGraphViewHost : INotifyPropertyChanged
     /// <summary>Raised when the user asks to inspect a node (double click in the web view).</summary>
     event EventHandler<GraphElementEventArgs>? InspectorRequested;
 
+    /// <summary>Raised when the user asks to expand a collapsed, expandable node of <see cref="CurrentGraph"/> (GRAPH-006).</summary>
+    event EventHandler<GraphElementEventArgs>? ExpandRequested;
+
+    /// <summary>Raised when the user asks to collapse an expanded node of <see cref="CurrentGraph"/> (GRAPH-006).</summary>
+    event EventHandler<GraphElementEventArgs>? CollapseRequested;
+
     /// <summary>
     /// Replaces the displayed graph. If the page is not ready yet, the graph is shown as soon as it is.
     /// Returns <see langword="false"/> if the web view rejected the message.
     /// </summary>
     Task<bool> ShowGraphAsync(GraphViewDto view, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Changes the displayed graph to <paramref name="view"/> by sending only the difference (<c>graph/patch</c>, GRAPH-006),
+    /// so unchanged nodes keep their place. Without a displayed graph this is <see cref="ShowGraphAsync"/>.
+    /// </summary>
+    Task<bool> PatchGraphAsync(GraphViewDto view, CancellationToken cancellationToken = default);
 
     /// <summary>Selects and centers an element of the current graph. Returns <see langword="false"/> if not delivered.</summary>
     Task<bool> FocusAsync(string elementId, CancellationToken cancellationToken = default);

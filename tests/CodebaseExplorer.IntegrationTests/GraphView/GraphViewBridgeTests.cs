@@ -325,6 +325,85 @@ public sealed class GraphViewBridgeTests
         ],
     };
 
+    // GRAPH-006
+
+    [Fact]
+    public async Task PatchGraph_WhenReady_SendsOnlyTheDifference()
+    {
+        await _bridge.Receive(Ready());
+        await _bridge.ShowGraphAsync(Graph(), Token);
+        _scripts.Clear();
+        var module = Node(ModuleM, "Orders") with { ParentId = NodeA, Kind = GraphNodeKinds.Module };
+        var expanded = Graph() with
+        {
+            Nodes = [Node(NodeA, "A") with { IsExpandable = true, IsExpanded = true }, Node(NodeB, "B"), module],
+            Edges = [Graph().Edges[0], Graph().Edges[0] with { Id = ModuleM + "|" + NodeB, Source = ModuleM }],
+        };
+
+        Assert.True(await _bridge.PatchGraphAsync(expanded, Token));
+
+        var envelope = Envelope(Assert.Single(_scripts));
+        Assert.Equal(GraphMessageTypes.GraphPatch, envelope.GetProperty("type").GetString());
+        var payload = envelope.GetProperty("payload");
+        Assert.Equal([ModuleM], payload.GetProperty("addedNodes").EnumerateArray().Select(n => n.GetProperty("id").GetString()));
+        Assert.Equal([NodeA], payload.GetProperty("updatedNodes").EnumerateArray().Select(n => n.GetProperty("id").GetString()));
+        Assert.Equal([ModuleM + "|" + NodeB], payload.GetProperty("addedEdges").EnumerateArray().Select(e => e.GetProperty("id").GetString()));
+        Assert.Empty(payload.GetProperty("removedNodeIds").EnumerateArray());
+        Assert.Empty(payload.GetProperty("removedEdgeIds").EnumerateArray());
+        Assert.Same(expanded, _bridge.CurrentGraph);
+    }
+
+    [Fact]
+    public void Diff_ExpandThenCollapse_RestoresTheOriginalElements()
+    {
+        var collapsed = Graph();
+        var expanded = collapsed with
+        {
+            Nodes = [Node(NodeA, "A") with { IsExpanded = true }, Node(NodeB, "B"), Node(ModuleM, "M") with { ParentId = NodeA }],
+            Edges = [collapsed.Edges[0] with { Count = 2 }],
+        };
+
+        var back = GraphViewBridge.Diff(expanded, collapsed);
+
+        Assert.Equal([ModuleM], back.RemovedNodeIds);
+        Assert.Equal([NodeA], back.UpdatedNodes.Select(n => n.Id));
+        Assert.Equal([EdgeAb], back.RemovedEdgeIds); // data changed → removed and added again
+        Assert.Equal([EdgeAb], back.AddedEdges.Select(e => e.Id));
+        Assert.Empty(back.AddedNodes);
+    }
+
+    [Fact]
+    public async Task PatchGraph_BeforeReady_BehavesLikeShowGraph()
+    {
+        Assert.True(await _bridge.PatchGraphAsync(Graph(), Token));
+
+        Assert.Empty(_scripts);
+        await _bridge.Receive(Ready());
+        Assert.Equal(GraphMessageTypes.GraphLoad, MessageType(Assert.Single(_scripts)));
+    }
+
+    [Fact]
+    public async Task ExpandAndCollapseRequests_AreValidatedAgainstTheNodeState()
+    {
+        await _bridge.Receive(Ready());
+        await _bridge.ShowGraphAsync(Graph() with { Nodes = [Node(NodeA, "A") with { IsExpandable = true }, Node(NodeB, "B")] }, Token);
+        var expand = new List<string>();
+        var collapse = new List<string>();
+        _bridge.ExpandRequested += (_, e) => expand.Add(e.ElementId);
+        _bridge.CollapseRequested += (_, e) => collapse.Add(e.ElementId);
+
+        await _bridge.Receive(Message(GraphMessageTypes.NodeExpandRequested, new ElementPayload(NodeA)));
+        await _bridge.Receive(Message(GraphMessageTypes.NodeExpandRequested, new ElementPayload(NodeB))); // not expandable
+        await _bridge.Receive(Message(GraphMessageTypes.NodeCollapseRequested, new ElementPayload(NodeA))); // not expanded
+        await _bridge.Receive(Message(GraphMessageTypes.NodeExpandRequested, new ElementPayload(ModuleM))); // unknown
+
+        Assert.Equal([NodeA], expand);
+        Assert.Empty(collapse);
+        Assert.Equal(3, _logger.Entries.Count(e => e.Level == LogLevel.Warning));
+    }
+
+    private const string ModuleM = "0000000000000000000000000000000c";
+
     private static GraphNodeDto Node(string id, string label) => new()
     {
         Id = id,

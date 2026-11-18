@@ -4,11 +4,16 @@ import { edgeWidth, nodeScale, toElements } from '../src/elements';
 import { GraphViewController } from '../src/graphView';
 import type { Renderer } from '../src/graphView';
 import { parseGraphView } from '../src/protocol';
-import type { GraphView, LayoutName, ThemeMode } from '../src/protocol';
+import type { GraphPatch, GraphView, LayoutName, ThemeMode } from '../src/protocol';
 import { envelope, node, view } from './fixtures';
 
 class FakeRenderer implements Renderer {
   loaded: GraphView[] = [];
+  patches: GraphPatch[] = [];
+
+  patch(patch: GraphPatch): void {
+    this.patches.push(patch);
+  }
   themes: ThemeMode[] = [];
   layouts: LayoutName[] = [];
   focused: string[] = [];

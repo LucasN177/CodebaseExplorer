@@ -73,6 +73,15 @@ internal sealed class ModelBuilder
         return entity;
     }
 
+    public CodeEntity Member(CodeProject project, CodeModule module, CodeEntity type, string name)
+    {
+        var file = _files.First(f => f.ProjectId == project.Id);
+        var entity = CodeEntity.Create(project, module, EntityKind.Method, name, $"{type.QualifiedName}.{name}", LanguageId.CSharp,
+            $"M:{type.QualifiedName}.{name}", [SourceLocation.Line(file.Id, 2, 1, 10)], containingEntity: type);
+        _entities.Add(entity);
+        return entity;
+    }
+
     public ExternalDependency Package(string name)
     {
         var dependency = ExternalDependency.Create(Repository, PackageEcosystem.NuGet, name);

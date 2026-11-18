@@ -4,7 +4,7 @@ import type { Core } from 'cytoscape';
 import dagre from 'cytoscape-dagre';
 import fcose from 'cytoscape-fcose';
 import { Bridge, hostTransport } from './bridge';
-import { toElements } from './elements';
+import { edgeElement, nodeElement, toElements } from './elements';
 import { GraphViewController } from './graphView';
 import type { Renderer } from './graphView';
 import { applyFocusDimming } from './highlight';
@@ -33,6 +33,18 @@ class CytoscapeRenderer implements Renderer {
     this.cy.batch(() => {
       this.cy.elements().remove();
       this.cy.add(toElements(view));
+    });
+    this.arrange();
+  }
+
+  patch(patch: Parameters<Renderer['patch']>[0]): void {
+    this.cy.batch(() => {
+      // Removing a node also removes its edges and descendants; removing an already removed edge is a no-op.
+      for (const id of patch.removedNodeIds) this.cy.getElementById(id).remove();
+      for (const id of patch.removedEdgeIds) this.cy.getElementById(id).remove();
+      this.cy.add(patch.addedNodes.map(nodeElement));
+      for (const node of patch.updatedNodes) this.cy.getElementById(node.id).data(nodeElement(node).data);
+      this.cy.add(patch.addedEdges.map(edgeElement));
     });
     this.arrange();
   }
@@ -77,7 +89,8 @@ function start(): void {
     applyFocusDimming(cy);
     reportSelection();
   });
-  cy.on('dbltap', 'node', (event) => controller.openInspector(event.target.id()));
+  // Double click: expand/collapse an expandable node (GRAPH-006), otherwise open the inspector.
+  cy.on('dbltap', 'node', (event) => controller.activate(event.target.id()));
 
   globalThis.ceReceive = (json: string) => controller.receive(json);
   controller.start();

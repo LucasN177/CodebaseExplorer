@@ -4,9 +4,11 @@
 > Implementation status: **project level (L1) projection, DTOs and message envelope implemented**
 > (GRAPH-002); **graph web view implemented** (GRAPH-003: `graph/load`, `graph/focus`, `view/theme`,
 > `ready`, `selection/changed`, `node/openInspector`, `error`); **host control and message bridge
-> implemented** (GRAPH-004, §6.1; verified on Windows/WebView2). The other levels are not, and the
-> Architecture Explorer page shows the L1 graph of the imported repository (UI-003) and the evidence of a
-> selected edge (GRAPH-010, §6.2).
+> implemented** (GRAPH-004, §6.1; verified on Windows/WebView2); **module and entity levels with
+> expand/collapse implemented** (GRAPH-006: `GraphQuery.Expanded`, compound nodes, `graph/patch`,
+> `node/expandRequested`/`collapseRequested`). The Architecture Explorer page shows the graph of the imported
+> repository (UI-003) and the evidence of a selected edge (GRAPH-010, §6.2). Focus/neighborhood, filters and
+> the node budget are not implemented yet (GRAPH-007/008).
 > Related: [ADR-006](../decisions/ADR-006-cytoscape-visualization.md).
 
 ## 1. Components
@@ -74,6 +76,30 @@ project; `childCount` = top-level modules; `isExpandable` stays `false` until ex
 project, module/entity → its project); edges inside one project are dropped. `breadcrumbs` is empty
 until navigation exists (GRAPH-009).
 
+**Implemented (GRAPH-006):** `GraphQuery.Expanded` (element ids). The root level stays the project level;
+expanded nodes add children (mixed levels, `parentId` = compound parent, parents before children in
+`nodes`):
+
+- an expanded **project** shows its top-level namespaces; an expanded **module** shows its child
+  namespaces and the types declared directly in it (`kind` `module` / `entity`; module `sublabel` = full
+  qualified name, entity `sublabel` = entity kind). Types and members are not expandable in M3 (members are
+  shown by the inspector, UI-006);
+- **namespace chains are compressed**: a namespace without types and with exactly one child namespace is
+  skipped (`Shop` → `Shop.Domain` → `Shop.Domain.Orders` shows `Shop.Domain.Orders` directly); module labels
+  are relative to the parent module (`Orders` under `Shop.Domain`), top-level ones fully qualified;
+- `isExpandable` = has children, `childCount` = visible children one level down, `metrics.size` = owned files
+  (project), entities in the subtree (module), line count (entity);
+- every relationship endpoint is attributed to its **deepest visible ancestor** (member → containing type →
+  namespace chain → project); relationships inside one node or between a compound node and its own
+  content are dropped, so e.g. a project reference stays on the (compound) project node while code
+  relationships attach to the visible namespaces/types;
+- ids in `Expanded` that are unknown, hidden (inside a collapsed node) or not expandable are ignored; the
+  projection is pure, so collapsing restores exactly the previous view. The explorer keeps hidden
+  expansions, so re-expanding a project restores its inner expansions.
+
+The whole model is still read per run (ADR-010); the Storage slice queries listed for GRAPH-006 in the
+task breakdown follow with the node budget in M4 (GRAPH-008, QA-002).
+
 ## 4. Node budget and large graphs
 
 1. Compute the candidate node set for the query.
@@ -115,13 +141,18 @@ All messages are JSON envelopes `{ "type": string, "version": 1, "payload": obje
 both sides (unknown types ignored and logged; schema mismatches rejected). Implemented in
 `Contracts/Graph/Messages`: `GraphMessage`, `GraphMessageTypes`, the payload records, and
 `GraphMessageSerializer` (`Serialize`, `TryParse` — rejects invalid JSON, missing type, other protocol
-versions, non-object payloads — and `TryReadPayload`). The `graph/patch` payload follows with
-GRAPH-006 and the theme tokens with GRAPH-003.
+versions, non-object payloads — and `TryReadPayload`). `GraphPatchPayload` (GRAPH-006)
+carries `removedNodeIds`, `removedEdgeIds`, `addedNodes` (parents first), `updatedNodes` (same id and parent) and
+`addedEdges`; `GraphViewBridge.PatchGraphAsync` computes it as the difference between the displayed and the next view
+(re-parented nodes and changed edges are removed and added again). The web view validates a patch against its copy
+of the displayed graph (`applyPatch`) and applies it completely or not at all, then re-runs the layout. A double click
+on an expandable node sends `node/expandRequested` or `node/collapseRequested`, on any other node
+`node/openInspector`; the bridge accepts a request only for a node of the current graph in the matching state.
 
 | Direction | Type | Payload |
 |---|---|---|
 | .NET → web | `graph/load` | `GraphViewDto` (replace) |
-| .NET → web | `graph/patch` | added/removed nodes and edges (expand/collapse) |
+| .NET → web | `graph/patch` | `{ removedNodeIds, removedEdgeIds, addedNodes, updatedNodes, addedEdges }` (expand/collapse, GRAPH-006) |
 | .NET → web | `graph/focus` | `{ elementId }` |
 | .NET → web | `view/theme` | `{ mode: "light" \| "dark", tokens }` |
 | .NET → web | `view/layout` | `{ name: "hierarchical" \| "force" \| "concentric" }` |

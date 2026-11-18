@@ -102,6 +102,23 @@ describe('applyFocusDimming', () => {
     expect(visible).toEqual(['app', 'app|svc1', 'svc1']);
   });
 
+  it('keeps the content of a selected compound node and the boxes around visible nodes visible (GRAPH-006)', () => {
+    const cy = headless([
+      { group: 'nodes', data: { id: 'project' } },
+      { group: 'nodes', data: { id: 'ns', parent: 'project' } },
+      { group: 'nodes', data: { id: 'type', parent: 'ns' } },
+      { group: 'nodes', data: { id: 'other' } },
+      { group: 'nodes', data: { id: 'far' } },
+      { group: 'edges', data: { id: 'other|type', source: 'other', target: 'type' } },
+    ]);
+
+    cy.getElementById('ns').select();
+    applyFocusDimming(cy);
+
+    const dimmed = cy.elements(`.${DIMMED_CLASS}`).map((e) => e.id()).sort();
+    expect(dimmed).toEqual(['far']);
+  });
+
   it('removes the dimming when nothing is selected', () => {
     const cy = headless(layeredGraph());
     cy.getElementById('svc1').select();

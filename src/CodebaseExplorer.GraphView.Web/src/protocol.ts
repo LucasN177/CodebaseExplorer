@@ -6,11 +6,14 @@ export const PROTOCOL_VERSION = 1;
 
 export const MessageTypes = {
   graphLoad: 'graph/load',
+  graphPatch: 'graph/patch',
   graphFocus: 'graph/focus',
   viewTheme: 'view/theme',
   viewLayout: 'view/layout',
   ready: 'ready',
   selectionChanged: 'selection/changed',
+  nodeExpandRequested: 'node/expandRequested',
+  nodeCollapseRequested: 'node/collapseRequested',
   nodeOpenInspector: 'node/openInspector',
   error: 'error',
 } as const;
@@ -221,4 +224,97 @@ function parseEdge(raw: unknown): Parsed<GraphEdge> {
 /** Builds an outbound envelope as JSON. */
 export function createMessage(type: string, payload: Record<string, unknown>): string {
   return JSON.stringify({ type, version: PROTOCOL_VERSION, payload });
+}
+
+/** Payload of `graph/patch` (GRAPH-006): the difference to the displayed graph after an expand or collapse. */
+export interface GraphPatch {
+  removedNodeIds: string[];
+  removedEdgeIds: string[];
+  addedNodes: GraphNode[];
+  updatedNodes: GraphNode[];
+  addedEdges: GraphEdge[];
+}
+
+const parseIds = (value: unknown): string[] | undefined =>
+  Array.isArray(value) && value.every((id) => isString(id) && id.length > 0) ? (value as string[]) : undefined;
+
+/** Validates the structure of a `graph/patch` payload; consistency with the displayed graph is checked by `applyPatch`. */
+export function parseGraphPatch(payload: Record<string, unknown>): Parsed<GraphPatch> {
+  const removedNodeIds = parseIds(payload.removedNodeIds);
+  const removedEdgeIds = parseIds(payload.removedEdgeIds);
+  if (removedNodeIds === undefined || removedEdgeIds === undefined) return fail('removedNodeIds and removedEdgeIds must be arrays of ids');
+  if (!Array.isArray(payload.addedNodes) || !Array.isArray(payload.updatedNodes) || !Array.isArray(payload.addedEdges)) {
+    return fail('addedNodes, updatedNodes and addedEdges must be arrays');
+  }
+
+  const addedNodes: GraphNode[] = [];
+  for (const raw of payload.addedNodes) {
+    const node = parseNode(raw);
+    if (!node.ok) return node;
+    addedNodes.push(node.value);
+  }
+
+  const updatedNodes: GraphNode[] = [];
+  for (const raw of payload.updatedNodes) {
+    const node = parseNode(raw);
+    if (!node.ok) return node;
+    updatedNodes.push(node.value);
+  }
+
+  const addedEdges: GraphEdge[] = [];
+  for (const raw of payload.addedEdges) {
+    const edge = parseEdge(raw);
+    if (!edge.ok) return edge;
+    addedEdges.push(edge.value);
+  }
+
+  return { ok: true, value: { removedNodeIds, removedEdgeIds, addedNodes, updatedNodes, addedEdges } };
+}
+
+/**
+ * Applies a patch to a graph without touching the input (pure). Rejects patches that do not fit the graph — unknown
+ * ids, duplicates, changed parents, dangling parents or edges — so a patch is either applied completely or not at all.
+ * Removing a node also removes its edges.
+ */
+export function applyPatch(view: GraphView, patch: GraphPatch): Parsed<GraphView> {
+  const nodes = new Map(view.nodes.map((n) => [n.id, n]));
+  const edges = new Map(view.edges.map((e) => [e.id, e]));
+
+  for (const id of patch.removedNodeIds) {
+    if (!nodes.delete(id)) return fail(`cannot remove unknown node ${id}`);
+  }
+
+  for (const [id, edge] of edges) {
+    if (!nodes.has(edge.source) || !nodes.has(edge.target)) edges.delete(id);
+  }
+
+  for (const id of patch.removedEdgeIds) {
+    const known = view.edges.some((e) => e.id === id);
+    if (!known) return fail(`cannot remove unknown edge ${id}`);
+    edges.delete(id);
+  }
+
+  for (const node of patch.addedNodes) {
+    if (nodes.has(node.id)) return fail(`node ${node.id} already exists`);
+    nodes.set(node.id, node);
+  }
+
+  for (const node of patch.updatedNodes) {
+    const existing = nodes.get(node.id);
+    if (existing === undefined) return fail(`cannot update unknown node ${node.id}`);
+    if (existing.parentId !== node.parentId) return fail(`node ${node.id} cannot change its parent`);
+    nodes.set(node.id, node);
+  }
+
+  for (const node of nodes.values()) {
+    if (node.parentId !== undefined && !nodes.has(node.parentId)) return fail(`node ${node.id} has an unknown parent`);
+  }
+
+  for (const edge of patch.addedEdges) {
+    if (edges.has(edge.id)) return fail(`edge ${edge.id} already exists`);
+    if (!nodes.has(edge.source) || !nodes.has(edge.target)) return fail(`edge ${edge.id} references an unknown node`);
+    edges.set(edge.id, edge);
+  }
+
+  return { ok: true, value: { ...view, nodes: [...nodes.values()], edges: [...edges.values()] } };
 }

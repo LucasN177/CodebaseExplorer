@@ -189,6 +189,36 @@ public sealed class ArchitectureExplorerPageViewModelTests : IAsyncLifetime
         Assert.Null(_viewModel.SelectionCountText);
     }
 
+    [Fact]
+    public async Task ExpandAndCollapse_PatchTheGraph_AndAreReversible()
+    {
+        // GRAPH-006, end to end over the real model of dotnet-layered (projects → namespaces → types).
+        var initial = await ImportFixtureAsync();
+        _host.PatchGraphAsync(default!, Arg.Any<CancellationToken>()).ReturnsForAnyArgs(true);
+        var domain = initial.Nodes.Single(n => n.Label == "Shop.Domain");
+        Assert.True(domain.IsExpandable);
+
+        _host.ExpandRequested += Raise.EventWith(_host, new GraphElementEventArgs(domain.Id));
+        var expanded = LastPatch();
+
+        var module = Assert.Single(expanded.Nodes, n => n.ParentId == domain.Id);
+        Assert.Equal((GraphNodeKinds.Module, "Shop.Domain.Orders"), (module.Kind, module.Label)); // "Shop" and "Shop.Domain" compressed
+        Assert.True(expanded.Nodes.Single(n => n.Id == domain.Id).IsExpanded);
+
+        await _viewModel.SetExpandedAsync(module.Id, expanded: true, TestContext.Current.CancellationToken);
+        Assert.Contains(LastPatch().Nodes, n => n.ParentId == module.Id && n.Kind == GraphNodeKinds.Entity && n.Label == "Order");
+
+        _host.CollapseRequested += Raise.EventWith(_host, new GraphElementEventArgs(domain.Id));
+        var collapsed = LastPatch();
+        Assert.Equal(
+            System.Text.Json.JsonSerializer.Serialize(initial, GraphJsonContext.Default.GraphViewDto),
+            System.Text.Json.JsonSerializer.Serialize(collapsed, GraphJsonContext.Default.GraphViewDto));
+        Assert.Null(_viewModel.ErrorMessage);
+    }
+
+    private GraphViewDto LastPatch() =>
+        (GraphViewDto)_host.ReceivedCalls().Last(c => c.GetMethodInfo().Name == nameof(IGraphViewHost.PatchGraphAsync)).GetArguments()[0]!;
+
     private async Task<GraphViewDto> ImportFixtureAsync()
     {
         var summary = (await _app.Services.GetRequiredService<ImportLocalRepository>().ExecuteAsync(

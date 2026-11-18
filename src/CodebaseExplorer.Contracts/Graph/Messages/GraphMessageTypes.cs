@@ -7,6 +7,7 @@ public static class GraphMessageTypes
 
     // .NET → web view
     public const string GraphLoad = "graph/load";
+    public const string GraphPatch = "graph/patch";
     public const string GraphFocus = "graph/focus";
     public const string ViewTheme = "view/theme";
     public const string ViewLayout = "view/layout";

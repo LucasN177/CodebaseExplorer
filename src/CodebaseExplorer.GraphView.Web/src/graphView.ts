@@ -2,12 +2,14 @@
 // with a fake renderer. All data, expansion and filtering decisions stay in .NET; this side only
 // renders and reports user interaction.
 import { Bridge } from './bridge';
-import { MessageTypes, parseElementId, parseEnvelope, parseGraphView, parseLayout, parseTheme, PROTOCOL_VERSION } from './protocol';
-import type { GraphView, LayoutName, ThemeMode } from './protocol';
+import { applyPatch, MessageTypes, parseElementId, parseEnvelope, parseGraphPatch, parseGraphView, parseLayout, parseTheme, PROTOCOL_VERSION } from './protocol';
+import type { GraphPatch, GraphView, LayoutName, ThemeMode } from './protocol';
 
 /** What the message handler needs from the renderer (Cytoscape in production). */
 export interface Renderer {
   load(view: GraphView): void;
+  /** Applies a patch that `applyPatch` accepted for the displayed graph. */
+  patch(patch: GraphPatch): void;
   setTheme(mode: ThemeMode): void;
   /** Remembers the layout for later loads and re-arranges the current graph, if any. */
   setLayout(name: LayoutName): void;
@@ -15,6 +17,9 @@ export interface Renderer {
 }
 
 export class GraphViewController {
+  /** The displayed graph, kept to validate patches before anything is rendered. */
+  private current: GraphView | undefined;
+
   constructor(
     private readonly renderer: Renderer,
     private readonly bridge: Bridge,
@@ -38,7 +43,18 @@ export class GraphViewController {
       case MessageTypes.graphLoad: {
         const view = parseGraphView(payload);
         if (!view.ok) return this.reject(`graph/load: ${view.error}`);
+        this.current = view.value;
         this.renderer.load(view.value);
+        return 'ok';
+      }
+      case MessageTypes.graphPatch: {
+        const patch = parseGraphPatch(payload);
+        if (!patch.ok) return this.reject(`graph/patch: ${patch.error}`);
+        if (this.current === undefined) return this.reject('graph/patch: no graph is displayed');
+        const next = applyPatch(this.current, patch.value);
+        if (!next.ok) return this.reject(`graph/patch: ${next.error}`);
+        this.current = next.value;
+        this.renderer.patch(patch.value);
         return 'ok';
       }
       case MessageTypes.viewTheme: {
@@ -69,6 +85,18 @@ export class GraphViewController {
     this.bridge.send(MessageTypes.selectionChanged, { nodeIds, edgeIds });
   }
 
+
+  /**
+   * Double click on a node: expandable nodes are expanded or collapsed (GRAPH-006, decided by .NET), others open the
+   * inspector. Uses the displayed graph's state, not renderer data.
+   */
+  activate(elementId: string): void {
+    const node = this.current?.nodes.find((n) => n.id === elementId);
+    if (node === undefined) return;
+    if (node.isExpanded) this.bridge.send(MessageTypes.nodeCollapseRequested, { elementId });
+    else if (node.isExpandable) this.bridge.send(MessageTypes.nodeExpandRequested, { elementId });
+    else this.openInspector(elementId);
+  }
   /** Asks the host to open the inspector for an element (double click). */
   openInspector(elementId: string): void {
     this.bridge.send(MessageTypes.nodeOpenInspector, { elementId });

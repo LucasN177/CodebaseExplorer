@@ -46,7 +46,8 @@ analysis. Full vision: [docs/product/VISION.md](docs/product/VISION.md).
 | C# analysis with Roslyn (no build required) | 🟡 partial (namespaces, types and members; inheritance, implementation, type usage, instantiation and calls between them, also across projects, each with evidence; heuristic DI registrations) |
 | TypeScript, JavaScript and Python analysis (Tree-sitter, manifests) | ⏳ planned (M4) |
 | Graph layouts (force-directed, hierarchical, concentric; choice remembered) and visual encoding (ecosystem colors, kind shapes, evidence line styles, edge weight, focus dimming) | ✅ available |
-| Hierarchical drill-down, filters and search in the graph (Cytoscape.js) | ⏳ planned (M3–M4) |
+| Hierarchical drill-down in the graph: double-click a project or namespace to show its namespaces and types (edges attach to the deepest visible element) | ✅ available (verified on Windows) |
+| Filters, search and neighborhood view in the graph | ⏳ planned (M3–M4) |
 | Component Inspector with evidence and source snippets | ⏳ planned (M3) |
 | Local persistence (SQLite) and analysis history | 🚧 in progress (M2: database created and migrated at startup; analysis runs and models are saved — reopening a saved repository from the UI follows with REPO-005) |
 | Git metadata and change-activity overlays | ⏳ planned (M5) |

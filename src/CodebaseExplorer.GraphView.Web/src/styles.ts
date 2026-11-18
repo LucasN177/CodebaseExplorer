@@ -79,6 +79,15 @@ export function stylesheet(mode: ThemeMode): StylesheetJson {
     { selector: 'edge[level = "syntactic"]', style: { 'line-style': 'dashed' } },
     { selector: 'edge[level = "heuristic"]', style: { 'line-style': 'dotted' } },
     { selector: 'edge[declared = 0]', style: { 'target-arrow-shape': 'vee' } },
+    // GRAPH-006: namespaces are rectangles, types circles; an expandable, collapsed node has a double outline;
+    // an expanded node is a translucent compound box labeled at the top.
+    { selector: 'node[kind = "module"]', style: { shape: 'rectangle' } },
+    { selector: 'node[kind = "entity"]', style: { shape: 'ellipse', width: scaled(16), height: scaled(16) } },
+    { selector: 'node[expandable = 1][expanded = 0]', style: { 'border-width': 3, 'border-style': 'double', 'border-color': p.text } },
+    {
+      selector: 'node:parent',
+      style: { 'background-opacity': 0.1, 'border-width': 1, 'border-style': 'solid', 'border-color': p.edge, 'text-valign': 'top', 'text-margin-y': -4, padding: '12px' },
+    },
     { selector: '.dimmed', style: { opacity: DIMMED_OPACITY } },
     { selector: 'node:selected', style: { 'border-width': 3, 'border-style': 'solid', 'border-color': p.selection } },
     { selector: 'edge:selected', style: { 'line-color': p.selection, 'target-arrow-color': p.selection } },

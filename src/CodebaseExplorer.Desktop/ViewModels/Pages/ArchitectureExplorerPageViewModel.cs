@@ -53,6 +53,8 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
 
         _session.CurrentChanged += (_, _) => _ = LoadCurrentRepositoryAsync();
         Graph.PropertyChanged += OnGraphPropertyChanged;
+        Graph.ExpandRequested += (_, e) => _ = SetExpandedAsync(e.ElementId, expanded: true);
+        Graph.CollapseRequested += (_, e) => _ = SetExpandedAsync(e.ElementId, expanded: false);
         SelectionEvidence.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasEvidence));
     }
 
@@ -208,6 +210,54 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         }
     }
 
+    /// <summary>
+    /// Expands or collapses a node (GRAPH-006, double click in the graph): recomputes the view with the changed set of
+    /// expanded nodes and sends only the difference. Nodes expanded inside a collapsed node are remembered, so
+    /// expanding it again restores them; the projection ignores them while they are hidden.
+    /// </summary>
+    public async Task SetExpandedAsync(string elementId, bool expanded, CancellationToken cancellationToken = default)
+    {
+        if (_query is not { } query)
+        {
+            return;
+        }
+
+        var set = query.Expanded.ToHashSet(StringComparer.Ordinal);
+        if (!(expanded ? set.Add(elementId) : set.Remove(elementId)))
+        {
+            return;
+        }
+
+        var loadNumber = _loadNumber;
+        var next = query with { Expanded = [.. set.Order(StringComparer.Ordinal)] };
+        try
+        {
+            var result = await _getGraphView.ExecuteAsync(next, cancellationToken);
+            if (loadNumber != _loadNumber)
+            {
+                return; // another repository was loaded meanwhile
+            }
+
+            if (!result.TryGetValue(out var view, out var error))
+            {
+                _logger.LogWarning("Expanding or collapsing failed with {ErrorCode}", error.Code);
+                ErrorMessage = error.Message;
+                return;
+            }
+
+            _query = next;
+            if (!await Graph.PatchGraphAsync(view, cancellationToken))
+            {
+                ErrorMessage = "The graph view did not accept the change. Details are in the application log.";
+            }
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.LogError(exception, "Expanding or collapsing failed unexpectedly");
+            ErrorMessage = "The graph could not be changed. Details are in the application log.";
+        }
+    }
+
     partial void OnSelectedLayoutChanged(GraphLayoutOption value)
     {
         if (!_restoringLayout)
@@ -345,6 +395,8 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         {
             GraphNodeKinds.Project => "Project",
             GraphNodeKinds.ExternalDependency => "External dependency",
+            GraphNodeKinds.Module => "Namespace",
+            GraphNodeKinds.Entity => node.Sublabel is { Length: > 0 } entityKind ? char.ToUpperInvariant(entityKind[0]) + entityKind[1..] : "Code element",
             _ => node.Kind,
         };
 

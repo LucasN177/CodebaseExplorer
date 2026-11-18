@@ -2,7 +2,7 @@
 // repository are untrusted: they only ever go into element *data*, which Cytoscape renders as text
 // on a canvas — never into HTML.
 import type { ElementDefinition } from 'cytoscape';
-import type { GraphView } from './protocol';
+import type { GraphEdge, GraphNode, GraphView } from './protocol';
 
 /** Edge width in px: 1.5 for a single relationship, growing with log2(count), at most 7 (GRAPH_ENGINE.md §9). */
 export function edgeWidth(count: number): number {
@@ -35,39 +35,41 @@ export function ecosystemFamily(ecosystem: string | undefined): 'dotnet' | 'node
   }
 }
 
+/** Cytoscape definition of a node (untrusted names go into data only). */
+export function nodeElement(node: GraphNode): ElementDefinition {
+  return {
+    group: 'nodes',
+    data: {
+      id: node.id,
+      parent: node.parentId,
+      label: node.label,
+      kind: node.kind,
+      ecosystem: ecosystemFamily(node.ecosystem),
+      size: node.metrics.size,
+      scale: nodeScale(node.metrics.size),
+      missing: node.badges.includes('missing') ? 1 : 0,
+      expandable: node.isExpandable ? 1 : 0,
+      expanded: node.isExpanded ? 1 : 0,
+    },
+  };
+}
+
+/** Cytoscape definition of an aggregated edge. */
+export function edgeElement(edge: GraphEdge): ElementDefinition {
+  return {
+    group: 'edges',
+    data: {
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      count: edge.count,
+      width: edgeWidth(edge.count),
+      level: edge.maxLevel,
+      declared: edge.isDeclared ? 1 : 0,
+    },
+  };
+}
+
 export function toElements(view: GraphView): ElementDefinition[] {
-  const elements: ElementDefinition[] = [];
-
-  for (const node of view.nodes) {
-    elements.push({
-      group: 'nodes',
-      data: {
-        id: node.id,
-        parent: node.parentId,
-        label: node.label,
-        kind: node.kind,
-        ecosystem: ecosystemFamily(node.ecosystem),
-        size: node.metrics.size,
-        scale: nodeScale(node.metrics.size),
-        missing: node.badges.includes('missing') ? 1 : 0,
-      },
-    });
-  }
-
-  for (const edge of view.edges) {
-    elements.push({
-      group: 'edges',
-      data: {
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        count: edge.count,
-        width: edgeWidth(edge.count),
-        level: edge.maxLevel,
-        declared: edge.isDeclared ? 1 : 0,
-      },
-    });
-  }
-
-  return elements;
+  return [...view.nodes.map(nodeElement), ...view.edges.map(edgeElement)];
 }

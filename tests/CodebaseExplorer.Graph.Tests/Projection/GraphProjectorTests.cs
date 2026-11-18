@@ -45,7 +45,7 @@ public sealed class GraphProjectorTests
         Assert.Equal("dotnet", node.Ecosystem);
         Assert.Equal(3, node.Metrics.Size); // manifest + 2 sources
         Assert.Equal(2, node.ChildCount); // top-level modules only
-        Assert.False(node.IsExpandable);
+        Assert.True(node.IsExpandable); // GRAPH-006: projects with modules can be expanded
         Assert.Null(node.ParentId);
         Assert.Empty(node.Badges);
         Assert.Empty(view.Edges);

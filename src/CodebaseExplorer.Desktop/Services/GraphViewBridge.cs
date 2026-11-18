@@ -48,6 +48,12 @@ public sealed partial class GraphViewBridge(ILogger<GraphViewBridge> logger, IAp
     /// <inheritdoc />
     public event EventHandler<GraphElementEventArgs>? InspectorRequested;
 
+    /// <inheritdoc />
+    public event EventHandler<GraphElementEventArgs>? ExpandRequested;
+
+    /// <inheritdoc />
+    public event EventHandler<GraphElementEventArgs>? CollapseRequested;
+
     /// <summary>
     /// Writable folder for the web engine's profile (WebView2 user data folder). Must be set explicitly:
     /// the default next to the executable may not be writable (ADR-006, spike pitfall 1).
@@ -97,6 +103,65 @@ public sealed partial class GraphViewBridge(ILogger<GraphViewBridge> logger, IAp
 
         return !IsReady || await SendAsync(GraphMessageTypes.GraphLoad, GraphMessageSerializer.Serialize(GraphMessageTypes.GraphLoad, view), cancellationToken);
     }
+
+    /// <inheritdoc />
+    public async Task<bool> PatchGraphAsync(GraphViewDto view, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (CurrentGraph is not { } current || !IsReady)
+        {
+            // Nothing displayed yet (or the page reloads and gets the whole graph on ready): no difference to send.
+            return await ShowGraphAsync(view, cancellationToken);
+        }
+
+        var patch = Diff(current, view);
+        CurrentGraph = view;
+        _nodeIds = view.Nodes.Select(n => n.Id).ToHashSet(StringComparer.Ordinal);
+        _edgeIds = view.Edges.Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
+        Selection = new GraphSelection(
+            [.. Selection.NodeIds.Where(_nodeIds.Contains)],
+            [.. Selection.EdgeIds.Where(_edgeIds.Contains)]);
+        return await SendAsync(GraphMessageTypes.GraphPatch, GraphMessageSerializer.Serialize(GraphMessageTypes.GraphPatch, patch), cancellationToken);
+    }
+
+    /// <summary>
+    /// The <c>graph/patch</c> that turns <paramref name="from"/> into <paramref name="to"/>. Nodes whose parent changed and
+    /// edges whose data changed are removed and added again (the web view cannot re-parent or re-route in place).
+    /// </summary>
+    public static GraphPatchPayload Diff(GraphViewDto from, GraphViewDto to)
+    {
+        ArgumentNullException.ThrowIfNull(from);
+        ArgumentNullException.ThrowIfNull(to);
+
+        var oldNodes = from.Nodes.ToDictionary(n => n.Id, StringComparer.Ordinal);
+        var newNodes = to.Nodes.ToDictionary(n => n.Id, StringComparer.Ordinal);
+        var oldEdges = from.Edges.ToDictionary(e => e.Id, StringComparer.Ordinal);
+        var newEdges = to.Edges.ToDictionary(e => e.Id, StringComparer.Ordinal);
+
+        bool Reparented(string id) => newNodes.TryGetValue(id, out var node) && node.ParentId != oldNodes[id].ParentId;
+        var removedNodes = from.Nodes.Where(n => !newNodes.ContainsKey(n.Id) || Reparented(n.Id)).Select(n => n.Id).ToList();
+        var removedSet = removedNodes.ToHashSet(StringComparer.Ordinal);
+
+        var addedNodes = to.Nodes.Where(n => !oldNodes.ContainsKey(n.Id) || removedSet.Contains(n.Id)).ToList();
+        var updatedNodes = to.Nodes
+            .Where(n => oldNodes.TryGetValue(n.Id, out var old) && !removedSet.Contains(n.Id) && Json(old) != Json(n))
+            .ToList();
+
+        // An edge also disappears with a removed endpoint; it must then be added again if it still exists.
+        bool EdgeChanged(GraphEdgeDto edge) => !newEdges.TryGetValue(edge.Id, out var next) || Json(next) != Json(edge)
+            || removedSet.Contains(edge.Source) || removedSet.Contains(edge.Target);
+        var removedEdges = from.Edges.Where(EdgeChanged).Select(e => e.Id).ToList();
+        var removedEdgeSet = removedEdges.ToHashSet(StringComparer.Ordinal);
+        var addedEdges = to.Edges.Where(e => !oldEdges.ContainsKey(e.Id) || removedEdgeSet.Contains(e.Id)).ToList();
+
+        return new GraphPatchPayload(removedNodes, removedEdges, addedNodes, updatedNodes, addedEdges);
+    }
+
+    private static string Json(GraphNodeDto node) => JsonSerializer.Serialize(node, GraphJsonContext.Default.GraphNodeDto);
+
+    private static string Json(GraphEdgeDto edge) => JsonSerializer.Serialize(edge, GraphJsonContext.Default.GraphEdgeDto);
 
     /// <inheritdoc />
     public Task<bool> FocusAsync(string elementId, CancellationToken cancellationToken = default)
@@ -171,9 +236,11 @@ public sealed partial class GraphViewBridge(ILogger<GraphViewBridge> logger, IAp
             case GraphMessageTypes.Error:
                 OnPageError(message);
                 break;
-            case GraphMessageTypes.NodeExpandRequested or GraphMessageTypes.NodeCollapseRequested:
-                // Expand/collapse arrives with GRAPH-006; until then the request has no effect.
-                logger.LogDebug("Graph view message {MessageType} is not supported yet and was ignored", message.Type);
+            case GraphMessageTypes.NodeExpandRequested:
+                OnExpandOrCollapse(message, expand: true);
+                break;
+            case GraphMessageTypes.NodeCollapseRequested:
+                OnExpandOrCollapse(message, expand: false);
                 break;
             default:
                 Ignore(Truncate(message.Type), "unknown message type");
@@ -259,6 +326,26 @@ public sealed partial class GraphViewBridge(ILogger<GraphViewBridge> logger, IAp
         }
 
         InspectorRequested?.Invoke(this, new GraphElementEventArgs(payload.ElementId));
+    }
+
+    private void OnExpandOrCollapse(GraphMessage message, bool expand)
+    {
+        var node = GraphMessageSerializer.TryReadPayload<ElementPayload>(message, out var payload) && payload.ElementId is not null
+            ? CurrentGraph?.Nodes.FirstOrDefault(n => n.Id == payload.ElementId)
+            : null;
+        if (node is null)
+        {
+            Ignore(message.Type, "elementId must be a node of the current graph");
+            return;
+        }
+
+        if (expand ? !node.IsExpandable || node.IsExpanded : !node.IsExpanded)
+        {
+            Ignore(message.Type, expand ? "the node cannot be expanded" : "the node is not expanded");
+            return;
+        }
+
+        (expand ? ExpandRequested : CollapseRequested)?.Invoke(this, new GraphElementEventArgs(node.Id));
     }
 
     private void OnPageError(GraphMessage message)

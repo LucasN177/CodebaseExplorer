@@ -24,4 +24,5 @@ namespace CodebaseExplorer.Contracts.Graph;
 [JsonSerializable(typeof(ReadyPayload))]
 [JsonSerializable(typeof(SelectionChangedPayload))]
 [JsonSerializable(typeof(ErrorPayload))]
+[JsonSerializable(typeof(GraphPatchPayload))]
 public sealed partial class GraphJsonContext : JsonSerializerContext;

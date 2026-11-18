@@ -23,7 +23,7 @@ Status overview (keep in sync):
 | M0 Foundation | (initialization) | ✅ |
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
-| M3 Deep C# & Inspector | 9 | 6 |
+| M3 Deep C# & Inspector | 9 | 7 |
 | M4 Polyglot & scale | 11 | 0 |
 | M5 Git | 7 | 0 |
 | M6 Export | 2 | 0 |
@@ -420,11 +420,12 @@ Status overview (keep in sync):
 - **Note:** Done 2026-11-18. Layouts: force (fcose, default), hierarchical (dagre), concentric (built-in); switcher in the Architecture Explorer, choice stored as `graph.layout`. Measurements in GRAPH_ENGINE.md §8.1: the default force layout needs ≤ 0.43 s for 500 nodes / 2,000 edges (headless Edge); hierarchical exceeds the 2 s target on graphs that large (2.2–2.8 s headless, more in WebView2). elkjs and web-worker layouts not adopted. Module/type node shapes follow with the kinds in GRAPH-006. Verified with an end-to-end harness in headless Edge; not yet checked in the running app.
 
 ### GRAPH-006 — Module and entity levels with expand/collapse
-- **Priority:** P0 · **Milestone:** M3 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M3 · **Status:** done
 - **Prerequisites:** GRAPH-002, STORE-004, ANALYSIS-005
 - **Projects:** Graph, Graph.Tests, Storage (slice queries), Desktop, GraphView.Web
 - **Description:** L2/L3 projection, compound nodes, `graph/patch` messages, deepest-visible-ancestor edge attachment.
 - **Acceptance criteria:** Expanding and collapsing is reversible and yields identical views; projection tests for mixed levels.
+- **Note:** `GraphQuery.Expanded`; `VisibleTree` (Graph) builds the visible nodes: expanded projects show their namespaces, expanded namespaces their sub-namespaces and types (types not expandable in M3); namespace chains without types are compressed (`Shop` → `Shop.Domain` → `Shop.Domain.Orders` shows `Shop.Domain.Orders`); relationships attach to the deepest visible ancestor, edges inside a node or between a compound and its content are dropped; unknown/hidden ids are ignored. Protocol `graph/patch` (`GraphPatchPayload`): `GraphViewBridge.PatchGraphAsync` sends the difference, the web view validates it against its copy of the graph (`applyPatch`, all or nothing) and re-runs the layout; double click on an expandable node sends `node/expandRequested`/`collapseRequested`, the bridge checks the node state, the explorer keeps the expanded set (hidden inner expansions are remembered). Styles: namespaces rectangles, types circles, double outline = expandable, translucent compound boxes; focus dimming keeps a selected compound with its content. **Not done here:** Storage slice queries — the whole model is still read per run (ADR-010); slices follow with the node budget (GRAPH-008, QA-002). Tests: projection (mixed levels, compression, deepest-visible-ancestor, reversibility by JSON comparison, ignored ids, edge details), bridge diff and request validation, web `applyPatch`/controller/dimming, ViewModel end to end over `dotnet-layered`. **Manually verified on Windows:** expand project → namespace → types and collapse again by double click (after re-analyzing a repository stored before ANALYSIS-005, which has no namespaces).
 
 ### UI-006 — Component Inspector
 - **Priority:** P0 · **Milestone:** M3 · **Status:** todo
