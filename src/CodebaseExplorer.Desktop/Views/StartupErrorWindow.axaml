@@ -4,6 +4,7 @@
         x:Class="CodebaseExplorer.Desktop.Views.StartupErrorWindow"
         x:DataType="vm:StartupErrorViewModel"
         Title="Codebase Explorer — startup error"
+        Icon="avares://CodebaseExplorer/Assets/app-icon.ico"
         Width="640" SizeToContent="Height" CanResize="False"
         WindowStartupLocation="CenterScreen">
   <StackPanel Margin="24" Spacing="12">

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Codebase Explorer application icon. Vector source of the design that New-AppIcon.ps1 renders
+       (same 256-unit grid); keep both in sync when changing the design. -->
+  <defs>
+    <linearGradient id="bg" x1="12" y1="12" x2="244" y2="244" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3B82F6" />
+      <stop offset="0.45" stop-color="#6366F1" />
+      <stop offset="1" stop-color="#9333EA" />
+    </linearGradient>
+    <linearGradient id="hl" x1="0" y1="12" x2="0" y2="140" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22" />
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+    <clipPath id="tile"><rect x="12" y="12" width="232" height="232" rx="56" /></clipPath>
+  </defs>
+  <rect x="12" y="12" width="232" height="232" rx="56" fill="url(#bg)" />
+  <rect x="12" y="12" width="232" height="128" fill="url(#hl)" clip-path="url(#tile)" />
+  <g stroke="#FFFFFF" stroke-opacity="0.59" stroke-width="9" stroke-linecap="round">
+    <line x1="128" y1="70" x2="84" y2="134" />
+    <line x1="128" y1="70" x2="180" y2="134" />
+    <line x1="84" y1="134" x2="60" y2="194" />
+    <line x1="84" y1="134" x2="118" y2="194" />
+    <line x1="180" y1="134" x2="184" y2="194" />
+    <line x1="180" y1="134" x2="118" y2="194" />
+  </g>
+  <g fill="#1E1B4B" fill-opacity="0.27">
+    <circle cx="128" cy="74" r="22" /><circle cx="84" cy="138" r="17" /><circle cx="180" cy="138" r="17" />
+    <circle cx="60" cy="198" r="15" /><circle cx="118" cy="198" r="15" /><circle cx="184" cy="198" r="15" />
+  </g>
+  <circle cx="128" cy="70" r="22" fill="#FFFFFF" />
+  <circle cx="84" cy="134" r="17" fill="#FFFFFF" />
+  <circle cx="180" cy="134" r="17" fill="#FFFFFF" />
+  <circle cx="60" cy="194" r="15" fill="#FFFFFF" />
+  <circle cx="118" cy="194" r="15" fill="#22D3EE" />
+  <circle cx="184" cy="194" r="15" fill="#F0ABFC" />
+</svg>
