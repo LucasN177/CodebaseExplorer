@@ -23,7 +23,7 @@ Status overview (keep in sync):
 | M0 Foundation | (initialization) | ✅ |
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
-| M3 Deep C# & Inspector | 9 | 0 |
+| M3 Deep C# & Inspector | 9 | 1 |
 | M4 Polyglot & scale | 11 | 0 |
 | M5 Git | 7 | 0 |
 | M6 Export | 2 | 0 |
@@ -393,11 +393,12 @@ Status overview (keep in sync):
 - **Acceptance criteria:** All detections carry rule ids; no false positives on the fixture's negative cases.
 
 ### REPO-006 — Fixture `dotnet-advanced`
-- **Priority:** P1 · **Milestone:** M3 · **Status:** todo
+- **Priority:** P1 · **Milestone:** M3 · **Status:** done
 - **Prerequisites:** REPO-004
 - **Projects:** TestRepositories
 - **Description:** Partial classes, nested types, generics, multi-targeting, conditional references, missing project reference, central package management with `VersionOverride`.
 - **Acceptance criteria:** `EXPECTED.md` complete; used by ANALYSIS-005/006 tests and as additional regression input for the M1 parsers (ANALYSIS-003/004).
+- **Note:** `tests/CodebaseExplorer.TestRepositories/Repositories/dotnet-advanced` (16 files, LF). EXPECTED.md §1–7 (files, solution, projects incl. placeholder `Advanced.Plugins`, references, conditions, diagnostics) are asserted by `DotnetAdvancedFixtureTests` and already pass with the M1 parsers. §8 (modules and entities with documentation-comment IDs and identifier locations), §9 (minimum set of semantic relationships incl. cross-project) and §10 (DI registrations and negative cases) are the oracle for ANALYSIS-005 … 007. Open verification item V-1 for ANALYSIS-005: symbol keys must not depend on whether NuGet or SDK reference assemblies are present (unresolved parameter types).
 
 ### QA-003 — Hostile .NET fixtures proving zero execution
 - **Priority:** P0 · **Milestone:** M3 · **Status:** todo

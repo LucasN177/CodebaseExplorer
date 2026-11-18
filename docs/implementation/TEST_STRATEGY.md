@@ -74,7 +74,7 @@ Planned fixtures:
 | Fixture | Task | Purpose |
 |---|---|---|
 | `dotnet-layered` | REPO-004 (**exists**) | 5-project clean-architecture solution; M1 oracle. |
-| `dotnet-advanced` | REPO-006 | Partial types, generics, multi-targeting, conditions, CPM overrides, missing references. |
+| `dotnet-advanced` | REPO-006 (**exists**) | Partial and nested types, generics, multi-targeting, true/false/unsupported conditions, CPM `VersionOverride`, missing project reference, DI registrations with negative cases; oracle for ANALYSIS-005 … 007, regression input for the M1 parsers (`DotnetAdvancedFixtureTests`). |
 | `ts-monorepo-workspaces` | REPO-007 | npm/pnpm workspaces, tsconfig paths and project references. |
 | `js-commonjs` | REPO-007 | `require`, `module.exports`, index resolution. |
 | `python-src-layout` | REPO-007 | `pyproject.toml`, `src/` layout, relative imports. |
