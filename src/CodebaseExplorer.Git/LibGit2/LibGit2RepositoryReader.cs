@@ -1,5 +1,6 @@
 using CodebaseExplorer.Application.Common;
 using CodebaseExplorer.Application.Git;
+using CodebaseExplorer.Git.History;
 using LibGit2Sharp;
 
 namespace CodebaseExplorer.Git.LibGit2;
@@ -21,6 +22,24 @@ internal sealed class LibGit2RepositoryReader : IGitRepositoryReader
     {
         ArgumentNullException.ThrowIfNull(repository);
         return Task.Run(() => ReadSnapshot(repository, cancellationToken), cancellationToken);
+    }
+
+    public Task<Result<GitFileActivityReport>> ReadFileActivityAsync(
+        GitRepositoryInfo repository, GitHistoryWindow window, IProgress<GitProgress>? progress, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(window);
+        return Task.Run<Result<GitFileActivityReport>>(() =>
+        {
+            try
+            {
+                return FileActivityWalker.Walk(repository, window, progress, cancellationToken);
+            }
+            catch (LibGit2SharpException exception)
+            {
+                return ReadFailed(repository.RootPath, exception);
+            }
+        }, cancellationToken);
     }
 
     private static Result<GitRepositoryInfo> Open(string rootPath)

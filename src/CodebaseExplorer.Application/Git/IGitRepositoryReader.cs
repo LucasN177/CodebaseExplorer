@@ -21,4 +21,16 @@ public interface IGitRepositoryReader
 
     /// <summary>HEAD commit, branch or detached state, uncommitted changes and sanitized remotes.</summary>
     Task<Result<GitSnapshotInfo>> ReadSnapshotAsync(GitRepositoryInfo repository, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Walks the history reachable from HEAD once, newest first, within <paramref name="window"/> and accumulates
+    /// per-file statistics for files under the analyzed folder (GIT-004). Merge commits are skipped (as with
+    /// <c>git log --no-merges</c>); renames are not detected (a rename counts as delete + add, as with
+    /// <c>--no-renames</c>). In a shallow repository, commits without parents are treated as the history boundary.
+    /// </summary>
+    Task<Result<GitFileActivityReport>> ReadFileActivityAsync(
+        GitRepositoryInfo repository,
+        GitHistoryWindow window,
+        IProgress<GitProgress>? progress,
+        CancellationToken cancellationToken);
 }

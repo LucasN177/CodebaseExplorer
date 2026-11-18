@@ -25,7 +25,7 @@ Status overview (keep in sync):
 | M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 9 |
 | M4 Polyglot & scale | 11 | 3 |
-| M5 Git | 7 | 3 |
+| M5 Git | 7 | 4 |
 | M6 Export | 2 | 0 |
 | M7 Local AI | 7 | 0 |
 | M8 Hardening & release | 4 | 0 |
@@ -563,11 +563,12 @@ Status overview (keep in sync):
 - **Acceptance criteria:** Rejected URL schemes tested; cancellation leaves no half-cloned directory registered.
 
 ### GIT-004 — File activity statistics
-- **Priority:** P0 · **Milestone:** M5 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M5 · **Status:** done
 - **Prerequisites:** GIT-001, GIT-002
 - **Projects:** Git, IntegrationTests
 - **Description:** Single-pass history walk within `GitHistoryWindow`: per-file commit count, distinct authors (count only), first/last change, lines added/deleted.
 - **Acceptance criteria:** Correct numbers on builder-created histories; bounded runtime on the performance fixture.
+- **Note:** Done 2026-11-18. `IGitRepositoryReader.ReadFileActivityAsync(info, GitHistoryWindow, progress)` → `GitFileActivityReport` (files relative to the analyzed folder, `CommitsScanned`, `OldestCommitAt`, `ReachedCommitLimit`). `History/FileActivityWalker`: commits from HEAD in time order within the window (default 5,000 commits / 365 days, committer time), merge commits skipped, diffs against the first parent without rename detection, binary files count commits but no lines, distinct authors by case-insensitive e-mail (kept only during the walk); commits are diffed in parallel (≤ 8 workers, one `Repository` each) and merged deterministically. Tests: `GitFileActivityTests` (hand-computed numbers incl. rename = delete + add, merges, commit limit, since-date, subfolder, author e-mail case, binary, empty repository, 60-commit determinism + progress, cancellation). Runtime: 8.8 s on 2,511 commits of `libgit2/libgit2sharp` (TEST_STRATEGY.md §8). **Open:** "bounded runtime on the performance fixture" waits for QA-002 (M4); the window bounds the work meanwhile.
 
 ### GIT-005 — Persist Git data and activity overlay
 - **Priority:** P0 · **Milestone:** M5 · **Status:** todo

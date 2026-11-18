@@ -25,10 +25,16 @@ public interface IGitRepositoryReader
     Task<Result<GitRepositoryInfo>> OpenAsync(string path, CancellationToken ct);
     // HEAD (null if unborn), branch (null if detached), uncommitted changes (incl. untracked, not ignored), remotes.
     Task<Result<GitSnapshotInfo>> ReadSnapshotAsync(GitRepositoryInfo repository, CancellationToken ct);
-    // Illustrative, finalized in GIT-004:
-    Task<IReadOnlyList<GitFileActivity>> ReadFileActivityAsync(
+    // Implemented (GIT-004): one walk from HEAD, newest first, within the window; merge commits skipped
+    // (git log --no-merges), no rename detection (--no-renames), diffs against the first parent; in shallow
+    // repositories parentless commits are the boundary. Files outside the analyzed folder are dropped.
+    Task<Result<GitFileActivityReport>> ReadFileActivityAsync(
         GitRepositoryInfo repository, GitHistoryWindow window, IProgress<GitProgress>? progress, CancellationToken ct);
 }
+
+// GitFileActivityReport(Files, CommitsScanned, OldestCommitAt, ReachedCommitLimit);
+// GitFileActivity(Path relative to the analyzed folder, CommitCount, DistinctAuthorCount — by e-mail, case-insensitive —,
+// LinesAdded, LinesDeleted, FirstCommitAt, LastCommitAt, LastCommitSha). Times are committer times.
 
 // GitRepositoryInfo(RootPath, WorkingDirectory, RootPrefix, IsLinkedWorktree, IsShallow): RootPrefix is the analyzed
 // folder relative to the working tree ("" if equal) — Git paths are mapped to the model's files through it.
@@ -42,7 +48,7 @@ public interface IGitRemoteCloner
 ```
 
 `GitHistoryWindow` bounds the walk by maximum commit count (default 5,000) and/or since-date
-(default: 365 days). Rename following is not performed in the MVP.
+(default: 365 days, `GitHistoryWindow.Default(now)`). Rename following is not performed in the MVP.
 
 ## 3. Adapter choice
 
@@ -71,7 +77,7 @@ runs on all three CI OSes, so native loading is verified there too).
 | HTTPS clone (public) | Works for GitHub (`libgit2/libgit2sharp`) and GitLab (`gitlab.com`), verified manually 2026-11-18; automated as the opt-in network test `ShallowHttpsClone_OfPublicRepository`. |
 | HTTPS clone with token | Supported via `FetchOptions.CredentialsProvider` (`UsernamePasswordCredentials`); the token never appears in `.git/config`. **Not verified against a private repository** (no test token available) — opt-in test `HttpsClone_WithToken_UsesTheCredentialsCallbackOnly` reads `CODEBASE_EXPLORER_TEST_GIT_URL`/`…_TOKEN`. |
 | Shallow clone | `FetchOptions.Depth` works over HTTPS (`Repository.Info.IsShallow`); the **local transport rejects it** ("shallow fetch is not supported by the local transport"). **The product clones full history:** a shallow clone would make the activity statistics (§2 `GitHistoryWindow`) meaningless. |
-| History walk performance | `libgit2/libgit2sharp` (2,837 commits, 2,952 paths, Release build, Windows 11, local SSD): commit walk with tree-to-tree changes only **1.4 s**; with per-file line counts (`Patch`, no rename detection) **26.5 s**; with libgit2's default rename detection 32 s; `git log --numstat` for comparison 6.3 s. Line counting dominates. Consequence for GIT-004: single pass over the window, no rename detection (matches `git log --no-renames --numstat` exactly; renames count as delete + add), diffs against the first parent, merge commits skipped, the walk split across threads with one `Repository` instance each. The benchmark on the performance fixture follows with QA-002. |
+| History walk performance | `libgit2/libgit2sharp` (2,837 commits, 2,952 paths, Release build, Windows 11, local SSD): commit walk with tree-to-tree changes only **1.4 s**; with per-file line counts (`Patch`, no rename detection) **26.5 s**; with libgit2's default rename detection 32 s; `git log --numstat` for comparison 6.3 s. Line counting dominates. Consequence for GIT-004: single pass over the window, no rename detection (matches `git log --no-renames --numstat` exactly; renames count as delete + add), diffs against the first parent, merge commits skipped, the walk split across threads with one `Repository` instance each — implemented in GIT-004: **8.8 s** for the 2,511 non-merge commits of the same repository (16 logical CPUs, 8 workers; line totals equal `git log --no-merges --no-renames --numstat`). The benchmark on the performance fixture follows with QA-002. |
 | Credentials | Token passed via credentials callback; never written to `.git/config` or remote URLs |
 
 **Possible second adapter: Git CLI** (only if OPD-02 decides for SSH). If used, every invocation
