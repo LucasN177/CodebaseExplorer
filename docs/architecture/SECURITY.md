@@ -11,7 +11,7 @@
 | S2 | **Repository code is never executed.** No build, restore, test, script, MSBuild evaluation of targets/tasks/property functions, package manager invocation, lifecycle hook, Git hook, Roslyn analyzer/source generator from the repository, Python `setup.py`, or anything else that runs repository-defined logic. |
 | S3 | **Local-first.** Repository contents and analysis results are stored only in the user's local data directory. |
 | S4 | **No outbound network by default.** The only default network activity is a clone/update the user explicitly starts. AI providers are opt-in; cloud providers require explicit configuration and per-repository consent. |
-| S5 | **Read-only towards repositories.** The app never writes into a user's repository on its own. It writes into its own data directory (including its own clone directory). The single exception is a documentation export into a folder inside the repository that the user explicitly chose and confirmed (EXPORT-002). |
+| S5 | **Read-only towards repositories.** The app never writes into a user's repository on its own. It writes into its own data directory (including its own clone directory). The single exception is a documentation export into a folder inside the repository that the user explicitly chose and confirmed (EXPORT-002) — implemented: the *Export* page refuses a target inside the analyzed folder (also an app-managed clone) until the user ticks an explicit confirmation (`ReportFileWriter.IsInsideRepository`, `ExportPageViewModelTests`). |
 | S6 | **Least data.** Store only what features need (e.g. Git author counts, not identities). Never log source content or secrets. |
 
 ## 2. Threat model (summary)
@@ -98,7 +98,8 @@
 - No telemetry in the MVP (OPD-06 decides post-MVP opt-in telemetry; it would never include
   repository content, paths or names).
 - Users can delete a repository's data (cascade delete) and the clone directory from the UI.
-- Export files are written where the user chooses; default location is outside the analyzed repository.
+- Export files are written where the user chooses; default location is the user's documents folder, outside the analyzed
+  repository; existing files are never overwritten (EXPORT-002).
 
 ## 6. Verification
 

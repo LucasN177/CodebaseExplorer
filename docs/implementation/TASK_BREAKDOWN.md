@@ -26,7 +26,7 @@ Status overview (keep in sync):
 | M3 Deep C# & Inspector | 9 | 9 |
 | M4 Polyglot & scale | 11 | 11 |
 | M5 Git | 7 | 7 |
-| M6 Export | 2 | 1 |
+| M6 Export | 2 | 2 |
 | M7 Local AI | 7 | 0 |
 | M8 Hardening & release | 4 | 0 |
 | Post-MVP | 1 | 0 |
@@ -608,11 +608,12 @@ Status overview (keep in sync):
 - **Note:** Done 2026-11-18. Use case `ExportArchitectureReport` (Application/Export) → `ArchitectureReportDto` (file name `ARCHITECTURE-<repo>-<yyyy-MM-dd>.md`, Markdown, truncation flag; Contracts/Export with `ArchitectureReportRequest`/`ReportSections`). `MarkdownReportRenderer` is pure and deterministic: title and scope, overview, languages, projects (kind, folder, files, references in/out, packages), Mermaid dependency graph, external dependencies (used by), analysis metadata (status, times in UTC, commit/branch, files, warnings/errors, analyzer versions), evidence statistics (relationship kinds × levels, evidence per analyzer). No absolute local path is written. Scope: whole repository = project level incl. test projects with a node budget of 100; current view = the explorer's query (expansions become subgraphs). `MermaidDiagram`: generated ids, quoted labels with numeric entity codes for every special character, at most 500 edges (Mermaid default), edges in node order. `MarkdownText` escapes ` ` * _ [ ] | ~` and HTML. Tests: `ExportArchitectureReportTests` (snapshot `Export/Snapshots/dotnet-layered.md`, hostile npm package name, current view with subgraphs and section order, validation, file names; TEST_STRATEGY.md §5.2). Mermaid validity is checked against the emitted grammar, not by a Mermaid renderer (not verified in a viewer).
 
 ### EXPORT-002 — Export dialog
-- **Priority:** P0 · **Milestone:** M6 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M6 · **Status:** done
 - **Prerequisites:** EXPORT-001
 - **Projects:** Desktop
 - **Description:** Scope and section selection, target folder (default outside repository), open folder after export.
 - **Acceptance criteria:** Writing into the analyzed repository requires explicit confirmation.
+- **Note:** Done 2026-11-18. Implemented as the navigation page *Export* (`ExportPageViewModel`, `ExportPageView`) rather than a modal dialog, like the other pages (no dialog service exists). Scope: whole repository or the Architecture Explorer's current view (`ArchitectureExplorerPageViewModel.CurrentQuery`; enabled only while it shows the current repository); section check boxes; target folder (default: the user's documents folder) with *Choose folder…*; a target inside the analyzed folder — also an app-managed clone — shows a warning and enables *Export report* only after ticking an explicit confirmation, which is reset whenever the target changes; *Open the folder after the export* (`IFolderLauncher`). `ReportFileWriter` (Desktop service) writes UTF-8 without BOM with `FileMode.CreateNew` and never overwrites (`name (2).md`, …). Tests: `ExportPageViewModelTests` (empty state, export into the chosen folder + open + no overwrite, confirmation inside the repository and its reset, no section / relative target, current view, write failure inline, `IsInsideRepository` segment comparison). **Not verified:** the page in the running app.
 
 ---
 

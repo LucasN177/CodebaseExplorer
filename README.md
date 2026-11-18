@@ -55,7 +55,7 @@ analysis. Full vision: [docs/product/VISION.md](docs/product/VISION.md).
 | Component Inspector with evidence and source snippets | ⏳ planned (M3) |
 | Local persistence (SQLite) and analysis history | 🚧 in progress (M2: database created and migrated at startup; analysis runs and models are saved — reopening a saved repository from the UI follows with REPO-005) |
 | Git metadata and change-activity overlays | ✅ available (M5: HEAD, branch and remotes per run; per-file change statistics of the last 365 days / 5,000 commits; *Git activity* toggle in the graph and a Git line in the Component Inspector) |
-| Markdown/Mermaid architecture export | ⏳ planned (M6) |
+| Markdown/Mermaid architecture export | ✅ available (M6: *Export* page — whole repository or current graph view, selectable sections, target folder outside the repository by default, writing into the repository only after confirmation) |
 | Optional local AI (Ollama) with cited answers | ⏳ planned (M7) |
 
 Scope details: [docs/product/MVP_SCOPE.md](docs/product/MVP_SCOPE.md).
@@ -125,7 +125,8 @@ enforced by architecture tests. Details: [docs/architecture/SYSTEM_ARCHITECTURE.
 | M3 Deep C# & Inspector | ✅ done |
 | M4 Polyglot & scale | 🚧 in progress (see [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md)) |
 | M5 Git | ✅ implemented (started in parallel to M4; manual UI checks pending, see [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md)) |
-| M6 Export · M7 Local AI · M8 Release | ⏳ planned |
+| M6 Export | ✅ implemented (export page not yet checked manually in the running app) |
+| M7 Local AI · M8 Release | ⏳ planned |
 
 What exists today: 10 source projects and 6 test projects, central package management, module
 registration seams, a composition root, the Avalonia shell, and the language-independent domain

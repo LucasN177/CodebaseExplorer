@@ -16,11 +16,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         OverviewPageViewModel overview,
         ArchitectureExplorerPageViewModel architectureExplorer,
         RunHistoryPageViewModel runHistory,
+        ExportPageViewModel export,
         SettingsPageViewModel settings,
         RepositorySession session,
         ShellStatus shell)
     {
-        Pages = [start, overview, architectureExplorer, runHistory, settings];
+        Pages = [start, overview, architectureExplorer, runHistory, export, settings];
         CurrentPage = start;
         Shell = shell;
         overview.ExplorerRequested += (_, _) => CurrentPage = architectureExplorer;

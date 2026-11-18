@@ -58,6 +58,7 @@ public static class CompositionRoot
         services.AddSingleton<IFolderPicker, FolderPicker>();
         services.AddSingleton<IClipboardService, ClipboardService>();
         services.AddSingleton<IFolderLauncher, FolderLauncher>();
+        services.AddSingleton<IReportFileWriter, ReportFileWriter>();
         services.AddSingleton<RepositorySession>();
         services.AddSingleton<ShellStatus>();
         services.AddSingleton<GlobalExceptionHandler>();
@@ -71,6 +72,7 @@ public static class CompositionRoot
         services.AddSingleton<OverviewPageViewModel>();
         services.AddSingleton<ArchitectureExplorerPageViewModel>();
         services.AddSingleton<RunHistoryPageViewModel>();
+        services.AddSingleton<ExportPageViewModel>();
         services.AddSingleton<SettingsPageViewModel>();
         services.AddSingleton<MainWindowViewModel>();
 

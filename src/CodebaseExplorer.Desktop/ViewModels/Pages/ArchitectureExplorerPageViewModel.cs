@@ -106,6 +106,9 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
     /// <summary>The graph web view; bound to the graph host control.</summary>
     public IGraphViewHost Graph { get; }
 
+    /// <summary>The query of the graph currently shown (level, expansions, filters, neighborhood); null without a graph. Used by the export (EXPORT-002).</summary>
+    public GraphQuery? CurrentQuery => HasGraph ? _query : null;
+
     /// <summary>The layouts offered by the layout switcher (GRAPH-005).</summary>
     public IReadOnlyList<GraphLayoutOption> Layouts { get; }
 

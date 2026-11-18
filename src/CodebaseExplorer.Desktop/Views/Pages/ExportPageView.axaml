@@ -1,0 +1,60 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pages="using:CodebaseExplorer.Desktop.ViewModels.Pages"
+             x:Class="CodebaseExplorer.Desktop.Views.Pages.ExportPageView"
+             x:DataType="pages:ExportPageViewModel">
+  <!-- Export of the Markdown/Mermaid architecture report (EXPORT-002, WF-08) -->
+  <ScrollViewer>
+    <StackPanel Spacing="12" MaxWidth="720" HorizontalAlignment="Left">
+      <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold" />
+      <TextBlock IsVisible="{Binding ShowEmptyState}" TextWrapping="Wrap" Opacity="0.8"
+                 Text="Open or import a repository on the start page to export its architecture report." />
+
+      <StackPanel Spacing="12" IsVisible="{Binding HasRepository}">
+        <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                   Text="Writes a Markdown report with Mermaid diagrams: overview, languages, projects, dependency graph, external dependencies, analysis metadata and evidence statistics." />
+        <TextBlock Text="{Binding RepositoryName}" FontSize="16" FontWeight="SemiBold" />
+
+        <TextBlock Text="Scope" FontWeight="SemiBold" />
+        <RadioButton GroupName="scope" Content="Whole repository (all projects)" IsChecked="{Binding !UseCurrentView}" />
+        <RadioButton GroupName="scope" Content="Current graph view (expansions, filters and neighborhood of the Architecture Explorer)"
+                     IsChecked="{Binding UseCurrentView}" IsEnabled="{Binding CanUseCurrentView}" />
+
+        <TextBlock Text="Sections" FontWeight="SemiBold" />
+        <ItemsControl ItemsSource="{Binding Sections}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="pages:ExportSectionOption">
+              <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <TextBlock Text="Target folder" FontWeight="SemiBold" />
+        <DockPanel>
+          <Button DockPanel.Dock="Right" Content="Choose folder…" Margin="8,0,0,0" Command="{Binding ChooseFolderCommand}" />
+          <TextBox Text="{Binding TargetFolder}" AutomationProperties.Name="Target folder" />
+        </DockPanel>
+        <Border IsVisible="{Binding TargetIsInsideRepository}" BorderThickness="1" CornerRadius="6" Padding="12"
+                BorderBrush="{DynamicResource ErrorBorderBrush}"
+                Background="{DynamicResource ErrorBackgroundBrush}">
+          <StackPanel Spacing="8">
+            <TextBlock TextWrapping="Wrap"
+                       Text="This folder is inside the analyzed repository. Codebase Explorer never writes into a repository unless you confirm it." />
+            <CheckBox Content="Yes, write the report into the repository" IsChecked="{Binding ConfirmWriteIntoRepository}" />
+          </StackPanel>
+        </Border>
+        <CheckBox Content="Open the folder after the export" IsChecked="{Binding OpenFolderAfterExport}" />
+
+        <Button Content="Export report" Classes="accent" Command="{Binding ExportCommand}" />
+        <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap"
+                   IsVisible="{Binding StatusMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        <Border IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
+                BorderThickness="1" CornerRadius="6" Padding="12"
+                BorderBrush="{DynamicResource ErrorBorderBrush}"
+                Background="{DynamicResource ErrorBackgroundBrush}">
+          <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
+        </Border>
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -10,7 +10,7 @@
 | M3 | Deep C# & Component Inspector | 🚧 all tasks implemented (2026-11-18); verified on Windows, macOS/Linux open | Namespaces/types with evidence levels, inspector, hostile fixtures. |
 | M4 | Polyglot & large repositories | 🚧 all tasks implemented (2026-11-18); performance targets met (TEST_STRATEGY.md §8); ADR-012 accepted (whole-model reads stay); new explorer features not yet checked manually; macOS/Linux open | TS/JS/Python, filters/search/budget, performance targets. |
 | M5 | Git integration | 🟡 all 7 tasks implemented (started in parallel to M4); overlay and clone form not yet checked in the running app | Metadata, HTTPS clone, activity overlay. |
-| M6 | Documentation export | ⏳ planned | Markdown + Mermaid report. |
+| M6 | Documentation export | 🟡 both tasks implemented; export page not yet checked in the running app, Mermaid output not yet rendered in a viewer | Markdown + Mermaid report. |
 | M7 | Optional local AI | ⏳ planned | Ollama Q&A with validated citations; off by default. |
 | M8 | Hardening & release | ⏳ planned | Packaging, CI on 3 OSes, release gate. |
 
