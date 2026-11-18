@@ -168,7 +168,9 @@ internal sealed class VisibleTree
         var childCount = childModules.Length + types.Length;
         var expand = expanded.Contains(module.Id) && childCount > 0;
 
-        var label = parentQualifiedName is not null && module.QualifiedName.StartsWith(parentQualifiedName + ".", StringComparison.Ordinal)
+        // Relative to the parent: namespaces and Python modules are dotted, TS/JS folders and files are paths.
+        var label = parentQualifiedName is not null
+            && (module.QualifiedName.StartsWith(parentQualifiedName + ".", StringComparison.Ordinal) || module.QualifiedName.StartsWith(parentQualifiedName + "/", StringComparison.Ordinal))
             ? module.QualifiedName[(parentQualifiedName.Length + 1)..]
             : module.QualifiedName;
         var id = Add(new GraphNodeDto

@@ -24,7 +24,7 @@ Status overview (keep in sync):
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 9 |
-| M4 Polyglot & scale | 11 | 4 |
+| M4 Polyglot & scale | 11 | 5 |
 | M5 Git | 7 | 0 |
 | M6 Export | 2 | 0 |
 | M7 Local AI | 7 | 0 |
@@ -464,11 +464,12 @@ Status overview (keep in sync):
 - **Note:** Done 2026-11-18. `NodeProjectSystemAnalyzer` (`node.manifest`, ANALYSIS_ENGINE.md Stage 2 "Implemented"): one project per `package.json`, workspace roots from `workspaces`/`pnpm-workspace.yaml` (minimal in-house reader of the `packages:` list instead of a YAML library), repository packages → `ProjectReference`, others → npm `PackageReference`, `tsconfig.json` references (solution-style configs excluded), scripts listed as properties with an `Info` per lifecycle script. `Parsing/SafeJson`: `Utf8JsonReader`, depth 64, JSONC, UTF-16 positions. Shared helpers moved/added: `RepositoryPaths` → `FileSystem/`, `Pipeline/FragmentBuilder`. Tests: EXPECTED.md §2–5 of `ts-monorepo-workspaces`, `js-commonjs` and the frontend of `mixed-polyglot`; pnpm/yarn workspaces, invalid/too deep/oversized manifests, missing names, duplicates, unresolved tsconfig references; `SafeJsonTests`, `WorkspaceFileTests`. Hostile fixture `node-hostile` + `HostileNodeFixtureTests` (QA-003 harness): lifecycle scripts, `.npmrc`, node-gyp, `file:` dependency, module side effect, TS plugin — nothing runs. **Bug found and fixed in Storage:** a project at the repository root (root directory stored as `""`) could not be read back (`RecordMapper`), regression test `ProjectAtTheRepositoryRoot_IsLoadedAgain`.
 
 ### ANALYSIS-010 — TypeScript/JavaScript import analysis
-- **Priority:** P0 · **Milestone:** M4 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M4 · **Status:** done
 - **Prerequisites:** ANALYSIS-008, ANALYSIS-009
 - **Projects:** Analysis, Analysis.Tests
 - **Description:** Tree-sitter extraction of imports/exports/requires and top-level declarations; resolution per ANALYSIS_ENGINE.md; modules = directories.
 - **Acceptance criteria:** Fixture expectations met incl. path aliases; unresolved specifiers produce diagnostics.
+- **Note:** Done 2026-11-18. `TypeScriptAnalyzer` (`treesitter.typescript`, one analyzer for TS/TSX/JS; ANALYSIS_ENGINE.md Stage 3 "Implemented"): directory and file modules, top-level declarations (incl. CommonJS exports), `import`/`export … from`/`require`/`import()` resolved relative, through `tsconfig` `paths`/`baseUrl` (with `extends`), to workspace packages (entry points) or npm packages (declared → `Syntactic`, undeclared → `Heuristic`). `LanguageAnalysisContext` now carries all stage-2 projects. Graph: module labels are relative to the parent also for `/` paths; Inspector shows the module kind (Namespace, Folder, Package, File module) and "Modules"/"Sub-modules" instead of namespace-only wording. Tests: EXPECTED.md of `ts-monorepo-workspaces` §6–8, `js-commonjs` §4–6, `mixed-polyglot` frontend; `TypeScriptAnalyzerTests` (kinds/modifiers/export forms/overloads, `extends`+`baseUrl`, `.js`→`.ts`, built-ins, URL imports, workspace subpaths, hoisted root dependencies, computed imports, syntax errors, oversized files, targets outside projects); `PolyglotImportTests` (composition root: graph edges and drill-down into folders/files; one project per ecosystem in `mixed-polyglot`).
 
 ### ANALYSIS-011 — Python project-system analyzer
 - **Priority:** P0 · **Milestone:** M4 · **Status:** done

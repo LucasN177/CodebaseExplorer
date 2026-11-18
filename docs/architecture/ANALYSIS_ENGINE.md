@@ -270,6 +270,25 @@ warning (`csharp.project.reference-cycle`).
   `ExternalDependency`.
 - Evidence: resolved to existing file → `Confirmed`; bare specifier matched to a declared
   dependency → `Syntactic`; unresolved/computed → `Heuristic` or diagnostic.
+- **Implemented (ANALYSIS-010, `Languages/TypeScript`):** one analyzer `treesitter.typescript` for TypeScript, TSX
+  and JavaScript (shared resolution), per project (`ILanguageAnalyzer`; the context now also lists all stage-2
+  projects for workspace resolution). Modules: every folder below the project root with source files is a
+  `Directory` module, every source file a `FileModule` (qualified names = paths relative to the project root), also
+  when the file cannot be parsed. Entities: top-level classes (incl. `export default class {}` → `default`),
+  interfaces, type aliases, enums, function declarations (overloads merge) and **exported** variables (`Function` for
+  arrow/function initializers, else `Constant`/`Variable`); visibility `Exported` via `export`, `export { … }`,
+  `module.exports = X | { … }` or `exports.x = X`; symbol keys `{path}#{name}`, `#~{name}`, `#default`. References:
+  `import`, `export … from`, `require('…')` and `import('…')` (also inside functions) with literal specifiers;
+  computed → `Info` `ts.import.computed`. Resolution order: relative (`./`, `../`) → file with TS/Node extension
+  rules incl. `.js` → `.ts` and `index` files (`ModuleFiles`, scanned files only); `tsconfig` `paths` then `baseUrl`
+  (following relative `extends`, `TsConfigResolution`); Node built-ins (`fs`, `node:*`) → nothing; a package of the
+  repository → its entry file (`exports["."]` types/import/require/default, `types`, `typings`, `module`, `main`, then
+  `index`) or subpath; else npm package: declared in the project's or its workspace root's `package.json` →
+  `Syntactic`, otherwise `Heuristic`. Resolved files must belong to a project (else `Info`
+  `ts.import.outside-projects`); JSON/CSS and other non-source files produce nothing; unresolved → `Warning`
+  `ts.import.unresolved`. `Imports` connect file modules (rules `ts.{import|export|require|dynamic-import}.
+  {relative|path-alias|workspace|package|package-undeclared}`); syntax errors → `Info` `ts.file.syntax-errors`.
+  Oracle: `ts-monorepo-workspaces` §6–8, `js-commonjs` §4–6, `mixed-polyglot` §4.
 
 **Python (`treesitter.python`)**
 

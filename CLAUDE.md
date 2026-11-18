@@ -40,8 +40,9 @@ evidence a read-only source snippet (`GetSourceSnippet`, UI-007).
 M4: the Tree-sitter binding is decided and wrapped (`Languages/TreeSitter`, ANALYSIS-008, ADR-004 spike result);
 polyglot fixtures exist (REPO-007); the Node project-system analyzer reads `package.json`, workspaces and `tsconfig.json`
 (ANALYSIS-009, hostile npm fixture), the Python project-system analyzer reads `pyproject.toml` (Tomlyn), `setup.cfg` and
-requirement files (ANALYSIS-011, hostile Python fixture).
-No Tree-sitter analyzer, Git or AI
+requirement files (ANALYSIS-011, hostile Python fixture); the Tree-sitter TS/JS analyzer extracts folder/file modules, top-level
+declarations and resolved imports (ANALYSIS-010).
+No Python code analyzer, Git or AI
 functionality exists yet. Next: the open M1 checks (macOS/Linux) and the remaining M4
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 

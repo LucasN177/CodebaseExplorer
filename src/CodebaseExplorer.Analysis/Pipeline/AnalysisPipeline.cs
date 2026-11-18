@@ -197,7 +197,7 @@ internal sealed class AnalysisPipeline(
         {
             var (analyzer, project, files) = work[index];
             var context = new LanguageAnalysisContext(
-                request.RepositoryId, request.AnalysisRunId, request.Root, project, files, scan.Files, request.Limits, fileReader);
+                request.RepositoryId, request.AnalysisRunId, request.Root, project, files, scan.Files, request.Limits, fileReader, projects);
 
             results[index] = await RunIsolatedAsync(analyzer.Descriptor, project.Name, () => analyzer.AnalyzeProjectAsync(context, token));
             progress?.Report(new AnalysisProgress(

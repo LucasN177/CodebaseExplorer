@@ -12,7 +12,7 @@ quickly — without uploading code and without executing it.
 > solution and an application in which a local folder can be imported and its .NET projects analyzed.
 > Its project-level dependency graph is shown in the Architecture Explorer (verified on Windows), and the analysis is
 > saved in a local SQLite database.
-> **There are no Git or AI features yet and no code-level TypeScript/JavaScript/Python analysis yet.** See [Project status](#project-status).
+> **There are no Git or AI features yet and no code-level Python analysis yet.** See [Project status](#project-status).
 
 ---
 
@@ -44,7 +44,7 @@ analysis. Full vision: [docs/product/VISION.md](docs/product/VISION.md).
 | Clone GitHub/GitLab remotes | ⏳ planned (M5) |
 | Repository scanner, language and project detection | 🟡 partial (scanner, .NET and Node projects — `package.json`, npm/yarn/pnpm workspaces, `tsconfig.json` references — available; Python projects — `pyproject.toml` (PEP 621, Poetry), `setup.cfg`, requirement files — available) |
 | C# analysis with Roslyn (no build required) | 🟡 partial (namespaces, types and members; inheritance, implementation, type usage, instantiation and calls between them, also across projects, each with evidence; heuristic DI registrations) |
-| TypeScript, JavaScript and Python analysis (Tree-sitter, manifests) | 🚧 in progress (M4: Node and Python manifests available; imports and declarations planned) |
+| TypeScript, JavaScript and Python analysis (Tree-sitter, manifests) | 🚧 in progress (M4: Node and Python manifests available; TypeScript/JavaScript folders, files, top-level declarations and imports — relative, `tsconfig` paths, workspace packages, npm — available; Python code planned) |
 | Graph layouts (force-directed, hierarchical, concentric; choice remembered) and visual encoding (ecosystem colors, kind shapes, evidence line styles, edge weight, focus dimming) | ✅ available |
 | Hierarchical drill-down in the graph: double-click a project or namespace to show its namespaces and types (edges attach to the deepest visible element) | ✅ available (verified on Windows) |
 | Filters, search and neighborhood view in the graph | ⏳ planned (M3–M4) |

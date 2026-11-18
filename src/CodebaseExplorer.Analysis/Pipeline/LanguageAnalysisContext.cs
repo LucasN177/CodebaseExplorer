@@ -15,6 +15,8 @@ namespace CodebaseExplorer.Analysis.Pipeline;
 /// <param name="AllFiles">All scanned files (for resolution hints only).</param>
 /// <param name="Limits">Size and parallelism limits.</param>
 /// <param name="FileReader">The only permitted way to read repository content.</param>
+/// <param name="Projects">All real (non-placeholder) projects from stage 2, ordered by natural key — for resolving
+/// references into other projects (e.g. imports of workspace packages); never analyzed by this call.</param>
 internal sealed record LanguageAnalysisContext(
     RepositoryId RepositoryId,
     AnalysisRunId AnalysisRunId,
@@ -23,4 +25,5 @@ internal sealed record LanguageAnalysisContext(
     IReadOnlyList<ScannedFile> ProjectFiles,
     IReadOnlyList<ScannedFile> AllFiles,
     AnalysisLimits Limits,
-    IRepositoryFileReader FileReader);
+    IRepositoryFileReader FileReader,
+    IReadOnlyList<CodeProject> Projects);
