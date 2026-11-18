@@ -9,12 +9,7 @@
     <IsTestProject>true</IsTestProject>
     <OutputType>Exe</OutputType>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <!--
-      Exit code 8 = "zero tests ran". Domain/Analysis/Graph/Storage test projects are intentionally
-      empty until their first tasks land (CORE-002, ANALYSIS-001, GRAPH-002, STORE-001).
-      Remove this line in task CORE-010 once every test project contains tests.
-    -->
-    <TestingPlatformCommandLineArguments>$(TestingPlatformCommandLineArguments) --ignore-exit-code 8</TestingPlatformCommandLineArguments>
+    <!-- No exit-code exceptions: a test project in which no test ran (exit code 8) fails the run (CORE-010). -->
   </PropertyGroup>
 
   <ItemGroup Condition="$(MSBuildProjectName.EndsWith('Tests'))">

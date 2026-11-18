@@ -22,7 +22,7 @@ Status overview (keep in sync):
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
 | M1 Vertical slice | 22 | 16 |
-| M2 Persistence | 10 | 0 |
+| M2 Persistence | 10 | 5 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
 | M5 Git | 7 | 0 |
@@ -352,11 +352,12 @@ Status overview (keep in sync):
 - **Acceptance criteria:** Crash produces a log entry and a user-facing message; logs never contain file contents.
 
 ### CORE-010 — Remove the zero-test exit-code exception
-- **Priority:** P1 · **Milestone:** M2 · **Status:** todo
+- **Priority:** P1 · **Milestone:** M2 · **Status:** done
 - **Prerequisites:** CORE-002, ANALYSIS-001, GRAPH-002, STORE-001
 - **Projects:** tests/Directory.Build.props
 - **Description:** Every test project contains tests by now; remove `--ignore-exit-code 8`.
 - **Acceptance criteria:** `dotnet test --solution CodebaseExplorer.slnx` passes without the flag.
+- **Note:** The flag and its comment are gone from `tests/Directory.Build.props`; all five test projects contain tests. A focused run whose filter matches nothing now fails with exit code 8 (TEST_STRATEGY.md §2, DEVELOPMENT_GUIDE.md §8).
 
 ---
 

@@ -42,8 +42,9 @@ Run one project / filter (xunit.v3 MTP options):
 dotnet test --project tests/CodebaseExplorer.IntegrationTests --filter-class "*ProjectReferenceRulesTests"
 ```
 
-> Temporary: test projects without tests return exit code 8; `tests/Directory.Build.props` passes
-> `--ignore-exit-code 8` until CORE-010 removes it.
+> A test project in which no test ran exits with code 8 and fails the run; the former
+> `--ignore-exit-code 8` exception was removed in CORE-010. A focused run whose filter matches nothing
+> in the selected project therefore fails as well — check the filter.
 
 ## 3. Test levels
 

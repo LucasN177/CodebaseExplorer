@@ -110,6 +110,6 @@ match the sources. Details: SOLUTION_STRUCTURE.md §4.
 | Symptom | Cause / fix |
 |---|---|
 | `dotnet test` reports "Testing with VSTest target is no longer supported" | Run from the repository root so `global.json` (`test.runner = Microsoft.Testing.Platform`) applies. |
-| Test project exits with code 8 | No tests in that project; allowed until CORE-010. |
+| Test project exits with code 8 | No test ran in that project — usually a `--filter-*` that matches nothing there. Every test project must contain tests (CORE-010). |
 | Build fails with a style warning as error | Fix the code; do not lower severities without updating CODING_STANDARDS.md. |
 | Wrong SDK picked | Check `dotnet --list-sdks`; a 10.0.x SDK ≥ 10.0.100 is required. |
