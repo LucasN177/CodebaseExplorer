@@ -101,9 +101,9 @@
 
 | Check | Where |
 |---|---|
-| Hostile fixtures asserting that marker files are never created and no child process is spawned | .NET: MSBuild `Exec`, property functions, imported targets, analyzer/generator references, module initializer — **implemented (QA-003)**: fixture `dotnet-hostile`, `HostileDotNetFixtureTests` with the `ZeroExecutionHarness` (marker check + static process-API guard over the modules, TEST_STRATEGY.md §5.1) · npm lifecycle scripts (ANALYSIS-009, M4) · `setup.py` (ANALYSIS-011, M4) · Git hooks and `core.fsmonitor` (GIT-001, M5) |
+| Hostile fixtures asserting that marker files are never created and no child process is spawned | .NET: MSBuild `Exec`, property functions, imported targets, analyzer/generator references, module initializer — **implemented (QA-003)**: fixture `dotnet-hostile`, `HostileDotNetFixtureTests` with the `ZeroExecutionHarness` (marker check + static process-API guard over the modules, TEST_STRATEGY.md §5.1) · npm — **implemented (ANALYSIS-009)**: fixture `node-hostile` (lifecycle scripts, `.npmrc` `script-shell`, node-gyp `binding.gyp` action, `file:` dependency with `postinstall`, module with a top-level side effect, TypeScript language-service plugin), `HostileNodeFixtureTests` · `setup.py` (ANALYSIS-011, M4) · Git hooks and `core.fsmonitor` (GIT-001, M5) |
 | Path traversal / symlink escape | Analysis.Tests (REPO-001) |
-| XML bombs, deep JSON | Analysis.Tests (ANALYSIS-003, ANALYSIS-009) |
+| XML bombs, deep JSON | Analysis.Tests (ANALYSIS-003; ANALYSIS-009: `SafeJsonTests` depth limit, `NodeProjectSystemAnalyzerTests` deep/oversized/invalid manifests) |
 | No network with AI disabled | IntegrationTests with a guarded `HttpMessageHandler` (AI-001) |
 | WebView CSP/navigation | `GraphViewNavigationPolicyTests`, `GraphViewBridgeTests` (inbound validation), `GraphViewAssetsTests` (CSP); runtime checked manually on Windows (GRAPH-004) |
 

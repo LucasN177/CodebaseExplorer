@@ -51,6 +51,28 @@ public sealed class ArchitectureModelStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task ProjectAtTheRepositoryRoot_IsLoadedAgain()
+    {
+        // Found with the Node analyzer (ANALYSIS-009): the root directory is stored as "" and must map back to the root.
+        var repository = Unanalyzed(_samples.Repository);
+        var run = NewRun(AnalysisTrigger.Manual);
+        run.Complete(run.StartedAt.AddSeconds(1), AnalysisStatistics.Empty);
+        repository.MarkAnalyzed(run);
+        var manifest = RelativePath.Create("package.json");
+        var project = Domain.Projects.CodeProject.Create(repository.Id, "root", Domain.Projects.ProjectKind.NodePackage, Domain.Projects.Ecosystem.Node,
+            LanguageId.JavaScript, manifest, RelativePath.Root);
+        var file = RepositoryFile.Create(repository.Id, manifest, LanguageId.Json, FileClassification.ProjectManifest, 2,
+            ContentHash.Parse("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"), project.Id, 1);
+        var model = ArchitectureModel.Create(repository.Id, run.Id, [file], [project], [], [], [], []);
+
+        await _store.SaveRunAsync(repository, run, model, Token);
+
+        using var restarted = new ArchitectureModelStore(new TestContextFactory(_database));
+        var stored = await restarted.LoadCurrentModelAsync(repository.Id, Token);
+        Assert.True(Assert.Single(stored!.Model.Projects).RootDirectory.IsRoot);
+    }
+
+    [Fact]
     public async Task UnknownOrUnanalyzedRepository_HasNoModel()
     {
         Assert.Null(await _store.LoadCurrentModelAsync(RepositoryId.New(), Token));

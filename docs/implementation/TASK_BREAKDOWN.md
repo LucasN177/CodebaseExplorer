@@ -24,7 +24,7 @@ Status overview (keep in sync):
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 9 |
-| M4 Polyglot & scale | 11 | 2 |
+| M4 Polyglot & scale | 11 | 3 |
 | M5 Git | 7 | 0 |
 | M6 Export | 2 | 0 |
 | M7 Local AI | 7 | 0 |
@@ -456,11 +456,12 @@ Status overview (keep in sync):
 - **Note:** Done 2026-11-18 (ADR-004 "Spike result"). `TreeSitter.DotNet` 1.3.0 confirmed: TS, TSX, JS (JSX) and Python grammars and native binaries for all target RIDs; 1.9 MB parses in 0.4–0.65 s, hostile input ≤ 3.3 s, never crashed. **No** per-parse timeout/cancellation in the binding → parse time bounded by the 2 MB limit, cancellation between files and during walks. Tree-sitter queries are not used (super-linear on hostile input). **Crash containment: in-process with limits** (native crash = accepted residual risk, SECURITY.md §2). Proof code kept: `Languages/TreeSitter` (`TreeSitterParser`, `SyntaxWalk`) with `TreeSitterParserTests` (run on all CI OSes → verifies native assets); `Directory.Build.targets` trims the package to the runtime + 4 grammars for 64-bit win/osx/linux (~26 MB instead of ~600 MB).
 
 ### ANALYSIS-009 — Node project-system analyzer
-- **Priority:** P0 · **Milestone:** M4 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M4 · **Status:** done
 - **Prerequisites:** ANALYSIS-001, REPO-007
 - **Projects:** Analysis, Analysis.Tests
 - **Description:** `package.json`, npm/yarn workspaces, `pnpm-workspace.yaml`, `tsconfig.json` (JSONC) incl. `paths`/`references`; workspace dependencies → `ProjectReference`, others → npm `PackageReference`.
 - **Acceptance criteria:** Fixture expectations met; scripts are never run (only listed), proven by a hostile fixture with `preinstall`/`postinstall` scripts using the QA-003 harness; deep/huge JSON rejected safely.
+- **Note:** Done 2026-11-18. `NodeProjectSystemAnalyzer` (`node.manifest`, ANALYSIS_ENGINE.md Stage 2 "Implemented"): one project per `package.json`, workspace roots from `workspaces`/`pnpm-workspace.yaml` (minimal in-house reader of the `packages:` list instead of a YAML library), repository packages → `ProjectReference`, others → npm `PackageReference`, `tsconfig.json` references (solution-style configs excluded), scripts listed as properties with an `Info` per lifecycle script. `Parsing/SafeJson`: `Utf8JsonReader`, depth 64, JSONC, UTF-16 positions. Shared helpers moved/added: `RepositoryPaths` → `FileSystem/`, `Pipeline/FragmentBuilder`. Tests: EXPECTED.md §2–5 of `ts-monorepo-workspaces`, `js-commonjs` and the frontend of `mixed-polyglot`; pnpm/yarn workspaces, invalid/too deep/oversized manifests, missing names, duplicates, unresolved tsconfig references; `SafeJsonTests`, `WorkspaceFileTests`. Hostile fixture `node-hostile` + `HostileNodeFixtureTests` (QA-003 harness): lifecycle scripts, `.npmrc`, node-gyp, `file:` dependency, module side effect, TS plugin — nothing runs. **Bug found and fixed in Storage:** a project at the repository root (root directory stored as `""`) could not be read back (`RecordMapper`), regression test `ProjectAtTheRepositoryRoot_IsLoadedAgain`.
 
 ### ANALYSIS-010 — TypeScript/JavaScript import analysis
 - **Priority:** P0 · **Milestone:** M4 · **Status:** todo

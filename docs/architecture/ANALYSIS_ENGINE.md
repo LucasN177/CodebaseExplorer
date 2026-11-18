@@ -169,6 +169,26 @@ Run in parallel, one per ecosystem, each over the scanned file list.
 - `tsconfig.json` (JSONC): `compilerOptions.baseUrl`, `paths`, `references` (project references).
 - **Never** runs npm/yarn/pnpm; lifecycle scripts are only listed as facts (and flagged in the
   security overview).
+- **Implemented (ANALYSIS-009, `ProjectSystems/Node`):** one `CodeProject` per `package.json` (name = `name`,
+  else the folder name with an `Info`); kind `NodeWorkspaceRoot` if it has `workspaces` (array or yarn's
+  `{ packages }`) or a `pnpm-workspace.yaml` beside it, else `NodePackage`; primary language `typescript` if the
+  package folder has a `tsconfig.json` or owns `.ts`/`.tsx` files, else `javascript`. Members: packages whose folder
+  matches a pattern of the innermost enclosing workspace root (`*`, `**`, `?`, `!` exclusions; `WorkspacePatterns`)
+  get the property `workspace`. A dependency whose name is a Node project of the repository becomes a
+  `ProjectReference` (any version spec, incl. `workspace:*`), all others npm `PackageReference`s; both `Confirmed`,
+  rule `package.json.{dependencyType}`, attributes `dependencyType`, `versionSpec`, `devOnly=true` for
+  `devDependencies`; duplicate package names warn and resolve to the first (ordinal path). The project folder's
+  `tsconfig.json` adds `ProjectReference`s for its `references` (rule `tsconfig.references`; unresolved → `Warning`),
+  except for solution-style configs (`"files": []` without `include`), which only group projects. Properties:
+  `version`, `private`, `workspaces`, `workspace`, `scripts`, `lifecycleScripts`, `tsconfig`; each lifecycle script
+  (`preinstall`, `install`, `postinstall`, `prepare`, …) gets an `Info` diagnostic
+  `node.scripts.lifecycle-not-executed`. JSON/JSONC is read with `Parsing/SafeJson` (`Utf8JsonReader`, depth 64,
+  comments and trailing commas allowed, positions in UTF-16 columns, errors as `Warning` diagnostics; the project is
+  still created). `pnpm-workspace.yaml` is read by a minimal in-house reader of the `packages:` list
+  (`PnpmWorkspaceFile`) — decided instead of a YAML library, which would add aliases/anchors/tags as attack surface
+  for one list. `baseUrl`/`paths` (`TsConfigFile`) are used by the TS/JS analyzer (ANALYSIS-010). Oracle: fixtures
+  `ts-monorepo-workspaces`, `js-commonjs`, `mixed-polyglot`; zero execution: fixture `node-hostile`
+  (`HostileNodeFixtureTests`).
 
 **Python (`python.manifest`)**
 

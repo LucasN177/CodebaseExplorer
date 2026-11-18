@@ -214,7 +214,7 @@ internal static partial class RecordMapper
             record.Ecosystem,
             LanguageId.Create(record.PrimaryLanguage),
             projectFilePath,
-            RelativePath.Create(record.RootDirectory),
+            record.RootDirectory.Length == 0 ? RelativePath.Root : RelativePath.Create(record.RootDirectory), // the repository root is stored as ""
             Deserialize(record.PropertiesJson, StorageJsonContext.Default.DictionaryStringString, "PropertiesJson"),
             memberships);
 

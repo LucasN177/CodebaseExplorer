@@ -1,0 +1,9 @@
+{
+  "name": "native-addon",
+  "version": "1.0.0",
+  "gypfile": true,
+  "main": "index.js",
+  "scripts": {
+    "install": "node-gyp rebuild"
+  }
+}

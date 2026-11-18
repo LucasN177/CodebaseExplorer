@@ -1,7 +1,7 @@
-using CodebaseExplorer.Analysis.ProjectSystems.DotNet;
+using CodebaseExplorer.Analysis.FileSystem;
 using CodebaseExplorer.Domain.Common;
 
-namespace CodebaseExplorer.Analysis.Tests.ProjectSystems.DotNet;
+namespace CodebaseExplorer.Analysis.Tests.FileSystem;
 
 public sealed class RepositoryPathsTests
 {

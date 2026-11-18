@@ -37,7 +37,9 @@ M3: graph layouts (force/fcose default, hierarchical/dagre, concentric) with a p
 (`graph.layout`) and the visual encoding of GRAPH_ENGINE.md §9 (GRAPH-005); projects and namespaces expand in the graph
 (`GraphQuery.Expanded`, `graph/patch`, GRAPH-006); a Component Inspector shows details and relationships of a selected node (`GetElementDetails`, UI-006) and selected
 evidence a read-only source snippet (`GetSourceSnippet`, UI-007).
-M4: the Tree-sitter binding is decided and wrapped (`Languages/TreeSitter`, ANALYSIS-008, ADR-004 spike result).
+M4: the Tree-sitter binding is decided and wrapped (`Languages/TreeSitter`, ANALYSIS-008, ADR-004 spike result);
+polyglot fixtures exist (REPO-007); the Node project-system analyzer reads `package.json`, workspaces and `tsconfig.json`
+(ANALYSIS-009, hostile npm fixture).
 No Tree-sitter analyzer, Git or AI
 functionality exists yet. Next: the open M1 checks (macOS/Linux) and the remaining M4
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).

@@ -1,4 +1,5 @@
 using System.Xml.Linq;
+using CodebaseExplorer.Analysis.FileSystem;
 using CodebaseExplorer.Analysis.Parsing;
 using CodebaseExplorer.Domain.Common;
 using CodebaseExplorer.Domain.Files;

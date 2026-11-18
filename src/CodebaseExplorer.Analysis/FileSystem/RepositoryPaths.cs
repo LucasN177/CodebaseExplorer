@@ -1,6 +1,6 @@
 using CodebaseExplorer.Domain.Common;
 
-namespace CodebaseExplorer.Analysis.ProjectSystems.DotNet;
+namespace CodebaseExplorer.Analysis.FileSystem;
 
 /// <summary>Resolves paths written inside repository files (e.g. <c>..\Shop.Domain\Shop.Domain.csproj</c>).</summary>
 internal static class RepositoryPaths

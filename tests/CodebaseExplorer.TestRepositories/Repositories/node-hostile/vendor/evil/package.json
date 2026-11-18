@@ -1,0 +1,7 @@
+{
+  "name": "evil-local",
+  "version": "0.0.1",
+  "scripts": {
+    "postinstall": "node -e \"require('fs').writeFileSync('MARKER-vendor-postinstall.txt', 'executed')\""
+  }
+}

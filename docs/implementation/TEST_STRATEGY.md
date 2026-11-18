@@ -76,6 +76,7 @@ Planned fixtures:
 | `dotnet-layered` | REPO-004 (**exists**) | 5-project clean-architecture solution; M1 oracle. |
 | `dotnet-advanced` | REPO-006 (**exists**) | Partial and nested types, generics, multi-targeting, true/false/unsupported conditions, CPM `VersionOverride`, missing project reference, DI registrations with negative cases; oracle for ANALYSIS-005 … 007, regression input for the M1 parsers (`DotnetAdvancedFixtureTests`). |
 | `dotnet-hostile` | QA-003 (**exists**) | MSBuild `Exec`, property functions, imported targets, analyzer/generator references, module initializer; payloads write markers (§5.1). |
+| `node-hostile` | ANALYSIS-009 (**exists**) | npm lifecycle scripts, `.npmrc` `script-shell`, node-gyp action, `file:` dependency with `postinstall`, module with a top-level side effect, TypeScript plugin; payloads write markers (`HostileNodeFixtureTests`). |
 | `ts-monorepo-workspaces` | REPO-007 | npm workspaces (root + 3 packages), `workspace:*` and version-spec project references, JSONC `tsconfig` with `extends`, `paths` and project references, solution-style root `tsconfig`, `exports`/`main` entry points, lifecycle script, unresolved and undeclared imports, dynamic `import()`. pnpm workspaces are covered by analyzer tests with temporary repositories. |
 | `js-commonjs` | REPO-007 | CommonJS package: `require` (relative, directory `index.js`, explicit extension, JSON, built-ins, computed argument), `module.exports`/`exports.x`. |
 | `python-src-layout` | REPO-007 | PEP 621 `pyproject.toml` with optional dependencies, `requirements-dev.txt` (options, marker, include outside the repository), `src/` layout, relative/absolute/package imports, import-name mapping (`yaml` → `PyYAML`), undeclared and standard-library imports. |
@@ -99,8 +100,8 @@ Planned fixtures:
 ### 5.1 Hostile fixtures and the zero-execution harness (QA-003)
 
 Every ecosystem that can carry executable build or install logic gets a hostile fixture whose payloads only
-write `MARKER-*.txt` files when executed (`dotnet-hostile` for .NET; npm, Python and Git follow in
-ANALYSIS-009, ANALYSIS-011, GIT-001). Tests use `ZeroExecutionHarness`
+write `MARKER-*.txt` files when executed (`dotnet-hostile` for .NET, `node-hostile` for npm since ANALYSIS-009; Python and Git follow in
+ANALYSIS-011, GIT-001). Tests use `ZeroExecutionHarness`
 (`tests/CodebaseExplorer.IntegrationTests/Security`):
 
 1. `CopyFixture(name)` copies the fixture to a temporary folder (fixtures stay read-only);

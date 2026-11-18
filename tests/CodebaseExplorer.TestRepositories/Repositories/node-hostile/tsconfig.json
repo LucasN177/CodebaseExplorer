@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    // A TypeScript language-service plugin: loaded only by an editor's tsserver, never by Codebase Explorer.
+    "plugins": [{ "name": "evil-ts-plugin" }]
+  },
+  "include": ["scripts/**/*.js"]
+}

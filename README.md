@@ -7,12 +7,12 @@ software repositories and turns their structure, architecture, dependencies and 
 interactive architecture model. It helps developers understand unfamiliar or complex codebases
 quickly — without uploading code and without executing it.
 
-> **Project status: milestone M1 (vertical slice) functionally complete (manual macOS/Linux checks pending); M2 (persistence) in progress.**
+> **Project status: milestones M1 (manual macOS/Linux checks pending), M2 and M3 done; M4 (polyglot analysis and large repositories) in progress.**
 > The repository contains the complete product and architecture documentation, a buildable .NET 10
 > solution and an application in which a local folder can be imported and its .NET projects analyzed.
 > Its project-level dependency graph is shown in the Architecture Explorer (verified on Windows), and the analysis is
 > saved in a local SQLite database.
-> **There are no Git or AI features yet, no code-level (C#/TypeScript/Python) analysis, and saved repositories cannot be reopened from the UI yet (REPO-005).** See [Project status](#project-status).
+> **There are no Git or AI features yet and no code-level TypeScript/JavaScript/Python analysis yet.** See [Project status](#project-status).
 
 ---
 
@@ -42,9 +42,9 @@ analysis. Full vision: [docs/product/VISION.md](docs/product/VISION.md).
 | Repository overview: files and lines per language, projects per ecosystem, external dependencies, last run, warnings and errors | ✅ available |
 | Run history: every analysis run with status, duration and statistics; its diagnostics (analyzer, file and line) filterable by severity | ✅ available (commit hashes from M5) |
 | Clone GitHub/GitLab remotes | ⏳ planned (M5) |
-| Repository scanner, language and project detection | 🟡 partial (scanner and .NET project analysis available; other ecosystems M4) |
+| Repository scanner, language and project detection | 🟡 partial (scanner, .NET and Node projects — `package.json`, npm/yarn/pnpm workspaces, `tsconfig.json` references — available; Python manifests M4) |
 | C# analysis with Roslyn (no build required) | 🟡 partial (namespaces, types and members; inheritance, implementation, type usage, instantiation and calls between them, also across projects, each with evidence; heuristic DI registrations) |
-| TypeScript, JavaScript and Python analysis (Tree-sitter, manifests) | ⏳ planned (M4) |
+| TypeScript, JavaScript and Python analysis (Tree-sitter, manifests) | 🚧 in progress (M4: Node manifests available; imports and declarations planned) |
 | Graph layouts (force-directed, hierarchical, concentric; choice remembered) and visual encoding (ecosystem colors, kind shapes, evidence line styles, edge weight, focus dimming) | ✅ available |
 | Hierarchical drill-down in the graph: double-click a project or namespace to show its namespaces and types (edges attach to the deepest visible element) | ✅ available (verified on Windows) |
 | Filters, search and neighborhood view in the graph | ⏳ planned (M3–M4) |
@@ -81,7 +81,7 @@ Scope details: [docs/product/MVP_SCOPE.md](docs/product/MVP_SCOPE.md).
 |---|---|
 | Core | C#, .NET 10, Clean Architecture, modular monolith, DI, async/await |
 | Desktop | Avalonia UI 12 (Fluent, light/dark), CommunityToolkit.Mvvm |
-| Static analysis | Roslyn (C#, without MSBuild evaluation), Tree-sitter (TS/JS/Python, pending spike), manifest parsers |
+| Static analysis | Roslyn (C#, without MSBuild evaluation), Tree-sitter (TS/JS/Python via TreeSitter.DotNet, decided in ANALYSIS-008), manifest parsers |
 | Graph | Cytoscape.js, TypeScript, Vite, Avalonia.Controls.WebView (WebView2 verified on Windows; macOS/Linux pending) |
 | Storage | SQLite, Entity Framework Core 10, migrations |
 | Git | LibGit2Sharp (initial adapter behind an abstraction) |
@@ -117,8 +117,9 @@ enforced by architecture tests. Details: [docs/architecture/SYSTEM_ARCHITECTURE.
 |---|---|
 | M0 Foundation — docs, solution, app shell | ✅ done |
 | M1 Vertical slice — local repo → .NET projects → project graph | ✅ functionally complete (manual macOS/Linux WebView checks pending) |
-| M2 Persistence and analysis runs | 🚧 in progress (STORE-001 … STORE-004 done) |
-| M3 Deep C# & Inspector · M4 Polyglot & scale | ⏳ planned |
+| M2 Persistence and analysis runs | ✅ done |
+| M3 Deep C# & Inspector | ✅ done |
+| M4 Polyglot & scale | 🚧 in progress (see [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md)) |
 | M5 Git · M6 Export · M7 Local AI · M8 Release | ⏳ planned |
 
 What exists today: 10 source projects and 6 test projects, central package management, module

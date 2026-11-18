@@ -1,0 +1,17 @@
+{
+  "name": "node-hostile",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "preinstall": "node scripts/write-marker.js preinstall",
+    "install": "node scripts/write-marker.js install",
+    "postinstall": "node scripts/write-marker.js postinstall",
+    "prepare": "node scripts/write-marker.js prepare",
+    "test": "node scripts/write-marker.js test"
+  },
+  "dependencies": {
+    "evil-local": "file:./vendor/evil",
+    "evil-git": "git+https://example.invalid/evil.git",
+    "native-addon": "workspace:*"
+  }
+}
