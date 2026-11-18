@@ -92,7 +92,7 @@ Test project references:
 | AI | `Providers/`, `Retrieval/`, `Prompting/`, `Citations/`, `Conversations/`. |
 | Storage | `Persistence/` (`DbContext`, entities, configurations), `Migrations/`, `Stores/` (port implementations), `Search/` (FTS). |
 | Infrastructure | `FileSystem/` (**exists**: `ApplicationPaths`), `Secrets/`, `Logging/`. |
-| Desktop | `Composition/` (**exists**), `Services/` (**exists**: theme, `IGraphViewHost` + `GraphViewBridge`, `IFolderPicker`, `RepositorySession`), `ViewModels/` (**exists**), `Views/` (**exists**), `GraphView/` (**exists**: built web assets, generated and committed, §4), `Controls/` (**exists**: `GraphHostControl`, `GraphViewNavigationPolicy`), `app.manifest` (**exists**: Windows supportedOS, required for native control hosting), `Assets/`. |
+| Desktop | `Composition/` (**exists**), `Services/` (**exists**: theme, `IGraphViewHost` + `GraphViewBridge`, `IFolderPicker`, `RepositorySession`, `ShellStatus`), `ViewModels/` (**exists**), `Views/` (**exists**), `GraphView/` (**exists**: built web assets, generated and committed, §4), `Controls/` (**exists**: `GraphHostControl`, `GraphViewNavigationPolicy`), `app.manifest` (**exists**: Windows supportedOS, required for native control hosting), `Assets/`. |
 
 Every module has exactly one public `DependencyInjection` class (**exists** for all modules).
 
@@ -164,6 +164,13 @@ dotnet run --project src/CodebaseExplorer.Desktop
 | xunit.v3 | 4.0.3 | tests | Runs on Microsoft.Testing.Platform. |
 | NSubstitute | 6.2.0 | tests | |
 | coverlet.MTP | 10.1.1 | tests | MIT; code coverage as Microsoft.Testing.Platform extension (QA-001, TEST_STRATEGY.md §7.1). |
+
+**Developer tooling for Avalonia 12 (evaluated in UI-001, 2026-11-18): not adopted.** `Avalonia.Diagnostics`
+(the in-app DevTools with `AttachDevTools()`) ends at 11.3.23 and depends on Avalonia 11, so it cannot be used
+with Avalonia 12. Its successor `AvaloniaUI.DiagnosticsSupport` (2.2.3) only bridges to the separate
+"AvaloniaUI Developer Tools" application and declares no license in its package. No diagnostics package is
+referenced; developers who use the external tool add it locally without committing it. Revisit if an
+OSI-licensed option for Avalonia 12 appears.
 
 ### 6.2 Planned dependencies (exist on nuget.org/npm; **not yet referenced**)
 

@@ -17,18 +17,22 @@ public sealed partial class StartPageViewModel : PageViewModel
     private readonly ImportLocalRepository _import;
     private readonly IFolderPicker _folderPicker;
     private readonly RepositorySession _session;
+    private readonly ShellStatus _shell;
     private readonly ILogger<StartPageViewModel> _logger;
     private int _importNumber;
+    private BackgroundOperation? _operation;
 
     public StartPageViewModel(
         ImportLocalRepository import,
         IFolderPicker folderPicker,
         RepositorySession session,
+        ShellStatus shell,
         ILogger<StartPageViewModel> logger)
     {
         _import = import;
         _folderPicker = folderPicker;
         _session = session;
+        _shell = shell;
         _logger = logger;
 
         Stages =
@@ -123,14 +127,15 @@ public sealed partial class StartPageViewModel : PageViewModel
                 return;
             }
 
+            // Finish first: progress reports that arrive afterwards are dropped (IsImporting is false).
+            FinishImport(statusMessage:
+                $"Analyzed {summary.Name}: {summary.ProjectCount} projects, {summary.FileCount} files, " +
+                $"{summary.WarningCount} warnings, {summary.ErrorCount} errors.");
             foreach (var stage in Stages)
             {
                 stage.State = ImportStageState.Done;
             }
 
-            FinishImport(statusMessage:
-                $"Analyzed {summary.Name}: {summary.ProjectCount} projects, {summary.FileCount} files, " +
-                $"{summary.WarningCount} warnings, {summary.ErrorCount} errors.");
             _session.SetCurrent(summary);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -160,6 +165,8 @@ public sealed partial class StartPageViewModel : PageViewModel
         }
 
         IsImporting = true;
+        _operation?.Dispose();
+        _operation = _shell.BeginOperation($"Analyzing {Path.GetFileName(Path.TrimEndingDirectorySeparator(path))}");
     }
 
     private void FinishImport(string? statusMessage = null, string? errorMessage = null)
@@ -168,6 +175,14 @@ public sealed partial class StartPageViewModel : PageViewModel
         CurrentItem = null;
         StatusMessage = statusMessage;
         ErrorMessage = errorMessage;
+        _operation?.Dispose();
+        _operation = null;
+
+        // The page shows the error inline; the notification keeps it visible after navigating away.
+        if (errorMessage is not null)
+        {
+            _shell.Notify(NotificationSeverity.Error, $"Import of {ImportPath} failed: {errorMessage}");
+        }
     }
 
     private void ApplyProgress(AnalysisProgress report)
@@ -186,5 +201,10 @@ public sealed partial class StartPageViewModel : PageViewModel
             : report.Processed > 0 ? report.Processed.ToString(System.Globalization.CultureInfo.CurrentCulture)
             : null;
         CurrentItem = report.CurrentItem;
+
+        if (_operation is not null)
+        {
+            _operation.Detail = ProgressText is null ? Stages[activeIndex].Name : $"{Stages[activeIndex].Name} {ProgressText}";
+        }
     }
 }

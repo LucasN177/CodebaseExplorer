@@ -20,7 +20,8 @@ in-memory session cache (CORE-006), the graph web view bundle (GRAPH-003; after 
 `src/CodebaseExplorer.GraphView.Web` run `npm ci && npm run build` and commit `Desktop/GraphView`), and the
 graph host control with its message bridge (`IGraphViewHost`, GRAPH-004), and the Start page import flow
 (folder picker, progress, cancel, `RepositorySession`; UI-002), and
-the Architecture Explorer with the project graph and a selection panel (UI-003; manually verified on Windows only).
+the Architecture Explorer with the project graph and a selection panel (UI-003; manually verified on Windows only),
+the shell status bar and notifications (`ShellStatus`, UI-001), and CI on Windows/macOS/Linux (QA-001).
 No language analyzer, persistence, Git or AI functionality exists yet. Next: the remaining M1
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 

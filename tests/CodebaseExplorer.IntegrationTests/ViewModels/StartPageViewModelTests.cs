@@ -23,6 +23,7 @@ public sealed class StartPageViewModelTests : IDisposable
     private readonly IFolderPicker _picker = Substitute.For<IFolderPicker>();
     private readonly IRepositoryAnalyzer _analyzer = Substitute.For<IRepositoryAnalyzer>();
     private readonly RepositorySession _session = new();
+    private readonly ShellStatus _shell = new(TimeProvider.System);
 
     public StartPageViewModelTests() =>
         _picker.PickFolderAsync(default!, Arg.Any<CancellationToken>()).ReturnsForAnyArgs(TestRepositoryCatalog.GetFixturePath("dotnet-layered"));
@@ -34,13 +35,27 @@ public sealed class StartPageViewModelTests : IDisposable
     {
         var viewModel = CreateViewModel(_services.GetRequiredService<IRepositoryAnalyzer>());
 
-        await viewModel.OpenLocalFolderCommand.ExecuteAsync(null);
+        // Like the UI thread, the inline context applies progress reports in order, before completion;
+        // without a context Progress<T> would apply them on the thread pool, racing with completion.
+        var previous = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(new InlineSynchronizationContext());
+        try
+        {
+            await viewModel.OpenLocalFolderCommand.ExecuteAsync(null);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previous);
+        }
 
         Assert.Equal("dotnet-layered", _session.Current?.Name);
         Assert.False(viewModel.IsImporting);
         Assert.Null(viewModel.ErrorMessage);
         Assert.StartsWith("Analyzed dotnet-layered: 6 projects", viewModel.StatusMessage, StringComparison.Ordinal);
         Assert.All(viewModel.Stages, s => Assert.Equal(ImportStageState.Done, s.State));
+        Assert.False(_shell.IsBusy);
+        Assert.Equal("Ready", _shell.StatusText);
+        Assert.Empty(_shell.Notifications);
     }
 
     [Fact]
@@ -82,6 +97,12 @@ public sealed class StartPageViewModelTests : IDisposable
         Assert.Equal("The model is invalid.", viewModel.ErrorMessage);
         Assert.Null(viewModel.StatusMessage);
         Assert.Null(_session.Current);
+
+        // The error stays visible in the shell after navigating away from the start page (UI-001).
+        var notification = Assert.Single(_shell.Notifications);
+        Assert.Equal(NotificationSeverity.Error, notification.Severity);
+        Assert.EndsWith("dotnet-layered failed: The model is invalid.", notification.Message, StringComparison.Ordinal);
+        Assert.False(_shell.IsBusy);
     }
 
     [Fact]
@@ -118,6 +139,8 @@ public sealed class StartPageViewModelTests : IDisposable
 
         Assert.False(viewModel.IsImporting);
         Assert.Equal("Analysis cancelled. Nothing was changed.", viewModel.StatusMessage);
+        Assert.Empty(_shell.Notifications);
+        Assert.False(_shell.IsBusy);
         Assert.Null(viewModel.ErrorMessage);
         Assert.Null(_session.Current);
     }
@@ -180,10 +203,14 @@ public sealed class StartPageViewModelTests : IDisposable
             Assert.Equal(50, viewModel.ProgressPercent);
             Assert.False(viewModel.IsProgressIndeterminate);
             Assert.Equal("src/Shop.Web/Shop.Web.csproj", viewModel.CurrentItem);
+            Assert.True(_shell.IsBusy);
+            Assert.Equal("Analyzing dotnet-layered: Detecting projects 2 / 4", _shell.StatusText);
 
             finish.SetResult();
             await running.WaitAsync(Timeout, TestContext.Current.CancellationToken);
             Assert.Null(viewModel.CurrentItem);
+            Assert.False(_shell.IsBusy);
+            Assert.Equal("Ready", _shell.StatusText);
         }
         finally
         {
@@ -199,6 +226,7 @@ public sealed class StartPageViewModelTests : IDisposable
             TimeProvider.System),
         _picker,
         _session,
+        _shell,
         NullLogger<StartPageViewModel>.Instance);
 
     /// <summary>Runs posted callbacks immediately, so Progress&lt;T&gt; reports are applied deterministically.</summary>

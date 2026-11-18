@@ -16,6 +16,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
 {
     private readonly GetGraphView _getGraphView;
     private readonly RepositorySession _session;
+    private readonly ShellStatus _shell;
     private readonly ILogger<ArchitectureExplorerPageViewModel> _logger;
     private int _loadNumber;
 
@@ -23,11 +24,13 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         IGraphViewHost graph,
         GetGraphView getGraphView,
         RepositorySession session,
+        ShellStatus shell,
         ILogger<ArchitectureExplorerPageViewModel> logger)
     {
         Graph = graph;
         _getGraphView = getGraphView;
         _session = session;
+        _shell = shell;
         _logger = logger;
 
         _session.CurrentChanged += (_, _) => _ = LoadCurrentRepositoryAsync();
@@ -89,6 +92,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         RepositoryName = repository.Name;
         ErrorMessage = null;
         IsLoading = true;
+        using var operation = _shell.BeginOperation($"Loading the graph of {repository.Name}");
 
         try
         {
@@ -103,6 +107,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
                 _logger.LogWarning("Graph for the current repository failed with {ErrorCode}", error.Code);
                 HasGraph = false;
                 ErrorMessage = error.Message;
+                _shell.Notify(NotificationSeverity.Error, $"The graph of {repository.Name} could not be shown: {error.Message}");
                 return;
             }
 
@@ -116,6 +121,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         {
             _logger.LogError(exception, "Loading the graph failed unexpectedly");
             ErrorMessage = "The graph could not be loaded. Details are in the application log.";
+            _shell.Notify(NotificationSeverity.Error, ErrorMessage);
         }
         finally
         {

@@ -51,6 +51,7 @@ public static class CompositionRoot
         services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<IFolderPicker, FolderPicker>();
         services.AddSingleton<RepositorySession>();
+        services.AddSingleton<ShellStatus>();
 
         // One graph web view in the application; the bridge is bound to GraphHostControl.Host and
         // ViewModels use it through IGraphViewHost (GRAPH-004).

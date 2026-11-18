@@ -230,11 +230,12 @@ Status overview (keep in sync):
 - **Note:** `IGraphViewHost` and `GraphViewBridge` live in Desktop/Services (CODING_STANDARDS §7), the control and navigation policy in Desktop/Controls. The bridge re-sends graph and theme on every `ready`. Added `app.manifest` (supportedOS), without which native control hosting crashes on Windows. Runtime verified on Windows only (GRAPH_ENGINE.md §6.1); macOS/Linux stay with GRAPH-001. The page is wired in UI-003.
 
 ### UI-001 — Shell polish and Avalonia 12 developer tooling
-- **Priority:** P1 · **Milestone:** M1 · **Status:** todo
+- **Priority:** P1 · **Milestone:** M1 · **Status:** done
 - **Prerequisites:** —
 - **Projects:** Desktop
 - **Description:** Status bar, busy indicator, notification area for errors; evaluate developer tooling for Avalonia 12 (diagnostics/devtools) and document the result in SOLUTION_STRUCTURE.md §6.
 - **Acceptance criteria:** Shell shows background-operation state; no business logic in views.
+- **Note:** `ShellStatus` (Desktop/Services) holds running operations (status bar text, busy indicator) and notifications (newest first, max. 5, dismissible); the import and the graph load report into it, failures also become notifications. The notification area is docked above the page because native controls (graph WebView) would cover an overlay. Developer tooling: not adopted, see SOLUTION_STRUCTURE.md §6.
 
 ### UI-002 — Import local repository flow
 - **Priority:** P0 · **Milestone:** M1 · **Status:** done

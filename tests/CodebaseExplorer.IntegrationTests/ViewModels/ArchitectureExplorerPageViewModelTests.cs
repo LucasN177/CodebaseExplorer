@@ -22,6 +22,7 @@ public sealed class ArchitectureExplorerPageViewModelTests : IDisposable
     private readonly ServiceProvider _services = CompositionRoot.BuildServiceProvider();
     private readonly IGraphViewHost _host = Substitute.For<IGraphViewHost>();
     private readonly RepositorySession _session = new();
+    private readonly ShellStatus _shell = new(TimeProvider.System);
     private readonly ArchitectureExplorerPageViewModel _viewModel;
 
     public ArchitectureExplorerPageViewModelTests()
@@ -29,7 +30,7 @@ public sealed class ArchitectureExplorerPageViewModelTests : IDisposable
         _host.ShowGraphAsync(default!, Arg.Any<CancellationToken>()).ReturnsForAnyArgs(true);
         _host.Selection.Returns(GraphSelection.Empty);
         _viewModel = new ArchitectureExplorerPageViewModel(
-            _host, _services.GetRequiredService<GetGraphView>(), _session, NullLogger<ArchitectureExplorerPageViewModel>.Instance);
+            _host, _services.GetRequiredService<GetGraphView>(), _session, _shell, NullLogger<ArchitectureExplorerPageViewModel>.Instance);
     }
 
     public void Dispose() => _services.Dispose();
@@ -68,6 +69,10 @@ public sealed class ArchitectureExplorerPageViewModelTests : IDisposable
         Assert.False(_viewModel.HasGraph);
         Assert.Equal("The repository has not been analyzed in this session.", _viewModel.ErrorMessage);
         await _host.DidNotReceiveWithAnyArgs().ShowGraphAsync(default!, Arg.Any<CancellationToken>());
+        Assert.Equal(
+            "The graph of unknown could not be shown: The repository has not been analyzed in this session.",
+            Assert.Single(_shell.Notifications).Message);
+        Assert.False(_shell.IsBusy);
     }
 
     [Fact]

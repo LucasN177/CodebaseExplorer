@@ -5,6 +5,7 @@
         xmlns:vm="using:CodebaseExplorer.Desktop.ViewModels"
         xmlns:pages="using:CodebaseExplorer.Desktop.ViewModels.Pages"
         xmlns:views="using:CodebaseExplorer.Desktop.Views.Pages"
+        xmlns:services="using:CodebaseExplorer.Desktop.Services"
         mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="760"
         x:Class="CodebaseExplorer.Desktop.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -25,9 +26,9 @@
     </DataTemplate>
   </Window.DataTemplates>
 
-  <Grid ColumnDefinitions="220,*">
+  <Grid ColumnDefinitions="220,*" RowDefinitions="*,Auto">
     <!-- Navigation pane -->
-    <Border Grid.Column="0"
+    <Border Grid.Column="0" Grid.Row="0"
             Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
             Padding="8,16">
       <DockPanel>
@@ -50,9 +51,38 @@
       </DockPanel>
     </Border>
 
-    <!-- Current page -->
-    <ContentControl Grid.Column="1"
-                    Content="{Binding CurrentPage}"
-                    Margin="32,24" />
+    <DockPanel Grid.Column="1" Grid.Row="0">
+      <!-- Notification area (UI-001). Docked above the page, not overlaid: native controls such as the
+           graph WebView would cover an overlay. -->
+      <ItemsControl DockPanel.Dock="Top" ItemsSource="{Binding Shell.Notifications}" Margin="32,12,32,0">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="services:ShellNotification">
+            <Border BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,8"
+                    BorderBrush="{DynamicResource SystemFillColorCriticalBrush}"
+                    Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Content="Dismiss" Margin="12,0,0,0" VerticalAlignment="Center"
+                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DismissNotificationCommand}"
+                        CommandParameter="{Binding}" />
+                <TextBlock Text="{Binding Message}" TextWrapping="Wrap" VerticalAlignment="Center" />
+              </DockPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <!-- Current page -->
+      <ContentControl Content="{Binding CurrentPage}" Margin="32,24" />
+    </DockPanel>
+
+    <!-- Status bar (UI-001): state of background operations -->
+    <Border Grid.Row="1" Grid.ColumnSpan="2" Padding="12,4"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <ProgressBar IsIndeterminate="True" IsVisible="{Binding Shell.IsBusy}"
+                     Width="80" MinWidth="80" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding Shell.StatusText}" FontSize="12" VerticalAlignment="Center" />
+      </StackPanel>
+    </Border>
   </Grid>
 </Window>
