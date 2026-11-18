@@ -3,6 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using CodebaseExplorer.Application.Abstractions;
 using CodebaseExplorer.Desktop.Composition;
+using CodebaseExplorer.Desktop.Services;
 using CodebaseExplorer.Desktop.ViewModels;
 using CodebaseExplorer.Desktop.Views;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,6 +43,8 @@ public sealed partial class App : Avalonia.Application
         Window window;
         if (result.TryGetValue(out _, out var error))
         {
+            // Before the first window, so it opens in the stored theme (STORE-005).
+            await services.GetRequiredService<IThemeService>().RestoreAsync(CancellationToken.None);
             window = new MainWindow { DataContext = services.GetRequiredService<MainWindowViewModel>() };
         }
         else

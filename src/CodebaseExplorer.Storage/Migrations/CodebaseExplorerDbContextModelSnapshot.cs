@@ -624,6 +624,24 @@ namespace CodebaseExplorer.Storage.Migrations
                     b.ToTable("Repositories", (string)null);
                 });
 
+            modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.UserSettingRecord", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ValueJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("UserSettings", (string)null);
+                });
+
             modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.AnalysisDiagnosticRecord", b =>
                 {
                     b.HasOne("CodebaseExplorer.Storage.Persistence.Entities.AnalysisRunRecord", null)

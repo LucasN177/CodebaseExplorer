@@ -37,6 +37,8 @@ internal sealed class CodebaseExplorerDbContext(DbContextOptions<CodebaseExplore
 
     public DbSet<AnalysisEvidenceRecord> AnalysisEvidence => Set<AnalysisEvidenceRecord>();
 
+    public DbSet<UserSettingRecord> UserSettings => Set<UserSettingRecord>();
+
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
         configurationBuilder.Properties<Guid>().HaveConversion<GuidToBytesConverter>();

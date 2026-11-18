@@ -26,7 +26,8 @@ the shell status bar and notifications (`ShellStatus`, UI-001), edge evidence in
 M2 in progress: the EF Core SQLite context with all model tables and Domain mapping exists (STORE-001/002), the app
 creates, backs up and migrates the database at startup (STORE-003; `dotnet tool restore` + `dotnet ef`, see
 DEVELOPMENT_GUIDE §6), and saves every run and the current model in SQLite (`IArchitectureModelStore`, STORE-004;
-the whole model is read and cached per run, slice queries follow in M4). No language analyzer, Git or AI
+the whole model is read and cached per run, slice queries follow in M4), and stores user settings such as the theme
+(`IUserSettingsStore`, STORE-005); test projects without tests fail the run (CORE-010). No language analyzer, Git or AI
 functionality exists yet. Next: the remaining M2
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 

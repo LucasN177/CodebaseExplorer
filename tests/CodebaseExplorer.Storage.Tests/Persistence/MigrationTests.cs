@@ -27,4 +27,16 @@ public sealed class MigrationTests : IDisposable
 
         Assert.False(context.Database.HasPendingModelChanges());
     }
+
+    [Fact]
+    public async Task UserSettingsMigration_CreatesTheSettingsTable()
+    {
+        // STORE-005: second migration; Key is the primary key, all columns are required.
+        await using var context = _database.CreateContext();
+
+        Assert.Contains(context.Database.GetMigrations(), m => m.EndsWith("_AddUserSettings", StringComparison.Ordinal));
+        Assert.Equal(1L, await _database.ScalarAsync("SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'UserSettings'"));
+        Assert.Equal(3L, await _database.ScalarAsync("SELECT count(*) FROM pragma_table_info('UserSettings') WHERE \"notnull\" = 1 OR pk = 1"));
+        Assert.Equal("Key", await _database.ScalarAsync("SELECT name FROM pragma_table_info('UserSettings') WHERE pk = 1"));
+    }
 }

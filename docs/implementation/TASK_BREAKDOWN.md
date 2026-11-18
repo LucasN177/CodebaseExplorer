@@ -22,7 +22,7 @@ Status overview (keep in sync):
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
 | M1 Vertical slice | 22 | 16 |
-| M2 Persistence | 10 | 5 |
+| M2 Persistence | 10 | 6 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
 | M5 Git | 7 | 0 |
@@ -317,11 +317,12 @@ Status overview (keep in sync):
 - **Note (2026-11-18):** Port `IArchitectureModelStore` replaces `IArchitectureModelCache`; `ArchitectureModelStore` (Storage) saves every finished run and replaces the model of a run that produced one in one transaction (delete by repository, then batched inserts of 5,000 rows with a cleared change tracker). **Decided with the user:** the Application layer reads the whole current model (cached per run id) instead of SQL slices; slice queries move to M4 (GRAPH-008, QA-002), see SYSTEM_ARCHITECTURE.md §6 and ADR-010. The `dotnet-layered` L1 graph is unchanged (end-to-end test now runs through SQLite). Benchmark: 1,331 MB peak with `System.GC.ConserveMemory=9`, which the app now sets — with default GC it was 1,951 MB (TEST_STRATEGY.md §8). Integration tests run the real composition root against a temporary data directory (`TestApplication`, `CompositionRoot.BuildServiceProvider(overrides)`).
 
 ### STORE-005 — User settings store and theme persistence
-- **Priority:** P0 · **Milestone:** M2 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M2 · **Status:** done
 - **Prerequisites:** STORE-003
 - **Projects:** Application (port), Storage, Desktop
 - **Description:** `UserSettings` table access via `IUserSettingsStore`; persist theme choice and restore at startup.
 - **Acceptance criteria:** Theme survives restart; settings keys documented in DATABASE_SCHEMA.md.
+- **Note:** Port `IUserSettingsStore` (Application `Settings/`, string values, keys in `UserSettingKeys`) with `UserSettingsStore` (Storage; value stored as JSON string, unreadable rows read as missing) and migration `AddUserSettings`. `IThemeService` got `RestoreAsync` (called in `App.StartAsync` after the database is ready, before the main window) and `ChangeAsync` (applies, then stores; a failed save shows a notification). Restart verified by an integration test with a second composition root on the same data directory (`TestApplication.Restart`).
 
 ### REPO-005 — Recent repositories and reopen without re-analysis
 - **Priority:** P0 · **Milestone:** M2 · **Status:** todo

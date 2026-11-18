@@ -19,6 +19,7 @@ internal sealed record SolutionMembershipJson(string SolutionFileId, string? Sol
 
 /// <summary>Source-generated metadata for the JSON columns (DATABASE_SCHEMA.md §1 "JSON").</summary>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+[JsonSerializable(typeof(string))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
 [JsonSerializable(typeof(StatisticsJson))]
 [JsonSerializable(typeof(List<SolutionMembershipJson>))]

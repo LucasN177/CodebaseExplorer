@@ -5,7 +5,7 @@
 > `AnalysisDiagnostics`, `Files`, `Projects`, `Modules`; STORE-002: `CodeEntities`, `CodeEntityDeclarations`,
 > `CodeRelationships`, `AnalysisEvidence`, `ExternalDependencies` — DbContext, records, mapping; schema created
 > by the startup migration (STORE-003); runs and the current model are written and read by
-> `ArchitectureModelStore` (STORE-004)). Implemented by STORE-001 … STORE-005 (core and
+> `ArchitectureModelStore` (STORE-004); `UserSettings` is read and written by `UserSettingsStore` (STORE-005)). Implemented by STORE-001 … STORE-005 (core and
 > settings tables), GIT-005 (Git tables), AI-003 and AI-006 (search index and AI tables) in
 > `src/CodebaseExplorer.Storage` using EF Core with the SQLite provider
 > ([ADR-005](../decisions/ADR-005-sqlite-storage.md)).
@@ -357,6 +357,14 @@ Index: `IX_AIArtifacts_ElementId_ArtifactKind`.
 | UpdatedAt | TEXT | NN |
 
 Secrets (tokens, API keys) are **never** stored here (OPD-03).
+
+*Implemented in STORE-005* (port `IUserSettingsStore`, `UserSettingsStore`, migration `AddUserSettings`).
+Each value is a JSON string; a row whose `ValueJson` is not a JSON string reads as missing. Keys in use
+(constants in `UserSettingKeys`; add every new key here):
+
+| Key | Values | Missing / unknown value | Used by |
+|---|---|---|---|
+| `appearance.theme` | `"system"`, `"light"`, `"dark"` | `system` | `ThemeService` (Desktop): restored before the main window is shown, written when the user changes the theme. |
 
 ### 4.18 Search index (AI retrieval, M7)
 

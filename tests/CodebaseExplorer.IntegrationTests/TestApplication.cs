@@ -12,13 +12,29 @@ namespace CodebaseExplorer.IntegrationTests;
 /// </summary>
 internal sealed class TestApplication : IAsyncDisposable
 {
-    private readonly string _root = Path.Combine(Path.GetTempPath(), "codebase-explorer-integration-tests", Guid.NewGuid().ToString("N"));
+    private readonly string _root;
+    private readonly bool _ownsRoot;
 
-    public TestApplication() =>
+    public TestApplication()
+        : this(Path.Combine(Path.GetTempPath(), "codebase-explorer-integration-tests", Guid.NewGuid().ToString("N")), ownsRoot: true)
+    {
+    }
+
+    private TestApplication(string root, bool ownsRoot)
+    {
+        _root = root;
+        _ownsRoot = ownsRoot;
         Services = CompositionRoot.BuildServiceProvider(services =>
             services.AddSingleton<IApplicationPaths>(new ApplicationPaths(Path.Combine(_root, "data"))));
+    }
 
     public ServiceProvider Services { get; }
+
+    /// <summary>
+    /// A second application instance on the same data directory, like a restart of the app. Dispose it before
+    /// this instance; only this instance deletes the directory.
+    /// </summary>
+    public TestApplication Restart() => new(_root, ownsRoot: false);
 
     /// <summary>Creates and migrates the database exactly like the application does at startup.</summary>
     public async ValueTask InitializeAsync()
@@ -33,6 +49,11 @@ internal sealed class TestApplication : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await Services.DisposeAsync();
+        if (!_ownsRoot)
+        {
+            return;
+        }
+
         SqliteConnection.ClearAllPools();
         try
         {

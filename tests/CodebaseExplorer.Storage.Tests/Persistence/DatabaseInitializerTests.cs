@@ -176,9 +176,4 @@ public sealed class DatabaseInitializerTests : IDisposable
         command.CommandText = sql;
         return await command.ExecuteScalarAsync(Token);
     }
-
-    private sealed class SettableTimeProvider(DateTimeOffset now) : TimeProvider
-    {
-        public override DateTimeOffset GetUtcNow() => now;
-    }
 }
