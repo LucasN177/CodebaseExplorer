@@ -697,6 +697,7 @@ Status overview (keep in sync):
 - **Projects:** Application, Desktop
 - **Description:** Analysis limits/excludes, history window, external editor command template (path as single argument, no shell), cache cleanup.
 - **Acceptance criteria:** Editor launch passes arguments without shell interpolation (test with special characters in paths).
+- **Note (2026-11-18, partial, on the user's request):** part of the cache cleanup exists — the Settings page shows the disk usage of the database and backups, opens the data and log folders in the file manager (`IFolderLauncher`) and compacts the database (`IStorageMaintenance`, `VACUUM`; DATABASE_SCHEMA.md §5). Deleting all data from inside the app, analysis limits/excludes, history window and the editor template remain open.
 
 ---
 

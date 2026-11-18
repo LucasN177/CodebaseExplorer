@@ -394,6 +394,11 @@ that the SQLite library bundled with the EF Core SQLite provider includes FTS5 (
   EF Core SQLite migrator fail, found in STORE-003.)
 - Tests run every schema check against a database created by the migrations, and `HasPendingModelChanges`
   fails a Storage test when the model changed without a migration.
+- **Disk space (Settings page):** deleting a repository removes its rows, but SQLite keeps freed pages inside the
+  file for reuse, so the file does not shrink. `IStorageMaintenance` (Application port, `StorageMaintenance` in
+  Storage) reports the size of the database files (`.db`, `-wal`, `-shm`) and the backups, and compacts on request
+  with `VACUUM` followed by `PRAGMA wal_checkpoint(TRUNCATE)`; a failure (e.g. while an import writes) is reported as
+  `database.compaction-failed` and changes nothing. Compaction is never automatic.
 - Migrations are forward-only in production; down-migrations are not supported.
 - Every migration is covered by a Storage test that migrates an empty database to the latest
   version and, for data migrations, a test with a seeded database of the previous version.

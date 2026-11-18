@@ -37,7 +37,7 @@ analysis. Full vision: [docs/product/VISION.md](docs/product/VISION.md).
 
 | Feature | Status |
 |---|---|
-| App shell: navigation, Start page, Settings (theme System/Light/Dark, remembered across restarts; local data directory), status bar with busy indicator, error notifications, redacted log files in the data directory | ✅ available |
+| App shell: navigation, Start page, Settings (theme System/Light/Dark, remembered across restarts; local data directory with disk usage, *Open data folder* / *Open log folder* and *Compact database*), status bar with busy indicator, error notifications, redacted log files in the data directory | ✅ available |
 | Architecture Explorer: project-level graph of the imported repository, Component Inspector for a selected node (facts, metrics, members, incoming/outgoing relationships with evidence level, show in graph), evidence (file + line) of a selected edge with a read-only source snippet of the selected evidence (± 5 lines, copy path), light/dark theme | ✅ available (verified on Windows; macOS/Linux not yet tested) |
 | Import a local folder (folder picker, progress with stages, cancel) | ✅ available (results are saved locally in SQLite) |
 | Recent repositories on the start page: open the stored result without re-analysis, re-analyze, remove all stored data | ✅ available |

@@ -8,11 +8,15 @@ using NSubstitute.ExceptionExtensions;
 
 namespace CodebaseExplorer.IntegrationTests.ViewModels;
 
-/// <summary>STORE-005: the theme choice is stored and restored after a restart.</summary>
+/// <summary>
+/// STORE-005: the theme choice is stored and restored after a restart. Data directory: opening it in the file manager,
+/// disk usage and compacting the database (real SQLite through the composition root).
+/// </summary>
 public sealed class SettingsPageViewModelTests : IAsyncLifetime
 {
     private readonly TestApplication _app = new();
     private readonly ShellStatus _shell = new(TimeProvider.System);
+    private readonly IFolderLauncher _folders = Substitute.For<IFolderLauncher>();
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -74,6 +78,65 @@ public sealed class SettingsPageViewModelTests : IAsyncLifetime
         Assert.Equal(NotificationSeverity.Error, notification.Severity);
     }
 
-    private SettingsPageViewModel CreateViewModel(IThemeService theme) =>
-        new(theme, _app.Services.GetRequiredService<IApplicationPaths>(), _shell, NullLogger<SettingsPageViewModel>.Instance);
+    [Fact]
+    public async Task OpenDataFolder_UsesTheLauncher_AndReportsFailures()
+    {
+        var viewModel = CreateViewModel(Substitute.For<IThemeService>());
+        _folders.OpenAsync(default!).ReturnsForAnyArgs(true, false);
+
+        await viewModel.OpenDataDirectoryCommand.ExecuteAsync(null);
+        Assert.Empty(_shell.Notifications);
+        await _folders.Received(1).OpenAsync(viewModel.DataDirectory);
+
+        await viewModel.OpenLogsDirectoryCommand.ExecuteAsync(null);
+        await _folders.Received(1).OpenAsync(viewModel.LogsDirectory);
+        Assert.Equal(NotificationSeverity.Error, Assert.Single(_shell.Notifications).Severity);
+    }
+
+    [Fact]
+    public async Task Activating_ShowsTheDiskUsage_AndCompactingGivesSpaceBack()
+    {
+        // Fill the database with a repository, then remove it: the rows are gone, the file keeps its size.
+        var summary = (await _app.Services.GetRequiredService<CodebaseExplorer.Application.Repositories.ImportLocalRepository>().ExecuteAsync(
+            CodebaseExplorer.TestRepositories.TestRepositoryCatalog.GetFixturePath("dotnet-advanced"), null, Token)).Value;
+        await _app.Services.GetRequiredService<CodebaseExplorer.Application.Repositories.RemoveRepository>().ExecuteAsync(summary.RepositoryId, Token);
+        var storage = _app.Services.GetRequiredService<IStorageMaintenance>();
+        var before = storage.GetUsage().DatabaseBytes;
+        var viewModel = CreateViewModel(Substitute.For<IThemeService>());
+
+        await viewModel.ActivateAsync();
+        Assert.StartsWith("Database ", viewModel.StorageUsageText, StringComparison.Ordinal);
+
+        await viewModel.CompactCommand.ExecuteAsync(null);
+
+        Assert.StartsWith("Compacted: ", viewModel.CompactionMessage, StringComparison.Ordinal);
+        Assert.True(storage.GetUsage().DatabaseBytes < before, $"{storage.GetUsage().DatabaseBytes} >= {before}");
+        Assert.Empty(await _app.Services.GetRequiredService<CodebaseExplorer.Application.Repositories.ListRecentRepositories>().ExecuteAsync(Token));
+        Assert.False(_shell.IsBusy);
+    }
+
+    [Fact]
+    public async Task CompactionFailure_IsShownOnThePage()
+    {
+        var storage = Substitute.For<IStorageMaintenance>();
+        storage.GetUsage().Returns(new StorageUsage(2048, 0));
+        storage.CompactAsync(Arg.Any<CancellationToken>()).Returns(CodebaseExplorer.Application.Common.ApplicationError.Failure(DatabaseErrorCodes.CompactionFailed, "busy"));
+        var viewModel = CreateViewModel(Substitute.For<IThemeService>(), storage);
+
+        await viewModel.CompactCommand.ExecuteAsync(null);
+
+        Assert.Equal("busy", viewModel.CompactionMessage);
+        Assert.Equal("Database 2.0 KB · backups 0 B", viewModel.StorageUsageText);
+    }
+
+    [Theory]
+    [InlineData(0, "0 B")]
+    [InlineData(1536, "1.5 KB")]
+    [InlineData(5L * 1024 * 1024, "5.0 MB")]
+    [InlineData(3L * 1024 * 1024 * 1024, "3.00 GB")]
+    public void Sizes_AreReadable(long bytes, string expected) => Assert.Equal(expected, SettingsPageViewModel.Size(bytes));
+
+    private SettingsPageViewModel CreateViewModel(IThemeService theme, IStorageMaintenance? storage = null) =>
+        new(theme, _app.Services.GetRequiredService<IApplicationPaths>(), storage ?? _app.Services.GetRequiredService<IStorageMaintenance>(),
+            _folders, _shell, NullLogger<SettingsPageViewModel>.Instance);
 }

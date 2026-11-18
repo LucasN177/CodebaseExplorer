@@ -16,11 +16,23 @@
       <SelectableTextBlock Text="{Binding DataDirectory}" TextWrapping="Wrap" Opacity="0.8" />
       <TextBlock TextWrapping="Wrap" Opacity="0.7"
                  Text="Repository contents and analysis results are stored only on this machine." />
+      <TextBlock Text="{Binding StorageUsageText}" Opacity="0.8"
+                 IsVisible="{Binding StorageUsageText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="Open data folder" Command="{Binding OpenDataDirectoryCommand}" />
+        <Button Content="Compact database" Command="{Binding CompactCommand}"
+                ToolTip.Tip="Gives the space of removed repositories and replaced analysis runs back to the disk. Run it while no analysis is running." />
+      </StackPanel>
+      <TextBlock Text="{Binding CompactionMessage}" TextWrapping="Wrap" Opacity="0.8"
+                 IsVisible="{Binding CompactionMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+      <TextBlock TextWrapping="Wrap" Opacity="0.7"
+                 Text="Removing a repository deletes its data, but the database file keeps its size until it is compacted. To delete everything, quit the app and delete the data folder." />
     </StackPanel>
 
     <StackPanel Spacing="6">
       <TextBlock Text="Log files" FontWeight="SemiBold" />
       <SelectableTextBlock Text="{Binding LogsDirectory}" TextWrapping="Wrap" Opacity="0.8" />
+      <Button Content="Open log folder" Command="{Binding OpenLogsDirectoryCommand}" />
       <TextBlock TextWrapping="Wrap" Opacity="0.7"
                  Text="Logs contain file paths and error details, never file contents or secrets." />
     </StackPanel>
