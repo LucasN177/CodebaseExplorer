@@ -105,7 +105,7 @@ If an expansion would exceed the budget, the app offers a filtered or neighborho
 
 ## WF-08 Export architecture documentation
 
-**Persona:** Ana · **Capabilities:** MVP-12 · **Status:** planned (M6)
+**Persona:** Ana · **Capabilities:** MVP-12 · **Status:** report generation implemented (EXPORT-001: sections, scope, Mermaid graph, metadata); export dialog EXPORT-002
 
 1. Ana chooses *Export → Markdown report*.
 2. She selects scope (whole repository / current view), sections, and a target folder outside the

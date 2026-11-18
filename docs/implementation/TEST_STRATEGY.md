@@ -120,6 +120,16 @@ hooks since GIT-001 — Git histories are never committed as fixtures). Tests us
 
 The tests are ordinary integration tests and run in CI on Windows, macOS and Linux.
 
+### 5.2 Snapshot tests of generated documents (EXPORT-001)
+
+The Markdown architecture report is compared byte for byte with a committed snapshot
+(`tests/CodebaseExplorer.IntegrationTests/Export/Snapshots/dotnet-layered.md`, compared with LF line endings). The test
+imports a copy of the fixture outside any Git repository with a fixed clock, so commit, dates and durations are stable.
+On a difference the actual report is written next to the snapshot as `*.received.md` (git-ignored); review it and
+replace the snapshot to accept an intended change (e.g. a new analyzer version). Mermaid validity is checked against the
+small grammar the renderer emits (generated node ids, quoted labels, entity-escaped special characters, balanced
+subgraphs), including a fixture whose package name contains Markdown, HTML and Mermaid syntax.
+
 ## 6. Conventions
 
 - Test class per unit under test: `<Subject>Tests`; method names `Method_State_ExpectedResult`

@@ -55,6 +55,8 @@ histories for tests come from `GitRepositoryBuilder` (GIT-002), and the Git modu
 `IGitRemoteCloner`; GIT-003); imports store a Git snapshot and per-file statistics (`GitSnapshots`/`GitChanges`,
 `IGitActivityStore`) shown as the *Git activity* overlay and in the inspector (`GitActivityIndex`, GIT-005); the start page
 clones HTTPS remotes through an inline form with a masked token (UI-008).
+M6: `ExportArchitectureReport` generates the Markdown/Mermaid architecture report (pure text in `Application/Export`,
+snapshot test for `dotnet-layered`; EXPORT-001).
 No AI functionality exists yet. Next: the open manual checks (M1 on macOS/Linux, M4 explorer features, M5 overlay and
 clone form) in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 

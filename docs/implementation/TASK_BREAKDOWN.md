@@ -26,7 +26,7 @@ Status overview (keep in sync):
 | M3 Deep C# & Inspector | 9 | 9 |
 | M4 Polyglot & scale | 11 | 11 |
 | M5 Git | 7 | 7 |
-| M6 Export | 2 | 0 |
+| M6 Export | 2 | 1 |
 | M7 Local AI | 7 | 0 |
 | M8 Hardening & release | 4 | 0 |
 | Post-MVP | 1 | 0 |
@@ -600,11 +600,12 @@ Status overview (keep in sync):
 ## M6 — Documentation export
 
 ### EXPORT-001 — Markdown/Mermaid architecture report
-- **Priority:** P0 · **Milestone:** M6 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M6 · **Status:** done
 - **Prerequisites:** STORE-004
 - **Projects:** Application (use case and `Export/` folder with the Markdown/Mermaid renderer: pure text generation, no I/O), Contracts (export DTOs), Desktop (file writing via the save dialog)
 - **Description:** Report with overview, languages, projects, Mermaid project graph (budgeted), external dependencies, analysis metadata and evidence statistics.
 - **Acceptance criteria:** Snapshot test of the report for `dotnet-layered`; Mermaid output is valid (escaping of names tested).
+- **Note:** Done 2026-11-18. Use case `ExportArchitectureReport` (Application/Export) → `ArchitectureReportDto` (file name `ARCHITECTURE-<repo>-<yyyy-MM-dd>.md`, Markdown, truncation flag; Contracts/Export with `ArchitectureReportRequest`/`ReportSections`). `MarkdownReportRenderer` is pure and deterministic: title and scope, overview, languages, projects (kind, folder, files, references in/out, packages), Mermaid dependency graph, external dependencies (used by), analysis metadata (status, times in UTC, commit/branch, files, warnings/errors, analyzer versions), evidence statistics (relationship kinds × levels, evidence per analyzer). No absolute local path is written. Scope: whole repository = project level incl. test projects with a node budget of 100; current view = the explorer's query (expansions become subgraphs). `MermaidDiagram`: generated ids, quoted labels with numeric entity codes for every special character, at most 500 edges (Mermaid default), edges in node order. `MarkdownText` escapes ` ` * _ [ ] | ~` and HTML. Tests: `ExportArchitectureReportTests` (snapshot `Export/Snapshots/dotnet-layered.md`, hostile npm package name, current view with subgraphs and section order, validation, file names; TEST_STRATEGY.md §5.2). Mermaid validity is checked against the emitted grammar, not by a Mermaid renderer (not verified in a viewer).
 
 ### EXPORT-002 — Export dialog
 - **Priority:** P0 · **Milestone:** M6 · **Status:** todo

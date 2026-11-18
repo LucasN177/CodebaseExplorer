@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.AddSingleton<Search.SearchElements>();
         services.AddSingleton<GetGraphView>();
         services.AddSingleton<GetGraphEdgeDetails>();
+        services.AddSingleton<Export.ExportArchitectureReport>();
 
         return services;
     }
