@@ -163,6 +163,7 @@ dotnet run --project src/CodebaseExplorer.Desktop
 | Microsoft.Extensions.Logging, .Abstractions, .Debug | 10.0.15 | Desktop | File sink added in CORE-007. |
 | xunit.v3 | 4.0.3 | tests | Runs on Microsoft.Testing.Platform. |
 | NSubstitute | 6.2.0 | tests | |
+| coverlet.MTP | 10.1.1 | tests | MIT; code coverage as Microsoft.Testing.Platform extension (QA-001, TEST_STRATEGY.md §7.1). |
 
 ### 6.2 Planned dependencies (exist on nuget.org/npm; **not yet referenced**)
 
@@ -188,4 +189,4 @@ win-x64/osx-arm64/linux-x64) by the task that introduces it.
 |---|---|
 | Avalonia.Diagnostics | Latest stable is 11.3.23; no Avalonia 12 version was found. Dev tooling for Avalonia 12 is evaluated separately (task UI-001). |
 | Microsoft.Build.Locator, Microsoft.CodeAnalysis.Workspaces.MSBuild | Load and evaluate project files through MSBuild, which can execute repository-defined logic. Violates the zero-execution rule. |
-| xunit.runner.visualstudio, Microsoft.NET.Test.Sdk, coverlet.collector | VSTest-based; the .NET 10 SDK requires Microsoft.Testing.Platform for xunit.v3 with `dotnet test`. Coverage via a Microsoft.Testing.Platform extension will be evaluated in QA-001. |
+| xunit.runner.visualstudio, Microsoft.NET.Test.Sdk, coverlet.collector | VSTest-based; the .NET 10 SDK requires Microsoft.Testing.Platform for xunit.v3 with `dotnet test`. Coverage uses coverlet.MTP instead (QA-001). |

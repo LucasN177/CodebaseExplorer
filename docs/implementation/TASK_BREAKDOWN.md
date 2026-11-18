@@ -257,11 +257,12 @@ Status overview (keep in sync):
 - **Note (2026-11-18):** Implemented; ViewModel tests cover loading, errors and the selection panel. **Manual test on Windows passed:** `dotnet-layered` shows the 5 projects plus the placeholder `Shop.Legacy` (missing project file, see EXPECTED.md §4) with 8 edges, selection updates the panel, and switching the app theme recolors the graph. **Remaining:** the same manual test on macOS and Linux (together with GRAPH-001).
 
 ### QA-001 — Continuous integration
-- **Priority:** P1 · **Milestone:** M1 · **Status:** todo
+- **Priority:** P1 · **Milestone:** M1 · **Status:** done
 - **Prerequisites:** —
 - **Projects:** repository root (`.github/workflows`), docs
 - **Description:** GitHub Actions workflow building and testing on Windows, macOS and Linux; evaluate code coverage with a Microsoft.Testing.Platform extension.
 - **Acceptance criteria:** Pull requests show build + test status for 3 OSes; coverage decision documented in TEST_STRATEGY.md.
+- **Note:** `.github/workflows/ci.yml` (push to main, pull requests): .NET build + test on Windows, macOS, Linux; graph web view tests and bundle check on Linux; coverage with coverlet.MTP reported as artifact, no gate (TEST_STRATEGY.md §7.1). The macOS/Linux jobs run build and tests only — the manual WebView checks of GRAPH-001/UI-003 remain open.
 
 ---
 

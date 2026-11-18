@@ -26,7 +26,7 @@
 | xunit.v3 | 4.0.3 | Test framework; test projects are executables (`OutputType=Exe`). |
 | Microsoft.Testing.Platform | via xunit.v3; opted in via `global.json` `test.runner` | Runner for `dotnet test` on the .NET 10 SDK. |
 | NSubstitute | 6.2.0 | Test doubles for ports. |
-| Coverage | open (QA-001) | A Microsoft.Testing.Platform coverage extension will be evaluated; VSTest-based coverlet collector is not used. |
+| coverlet.MTP | 10.1.1 | Code coverage as a Microsoft.Testing.Platform extension (QA-001, §7.1); collects only when `--coverlet` is passed. |
 | Vitest | 5.1.0 (npm, exact) | Tests of the graph web view (`src/CodebaseExplorer.GraphView.Web/test`): message validation, controller, element mapping, static security checks. Run with `npm test`; not part of `dotnet test`. |
 
 Run all tests:
@@ -113,8 +113,33 @@ Planned fixtures:
 | Tests | local + CI (3 OSes) | 100 % passing |
 | Architecture rules | IntegrationTests | must pass; changes require ADR |
 | Hostile fixtures | IntegrationTests (from M3) | must pass on all OSes |
-| Coverage | CI (from QA-001) | reported; target ≥ 80 % line coverage for Domain, Analysis, Graph; no hard gate until baseline exists |
+| Coverage | CI (Linux job, QA-001) | reported as an artifact; target ≥ 80 % line coverage for Domain, Analysis, Graph; no hard gate yet (§7.1) |
 | Performance | QA-002 benchmarks | MVP targets in PRODUCT_CONCEPT.md §8; regressions > 20 % require explanation |
+
+### 7.1 Continuous integration and code coverage (QA-001)
+
+`.github/workflows/ci.yml` runs on every push to `main` and every pull request:
+
+- **.NET build and test** on `windows-latest`, `macos-latest` and `ubuntu-latest` (Release, SDK from
+  `global.json`); a green build means 0 warnings.
+- **Graph web view** on Linux: `npm ci --ignore-scripts`, `npm test`, `npm run build`, then a check that
+  the committed bundle in `Desktop/GraphView` is unchanged.
+- **Coverage** in the Linux .NET job, uploaded as artifact `coverage-cobertura` (one Cobertura file
+  per test project; assemblies `CodebaseExplorer*` without `TestRepositories`).
+
+**Decision (2026-11-18):** coverage uses **coverlet.MTP** (MIT, native Microsoft.Testing.Platform
+extension). Microsoft.Testing.Extensions.CodeCoverage was the alternative; it ships under a Microsoft
+license file instead of an OSI license, and the VSTest-based coverlet collector does not work with MTP.
+Coverage is **reported, not gated**: each assembly is measured by several test projects and the files
+are not merged yet, so a threshold would need a merge step (e.g. ReportGenerator) — revisit when a
+gate is wanted. Baseline (Release, measured by the assembly's own test project): Domain 95.2 %,
+Analysis 96.2 %, Graph 94.4 % line coverage.
+
+Run locally:
+
+```bash
+dotnet test --solution CodebaseExplorer.slnx --coverlet --coverlet-output-format cobertura
+```
 
 ## 8. Recorded results
 

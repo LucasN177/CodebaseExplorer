@@ -1,0 +1,95 @@
+# Continuous integration (QA-001): build and test on Windows, macOS and Linux for every push to main
+# and every pull request; graph web view checks and code coverage on Linux.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  dotnet:
+    name: .NET build and test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore CodebaseExplorer.slnx
+
+      # Warnings are errors (Directory.Build.props), so a green build means 0 warnings.
+      - name: Build
+        run: dotnet build CodebaseExplorer.slnx --no-restore --configuration Release
+
+      - name: Test
+        if: matrix.os != 'ubuntu-latest'
+        run: dotnet test --solution CodebaseExplorer.slnx --no-build --configuration Release
+
+      # Coverage is reported, not gated (TEST_STRATEGY.md "Code coverage"); one Cobertura file per test project.
+      - name: Test with coverage
+        if: matrix.os == 'ubuntu-latest'
+        run: >-
+          dotnet test --solution CodebaseExplorer.slnx --no-build --configuration Release
+          --coverlet --coverlet-output-format cobertura --coverlet-include "[CodebaseExplorer*]*"
+          --coverlet-exclude "[CodebaseExplorer.TestRepositories]*"
+          --results-directory "${{ github.workspace }}/TestResults"
+
+      - name: Upload coverage
+        if: matrix.os == 'ubuntu-latest' && always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-cobertura
+          path: TestResults/*.cobertura*.xml
+          if-no-files-found: warn
+          retention-days: 14
+
+  graph-view:
+    name: Graph web view (TypeScript)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: src/CodebaseExplorer.GraphView.Web
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: src/CodebaseExplorer.GraphView.Web/package-lock.json
+
+      # --ignore-scripts: no dependency lifecycle scripts run in CI (none are needed for the build).
+      - name: Install
+        run: npm ci --ignore-scripts
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # The bundle is committed (SOLUTION_STRUCTURE.md §4); a rebuild must not change it.
+      - name: Committed bundle is up to date
+        run: git diff --exit-code -- ../CodebaseExplorer.Desktop/GraphView
