@@ -25,7 +25,7 @@ Status overview (keep in sync):
 | M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 9 |
 | M4 Polyglot & scale | 11 | 3 |
-| M5 Git | 7 | 1 |
+| M5 Git | 7 | 2 |
 | M6 Export | 2 | 0 |
 | M7 Local AI | 7 | 0 |
 | M8 Hardening & release | 4 | 0 |
@@ -547,11 +547,12 @@ Status overview (keep in sync):
 - **Acceptance criteria:** Tests with `GitRepositoryBuilder`; hostile `.git/config` executes nothing.
 
 ### GIT-002 — GitRepositoryBuilder test helper
-- **Priority:** P0 · **Milestone:** M5 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M5 · **Status:** done
 - **Prerequisites:** GIT-006
 - **Projects:** TestRepositories
 - **Description:** Fluent builder creating temporary Git repositories with commits, authors, branches, renames; cleans up reliably (read-only files on Windows).
 - **Acceptance criteria:** Used by GIT-001/003/004 tests; no nested `.git` committed.
+- **Note:** Done 2026-11-18. `TestRepositories/Git`: `GitRepositoryBuilder` (`Create`, `Write`/`WriteLines`/`Delete`/`Rename` + `Commit` with explicit `GitTestAuthor` and time — default one hour after the previous commit, starting 2026-01-01 —, `Branch`, `Checkout`, `Merge` (no fast-forward), `DetachHead`, `Remote`, `AppendConfig`, `Hook`, `Worktree`) and `GitTestRepository` (`Commits`, `WorktreePath`, `CreateBareClone` for local-transport clone tests; `Dispose` deletes everything incl. read-only object files). Repositories always start on `main`, independent of the machine's `init.defaultBranch`. Built with LibGit2Sharp (test-only reference of TestRepositories). `GitRepositoryBuilderTests`, including a check that no fixture contains a nested `.git`.
 
 ### GIT-003 — HTTPS clone of GitHub/GitLab remotes
 - **Priority:** P0 · **Milestone:** M5 · **Status:** todo

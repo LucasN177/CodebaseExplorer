@@ -66,7 +66,8 @@ Location: `tests/CodebaseExplorer.TestRepositories/Repositories/<name>/`; locate
 - Fixtures are **data**: excluded from compilation, never built/restored/executed.
 - Each fixture has `EXPECTED.md` (projects, modules, entities, relationships with locations,
   external dependencies, expected diagnostics).
-- Git histories are generated at test time (`GitRepositoryBuilder`, GIT-002).
+- Git histories are generated at test time (`GitRepositoryBuilder` in `TestRepositories/Git`, GIT-002): explicit
+  authors and commit times, branches, merges, renames, worktrees, hostile config and hooks; no `.git` is committed.
 - Large performance repositories are **generated** (QA-002), never committed.
 
 Planned fixtures:

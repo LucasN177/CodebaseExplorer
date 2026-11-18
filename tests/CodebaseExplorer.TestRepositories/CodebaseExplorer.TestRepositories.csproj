@@ -4,11 +4,16 @@
     Not a test project. Holds fixture repositories (input data for analyzer and integration tests)
     and a helper to locate them. Fixture files are DATA: they are never compiled, restored, built
     or executed - neither by this project nor by Codebase Explorer (see docs/architecture/SECURITY.md).
+    Git histories are not committed as fixtures; GitRepositoryBuilder creates them at test time (GIT-002).
   -->
   <ItemGroup>
     <Compile Remove="Repositories/**" />
     <None Remove="Repositories/**" />
     <EmbeddedResource Remove="Repositories/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LibGit2Sharp" />
   </ItemGroup>
 
 </Project>
