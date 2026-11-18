@@ -171,6 +171,7 @@ dotnet run --project src/CodebaseExplorer.Desktop
 | Basic.Reference.Assemblies.Net100 | 1.8.15 | Analysis | MIT (jaredpar/basic-reference-assemblies), verified 2026-11-18; .NET 10 reference assemblies embedded as resources (~6 MB). Every C# compilation uses them instead of SDK packs so that entity ids are machine-independent (ADR-011). |
 | TreeSitter.DotNet | 1.3.0 | Analysis | MIT (mariusgreuel/tree-sitter-dotnet-bindings), verified 2026-11-18 in spike ANALYSIS-008 (ADR-004 "Spike result"): netstandard2.0, no dependencies, native Tree-sitter runtime and grammars for win/osx/linux x64+arm64 (and 32-bit RIDs). Single maintainer. `Directory.Build.targets` keeps only the runtime and the TypeScript, TSX, JavaScript and Python grammars for 64-bit Windows/macOS/Linux (~26 MB instead of ~600 MB). No per-parse timeout API. |
 | coverlet.MTP | 10.1.1 | tests | MIT; code coverage as Microsoft.Testing.Platform extension (QA-001, TEST_STRATEGY.md §7.1). |
+| LibGit2Sharp | 0.32.0 | Git (tests: IntegrationTests via Desktop) | MIT; verified 2026-11-18 in spike GIT-006 (GIT_INTEGRATION.md §3.1): targets net8.0 and net472, depends on LibGit2Sharp.NativeBinaries 2.0.324 (libgit2, GPL-2.0 with linking exception) with native binaries for all target RIDs incl. musl. Runs no hooks, fsmonitor, filter drivers or credential helpers. SSH URLs would start the system `ssh` executable, so the app rejects them (OPD-02). |
 
 **Developer tooling for Avalonia 12 (evaluated in UI-001, 2026-11-18): not adopted.** `Avalonia.Diagnostics`
 (the in-app DevTools with `AttachDevTools()`) ends at 11.3.23 and depends on Avalonia 11, so it cannot be used
@@ -186,7 +187,6 @@ win-x64/osx-arm64/linux-x64) by the task that introduces it.
 
 | Package | Latest stable seen 2026-11-17 | Planned for | Open verification items |
 |---|---|---|---|
-| LibGit2Sharp | 0.32.0 (targets net8.0/net472, published 2026-07) | GIT-001 | Native binaries for osx-arm64/linux-x64; SSH not supported (OPD-02); shallow clone support. |
 | Microsoft.Extensions.AI / .Abstractions | 10.11.0 (10.x line) | AI-001 | Independently versioned, exempt from the 10.0.x rule (DEVELOPMENT_GUIDE.md §4); check that its dependencies resolve to 10.0.x runtime packages. |
 | OllamaSharp | 5.5.2 | AI-002 | `IChatClient` implementation compatibility with the chosen Microsoft.Extensions.AI version. |
 | Microsoft.Extensions.AI.OpenAI | to be verified | AI-007 (post-MVP) | Version line compatible with net10.0. |

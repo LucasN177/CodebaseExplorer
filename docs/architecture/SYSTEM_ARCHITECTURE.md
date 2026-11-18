@@ -277,8 +277,8 @@ Single desktop application per OS, published self-contained per runtime identifi
 (`win-x64`, `osx-arm64`, `linux-x64`; others optional). Native components that must be present per
 RID: Avalonia native backends, WebView backend (WebView2 on Windows, system WebKit on macOS/Linux —
 to be verified in GRAPH-001), SQLite (via the EF Core SQLite provider's native bundle), Tree-sitter
-native libraries (to be verified in ANALYSIS-008), libgit2 (LibGit2Sharp native binaries, to be
-verified in GIT-006). Packaging is defined in task QA-004.
+native libraries (to be verified in ANALYSIS-008), libgit2 (LibGit2Sharp native binaries for all target
+RIDs incl. musl, verified in GIT-006). Packaging is defined in task QA-004.
 
 ## 13. Quality attribute scenarios
 

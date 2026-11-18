@@ -1,7 +1,7 @@
 # Git Integration — Codebase Explorer
 
-> Status: **accepted (specification)** · Last reviewed: 2026-11-17
-> Implementation status: **not implemented** (module seam `AddGitModule()` exists).
+> Status: **accepted (specification)** · Last reviewed: 2026-11-18
+> Implementation status: **in progress** — adapter verified (GIT-006, §3.1).
 
 ## 1. Scope
 
@@ -47,14 +47,22 @@ Reasons:
   (SECURITY.md). This property must be re-confirmed in GIT-006.
 - Mature read APIs for commits, trees, diffs and refs.
 
-Known limitations / verification items (task GIT-006):
+### 3.1 Verification results (spike GIT-006, 2026-11-18)
 
-| Item | Status |
+Verified with LibGit2Sharp **0.32.0** (MIT) and LibGit2Sharp.NativeBinaries **2.0.324** (libgit2 commit `5853918`,
+GPL-2.0 with linking exception) on Windows 11 x64; proof code: `LibGit2SharpVerificationTests` (IntegrationTests,
+runs on all three CI OSes, so native loading is verified there too).
+
+| Item | Verified fact |
 |---|---|
-| SSH transport | Not supported by LibGit2Sharp's bundled libgit2 build (to be re-verified). → OPD-02 |
-| Native binaries for win-x64, osx-arm64, linux-x64 | Provided via LibGit2Sharp.NativeBinaries (to be verified for all target RIDs, incl. glibc/musl expectations on Linux) |
-| Shallow clone (`depth`) support | To be verified; if unavailable, full clones are used and documented |
-| Performance of per-file history statistics on large histories | To be measured (QA-002); fallback: walk commits once and accumulate diffs per file in a single pass |
+| Native binaries | The package ships `runtimes/{win-x64, win-arm64, win-x86, osx-x64, osx-arm64, linux-x64, linux-arm64, linux-arm, linux-musl-x64, linux-musl-arm64, linux-musl-arm, linux-ppc64le}/native` — all target RIDs, glibc and musl. Loading verified locally on win-x64; macOS/Linux through the CI test run. |
+| Built-in features | `Threads, Https, Ssh, NSec`. |
+| SSH transport | **Correction:** the native build *does* support SSH — not with libssh2, but by **starting the system `ssh` executable** (an `ssh://` clone attempt failed with OpenSSH's own "Host key verification failed." message). This means libgit2 spawns a process for SSH URLs. The product therefore rejects `ssh://` and scp-like URLs before they reach libgit2 (§4) and never fetches in user-managed repositories. OPD-02 stays open; its options are unchanged, but "LibGit2Sharp without SSH" now means "SSH URLs rejected by the app", and an SSH option could use this built-in path instead of a Git CLI adapter. |
+| Hooks, `core.fsmonitor`, filter/diff drivers, `credential.helper`, `core.sshCommand` | **Not executed** by open, status, refs/remotes, commit walk, diff, commit, branch checkout and path checkout, with all of them configured to write marker files (`LocalOperations_RunNoHookFsmonitorOrFilterDriver`). libgit2 has no credential-helper support at all; credentials come only from the callback. |
+| HTTPS clone (public) | Works for GitHub (`libgit2/libgit2sharp`) and GitLab (`gitlab.com`), verified manually 2026-11-18; automated as the opt-in network test `ShallowHttpsClone_OfPublicRepository`. |
+| HTTPS clone with token | Supported via `FetchOptions.CredentialsProvider` (`UsernamePasswordCredentials`); the token never appears in `.git/config`. **Not verified against a private repository** (no test token available) — opt-in test `HttpsClone_WithToken_UsesTheCredentialsCallbackOnly` reads `CODEBASE_EXPLORER_TEST_GIT_URL`/`…_TOKEN`. |
+| Shallow clone | `FetchOptions.Depth` works over HTTPS (`Repository.Info.IsShallow`); the **local transport rejects it** ("shallow fetch is not supported by the local transport"). **The product clones full history:** a shallow clone would make the activity statistics (§2 `GitHistoryWindow`) meaningless. |
+| History walk performance | `libgit2/libgit2sharp` (2,837 commits, 2,952 paths, Release build, Windows 11, local SSD): commit walk with tree-to-tree changes only **1.4 s**; with per-file line counts (`Patch`, no rename detection) **26.5 s**; with libgit2's default rename detection 32 s; `git log --numstat` for comparison 6.3 s. Line counting dominates. Consequence for GIT-004: single pass over the window, no rename detection (matches `git log --no-renames --numstat` exactly; renames count as delete + add), diffs against the first parent, merge commits skipped, the walk split across threads with one `Repository` instance each. The benchmark on the performance fixture follows with QA-002. |
 | Credentials | Token passed via credentials callback; never written to `.git/config` or remote URLs |
 
 **Possible second adapter: Git CLI** (only if OPD-02 decides for SSH). If used, every invocation

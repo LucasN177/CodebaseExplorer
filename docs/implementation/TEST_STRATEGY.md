@@ -127,7 +127,8 @@ The tests are ordinary integration tests and run in CI on Windows, macOS and Lin
 - Tests never depend on the developer machine's state (installed SDK packs, Git config, Ollama) —
   where a dependency is optional (e.g. SDK reference packs), tests cover both presence and absence
   via injectable locators.
-- Network tests are opt-in (trait `Category=Network`) and excluded from default runs.
+- Network tests are opt-in (`[Fact(Explicit = true)]` with trait `Category=Network`) and excluded from default runs;
+  run them with `--explicit only` (first ones: `LibGit2SharpVerificationTests`, GIT-006).
 
 ## 7. Quality gates
 
