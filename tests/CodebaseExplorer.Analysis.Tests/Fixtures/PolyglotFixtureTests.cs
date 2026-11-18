@@ -13,7 +13,7 @@ namespace CodebaseExplorer.Analysis.Tests.Fixtures;
 /// </summary>
 public sealed class PolyglotFixtureTests
 {
-    public static TheoryData<string> Fixtures() => ["ts-monorepo-workspaces", "js-commonjs", "python-src-layout", "mixed-polyglot"];
+    public static TheoryData<string> Fixtures() => ["ts-monorepo-workspaces", "js-commonjs", "python-src-layout", "mixed-polyglot", "plain-folders"];
 
     private static async Task<ScanResult> ScanAsync(string fixture) =>
         await new RepositoryScanner(new RepositoryFileReader(), TimeProvider.System).ScanAsync(
@@ -92,6 +92,19 @@ public sealed class PolyglotFixtureTests
         Assert.Equal(["frontend/tsconfig.json"], PathsOf(scan, FileClassification.Configuration));
         Assert.Equal(4, PathsOf(scan, FileClassification.Source).Length);
         Assert.Equal(["EXPECTED.md", "README.md"], PathsOf(scan, FileClassification.Documentation));
+    }
+
+    [Fact]
+    public async Task PlainFolders_MatchesSection1()
+    {
+        var scan = await ScanAsync("plain-folders");
+
+        Assert.Equal(7, scan.Files.Count);
+        Assert.Empty(Markers(scan));
+        Assert.Equal(
+            ["docs/guides/deploy.md Documentation", "docs/setup.md Documentation", "EXPECTED.md Documentation", "notes/2026-11.txt Documentation",
+             "README.md Documentation", "scripts/build.sh Source", "scripts/cleanup.py Source"],
+            scan.Files.Select(f => $"{f.Path.Value} {f.Classification}").Order(StringComparer.OrdinalIgnoreCase));
     }
 
     [Theory]

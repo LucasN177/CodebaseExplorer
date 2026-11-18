@@ -1,0 +1,3 @@
+# Deploying
+
+Copy the files.

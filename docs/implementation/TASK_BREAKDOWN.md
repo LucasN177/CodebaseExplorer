@@ -24,7 +24,7 @@ Status overview (keep in sync):
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 9 |
-| M4 Polyglot & scale | 11 | 3 |
+| M4 Polyglot & scale | 11 | 11 |
 | M5 Git | 7 | 7 |
 | M6 Export | 2 | 0 |
 | M7 Local AI | 7 | 0 |
@@ -464,32 +464,36 @@ Status overview (keep in sync):
 - **Note:** Done 2026-11-18. `NodeProjectSystemAnalyzer` (`node.manifest`, ANALYSIS_ENGINE.md Stage 2 "Implemented"): one project per `package.json`, workspace roots from `workspaces`/`pnpm-workspace.yaml` (minimal in-house reader of the `packages:` list instead of a YAML library), repository packages → `ProjectReference`, others → npm `PackageReference`, `tsconfig.json` references (solution-style configs excluded), scripts listed as properties with an `Info` per lifecycle script. `Parsing/SafeJson`: `Utf8JsonReader`, depth 64, JSONC, UTF-16 positions. Shared helpers moved/added: `RepositoryPaths` → `FileSystem/`, `Pipeline/FragmentBuilder`. Tests: EXPECTED.md §2–5 of `ts-monorepo-workspaces`, `js-commonjs` and the frontend of `mixed-polyglot`; pnpm/yarn workspaces, invalid/too deep/oversized manifests, missing names, duplicates, unresolved tsconfig references; `SafeJsonTests`, `WorkspaceFileTests`. Hostile fixture `node-hostile` + `HostileNodeFixtureTests` (QA-003 harness): lifecycle scripts, `.npmrc`, node-gyp, `file:` dependency, module side effect, TS plugin — nothing runs. **Bug found and fixed in Storage:** a project at the repository root (root directory stored as `""`) could not be read back (`RecordMapper`), regression test `ProjectAtTheRepositoryRoot_IsLoadedAgain`.
 
 ### ANALYSIS-010 — TypeScript/JavaScript import analysis
-- **Priority:** P0 · **Milestone:** M4 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M4 · **Status:** done
 - **Prerequisites:** ANALYSIS-008, ANALYSIS-009
 - **Projects:** Analysis, Analysis.Tests
 - **Description:** Tree-sitter extraction of imports/exports/requires and top-level declarations; resolution per ANALYSIS_ENGINE.md; modules = directories.
 - **Acceptance criteria:** Fixture expectations met incl. path aliases; unresolved specifiers produce diagnostics.
+- **Note:** Done 2026-11-18. `TypeScriptAnalyzer` (`treesitter.typescript`, one analyzer for TS/TSX/JS; ANALYSIS_ENGINE.md Stage 3 "Implemented"): directory and file modules, top-level declarations (incl. CommonJS exports), `import`/`export … from`/`require`/`import()` resolved relative, through `tsconfig` `paths`/`baseUrl` (with `extends`), to workspace packages (entry points) or npm packages (declared → `Syntactic`, undeclared → `Heuristic`). `LanguageAnalysisContext` now carries all stage-2 projects. Graph: module labels are relative to the parent also for `/` paths; Inspector shows the module kind (Namespace, Folder, Package, File module) and "Modules"/"Sub-modules" instead of namespace-only wording. Tests: EXPECTED.md of `ts-monorepo-workspaces` §6–8, `js-commonjs` §4–6, `mixed-polyglot` frontend; `TypeScriptAnalyzerTests` (kinds/modifiers/export forms/overloads, `extends`+`baseUrl`, `.js`→`.ts`, built-ins, URL imports, workspace subpaths, hoisted root dependencies, computed imports, syntax errors, oversized files, targets outside projects); `PolyglotImportTests` (composition root: graph edges and drill-down into folders/files; one project per ecosystem in `mixed-polyglot`).
 
 ### ANALYSIS-011 — Python project-system analyzer
-- **Priority:** P0 · **Milestone:** M4 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M4 · **Status:** done
 - **Prerequisites:** ANALYSIS-001, REPO-007
 - **Projects:** Analysis, Analysis.Tests, Directory.Packages.props (TOML parser if needed)
 - **Description:** `pyproject.toml` (PEP 621, Poetry), `requirements*.txt`, `setup.cfg`; package roots and `src/` layout; `setup.py` detected only.
 - **Acceptance criteria:** Fixture expectations met; a hostile `setup.py` fixture proves nothing is executed (QA-003 harness); TOML library choice verified and documented (or minimal in-house parser justified).
+- **Note:** Done 2026-11-18. `PythonProjectSystemAnalyzer` (`python.manifest`, ANALYSIS_ENGINE.md Stage 2 "Implemented"): one project per folder with manifests; PEP 621/735, Poetry (incl. groups and inline tables), `setup.cfg` and requirement files (includes inside the repository, options/URLs reported); repository projects → `ProjectReference`, others → PyPI `PackageReference`. **TOML library: Tomlyn 2.11.1** (BSD-2-Clause, verified on nuget.org; syntax parser with positions and depth limit; SOLUTION_STRUCTURE.md §6.1); `setup.cfg` by a minimal in-house INI reader. Tests: EXPECTED.md §2–4 of `python-src-layout` and the Poetry project of `mixed-polyglot`; `PythonManifestTests` (PEP 508, requirement files, `setup.cfg`, Poetry/dependency groups, invalid and 100,000-level nested TOML, include cycles, `setup.py` detection, cross-project references). Hostile fixture `python-hostile` + `HostilePythonFixtureTests` (QA-003 harness): `setup.py`, in-tree build backend, `conftest.py`, site customization, `.pth`, package code, `-e .` — nothing runs.
 
 ### ANALYSIS-012 — Python import analysis
-- **Priority:** P0 · **Milestone:** M4 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M4 · **Status:** done
 - **Prerequisites:** ANALYSIS-008, ANALYSIS-011
 - **Projects:** Analysis, Analysis.Tests
 - **Description:** Tree-sitter extraction of `import`/`from … import`, relative imports, top-level classes/functions; resolution against package roots and declared dependencies (heuristic name mapping).
 - **Acceptance criteria:** Fixture expectations met; heuristic mappings carry `Heuristic` level.
+- **Note:** Done 2026-11-18. `PythonAnalyzer` (`treesitter.python`, ANALYSIS_ENGINE.md Stage 3 "Implemented"): package and file modules (dotted, relative to `src/` or the project root), top-level classes/functions, imports anywhere in a file resolved relative/absolute against a repository-wide module index, standard library skipped, PyPI by declared name (`Syntactic`), mapping table (`Heuristic`) or undeclared (`Heuristic`). Declared distributions are re-read from the manifests of the project's folder (`pyproject.toml`, `setup.cfg`, `requirements*.txt` without includes). `Span` moved to `Languages/TreeSitter`. Tests: EXPECTED.md of `python-src-layout` §5–7 and `mixed-polyglot` §4; edge cases (star/aliased/nested/`try` imports, `__future__`, imports above the root, unresolved relative imports, decorated `async` functions, duplicate names).
 
 ### ANALYSIS-013 — Determinism and limits hardening
-- **Priority:** P1 · **Milestone:** M4 · **Status:** todo
+- **Priority:** P1 · **Milestone:** M4 · **Status:** done
 - **Prerequisites:** ANALYSIS-010, ANALYSIS-012
 - **Projects:** Analysis, Analysis.Tests
 - **Description:** Determinism test across all fixtures; limit enforcement (file count, depth, parse timeouts) with diagnostics; statistics per stage.
 - **Acceptance criteria:** All fixtures analyzed twice produce byte-identical serialized models.
+- **Note:** Done 2026-11-18. `DeterminismAndLimitsTests`: all 10 fixtures, sequential vs. 8 workers, byte-identical JSON of model and diagnostics. Limits: file count and depth were already enforced with diagnostics by the scanner (REPO-002, tested); new `AnalysisLimits.MaxParseDuration` (5 s) for the Tree-sitter analyzers (`TreeSitterParser.ParseWithin`: a parse that exceeded the budget is dropped, the extraction is cancelled when it runs out; `Warning` `analysis.parse-timeout`, the module stays). Statistics: per-analyzer durations `analyzer.<id>` in `StageDurations` (stored with the run; not yet shown in the UI).
 
 ### REPO-007 — Polyglot fixtures
 - **Priority:** P0 · **Milestone:** M4 · **Status:** done
@@ -500,32 +504,36 @@ Status overview (keep in sync):
 - **Note:** Done 2026-11-18. Four fixtures (LF, byte-exact) with `EXPECTED.md`: `ts-monorepo-workspaces` (19 files), `js-commonjs` (7), `python-src-layout` (9), `mixed-polyglot` (10). Their EXPECTED.md files fix the conventions the analyzers implement: one Node project per `package.json` (root with `workspaces` = `NodeWorkspaceRoot`), dependencies on repository packages = `ProjectReference`, solution-style `tsconfig` references are no dependency; one Python project per folder with manifests; TS/JS modules = directory modules + one `FileModule` per source file, Python modules = packages + file modules (dotted, relative to `src/` or the project root); `Imports` connect file modules (rules `ts.{syntax}.{resolution}`, `py.import.*`). `PolyglotFixtureTests` asserts section 1 (files, markers, classifications, LF) of all four; the analyzer sections are asserted by ANALYSIS-009 … 012. Hostile npm/`setup.py` fixtures are added with ANALYSIS-009/011.
 
 ### GRAPH-007 — Filters, search and neighborhood view
-- **Priority:** P0 · **Milestone:** M4 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M4 · **Status:** done
 - **Prerequisites:** GRAPH-006
 - **Projects:** Application, Storage (search query), Graph, Desktop, GraphView.Web
 - **Description:** Filters (language, ecosystem, relationship kind, min level, tests/generated/external toggles), `Ctrl/Cmd+K` search, focus + n-hop neighborhood.
 - **Acceptance criteria:** Filter combinations covered by projection tests; search returns results < 200 ms on the performance fixture.
+- **Note:** Done 2026-11-18. `GraphQuery.Filters` (`GraphFilters`: languages, ecosystems, relationship kinds, minimum level, tests and generated code **hidden by default** as specified in GRAPH_ENGINE.md §3) and neighborhood mode (`Focus`, `Depth` 1–3, `Direction`) with breadcrumbs (GRAPH_ENGINE.md §3 "Implemented"); search as Application use case `SearchElements` over the cached model (not a Storage query — the whole model is read, ADR-010/012). Desktop: search box (`Ctrl/Cmd+K` while the Avalonia part has focus), results open the neighborhood, filter flyout, neighborhood depth/direction, breadcrumbs. Tests: `GraphFilterAndNeighborhoodTests` (filter combinations incl. test/generated evidence, external dependencies by ecosystem, kinds × level, directions, depth, compound parents, budget, focus errors, edge details), `SearchElementsTests`, ViewModel tests (filters, search → neighborhood, breadcrumbs, whole graph). Search benchmark on the 2,000-project repository: max 14.4 ms (TEST_STRATEGY.md §8). Hiding test code changed the default dotnet-layered graph (Shop.Tests hidden; tests adjusted). **Not verified manually** in the running app.
 
 ### GRAPH-008 — Node budget and truncation
-- **Priority:** P0 · **Milestone:** M4 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M4 · **Status:** done
 - **Prerequisites:** GRAPH-006
 - **Projects:** Graph, Graph.Tests, Desktop
 - **Description:** Enforce node budget; top-N by degree + "N more" aggregate nodes; truncation hints in the UI.
 - **Acceptance criteria:** No `GraphViewDto` exceeds the budget (property-based/parameterized tests).
+- **Note:** Done 2026-11-18. `GraphQuery.NodeBudget` (500, 2 … 5,000); surplus roots → top-N by degree + one `aggregate` "N more" node carrying their edges; expansions that do not fit are refused; `TruncationDto` with reason (`node-budget`, `expansion-refused`) and suggestions (GRAPH_ENGINE.md §4 "Implemented"). Desktop: truncation banner in the explorer, the aggregate is not inspected; web view: dashed aggregate style (bundle rebuilt). Tests: `GraphNodeBudgetTests` (18 random models × budgets/expansions/packages, degree ranking and edge re-attribution, refused expansion, invalid budgets, stable aggregate id with edge details). **Not done here:** Storage slice queries — the whole model is still read and cached per run (ADR-010); QA-002 decides whether slices are needed.
 
 ### QA-002 — Performance fixture generator and benchmarks
-- **Priority:** P0 · **Milestone:** M4 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M4 · **Status:** done
 - **Prerequisites:** ANALYSIS-006, STORE-004
 - **Projects:** tools/development, TestRepositories, docs
 - **Description:** Generator for synthetic repositories (e.g. 2,000 .NET projects, 50k TS files) into a temp folder (not committed); benchmark script measuring analysis time, memory, projection time.
 - **Acceptance criteria:** Results recorded in TEST_STRATEGY.md; MVP targets (PRODUCT_CONCEPT.md §8) evaluated.
+- **Note:** Done 2026-11-18. Generator `SyntheticRepository` (TestRepositories: .NET solutions with project references, packages and cross-project type usage; npm workspaces with relative, workspace and package imports), explicit benchmarks `PerformanceBenchmarks` (IntegrationTests, real composition root incl. SQLite) and `tools/development/Run-Benchmarks.ps1` (parser-checked only; measured with the equivalent `dotnet test` commands). Results (TEST_STRATEGY.md §8): 100 .NET projects 5.6 s to the first graph (target < 30 s ✅), 2,000 projects 81.5 s (target < 3 min ✅, peak 783 MB), 50,502 TS files 148.1 s (peak 1.19 GB). Slice queries (ADR-010 follow-up): not needed for the targets — **ADR-012 (accepted 2026-11-18)** keeps whole-model reads for the MVP.
 
 ### GRAPH-009 — Repository level, folder fallback and navigation history
-- **Priority:** P0 · **Milestone:** M4 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M4 · **Status:** done
 - **Prerequisites:** GRAPH-006
 - **Projects:** Graph, Graph.Tests, Desktop, GraphView.Web
 - **Description:** L0 repository level (ecosystem/solution/workspace groups), folder-level graph for repositories without recognized projects (USER_WORKFLOWS.md WF-01), breadcrumbs and *Back* navigation restoring the previous view state (WF-03).
 - **Acceptance criteria:** L0 projection tests; a fixture without projects shows a folder graph; Back restores expansion state and filters.
+- **Note:** Done 2026-11-18 (GRAPH_ENGINE.md §3 "Implemented (GRAPH-009)"). `GraphLevels.Repository`: groups by workspace › solution › ecosystem (`group` nodes, expandable into projects, budget-aware, group edges); folder fallback for models without projects (`GraphLevels.Folder`, `folder` nodes); breadcrumbs include groups. Explorer: view mode *Projects/Grouped*, *Back* (50 states: expansions, filters, level, neighborhood; restores the filter controls), folder hint, group/folder/aggregate nodes are not inspected, module nodes are called "Module". Web view: group and folder styles (bundle rebuilt). Fixture `plain-folders` (EXPECTED.md). Tests: `GraphRepositoryLevelTests` (grouping, expansion edges, reversible collapse, budget, neighborhood into a collapsed group, folders), `FolderGraphTests` (fixture), ViewModel tests (Back step by step, grouped view). Known limitation: *Show in graph* cannot reveal elements inside a collapsed group. **Not verified manually** in the running app.
 
 ---
 

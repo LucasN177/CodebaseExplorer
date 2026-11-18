@@ -198,6 +198,22 @@ Run in parallel, one per ecosystem, each over the scanned file list.
   `setup.cfg` (INI). `setup.py` is detected and reported, **never executed**; static extraction
   from `setup.py` is not attempted in the MVP.
 - Package roots: directories with `__init__.py`, `src/` layout detection.
+- **Implemented (ANALYSIS-011, `ProjectSystems/Python`):** one `PythonProject` per folder with Python manifests;
+  all manifests of the folder contribute, the first of `pyproject.toml`, `setup.cfg`, `setup.py`, `requirements.txt`,
+  other `requirements*.txt` is the manifest file and names the project (`[project] name`, `[tool.poetry] name`,
+  `[metadata] name`, else the folder). Properties `version`, `requiresPython` (incl. Poetry's `python`),
+  `buildBackend`, `layout` (`src` if Python files lie below `src/`, else `flat`), `manifests`, `setupPy`. Dependencies
+  (PEP 508 parsed by `Pep508`, specifier and marker kept as written, never evaluated): PEP 621 `dependencies` and
+  `optional-dependencies` (`extra`), PEP 735 `dependency-groups` (`group`), Poetry `dependencies`,
+  `dev-dependencies` and `group.<g>.dependencies` (`group`, `devOnly=true` except `main`; inline tables use
+  `version`), `setup.cfg` `install_requires`/`extras_require`, requirement files (`-r` includes followed inside the
+  repository, at most 5 levels, cycles and missing/outside files reported; every other option, URL and VCS line
+  reported and ignored). Names of other Python projects of the repository (PEP 503) → `ProjectReference`, others PyPI
+  `PackageReference`, all `Confirmed`, rules `pyproject.*`, `setup.cfg.*`, `requirements.txt`. `[build-system]
+  requires` and `setup_requires` are not dependencies. TOML: **Tomlyn 2.11.1** (BSD-2-Clause) syntax parser —
+  positions, depth limit 32 (`TomlException` → `Warning`), invalid TOML → `Warning`, project still created; INI
+  (`setup.cfg`) by a minimal in-house reader. `setup.py` → `Info` `python.setup-py.not-executed`. Oracle: fixtures
+  `python-src-layout`, `mixed-polyglot`; zero execution: fixture `python-hostile` (`HostilePythonFixtureTests`).
 
 ### Stage 3 — Language analyzers
 
@@ -254,6 +270,25 @@ warning (`csharp.project.reference-cycle`).
   `ExternalDependency`.
 - Evidence: resolved to existing file → `Confirmed`; bare specifier matched to a declared
   dependency → `Syntactic`; unresolved/computed → `Heuristic` or diagnostic.
+- **Implemented (ANALYSIS-010, `Languages/TypeScript`):** one analyzer `treesitter.typescript` for TypeScript, TSX
+  and JavaScript (shared resolution), per project (`ILanguageAnalyzer`; the context now also lists all stage-2
+  projects for workspace resolution). Modules: every folder below the project root with source files is a
+  `Directory` module, every source file a `FileModule` (qualified names = paths relative to the project root), also
+  when the file cannot be parsed. Entities: top-level classes (incl. `export default class {}` → `default`),
+  interfaces, type aliases, enums, function declarations (overloads merge) and **exported** variables (`Function` for
+  arrow/function initializers, else `Constant`/`Variable`); visibility `Exported` via `export`, `export { … }`,
+  `module.exports = X | { … }` or `exports.x = X`; symbol keys `{path}#{name}`, `#~{name}`, `#default`. References:
+  `import`, `export … from`, `require('…')` and `import('…')` (also inside functions) with literal specifiers;
+  computed → `Info` `ts.import.computed`. Resolution order: relative (`./`, `../`) → file with TS/Node extension
+  rules incl. `.js` → `.ts` and `index` files (`ModuleFiles`, scanned files only); `tsconfig` `paths` then `baseUrl`
+  (following relative `extends`, `TsConfigResolution`); Node built-ins (`fs`, `node:*`) → nothing; a package of the
+  repository → its entry file (`exports["."]` types/import/require/default, `types`, `typings`, `module`, `main`, then
+  `index`) or subpath; else npm package: declared in the project's or its workspace root's `package.json` →
+  `Syntactic`, otherwise `Heuristic`. Resolved files must belong to a project (else `Info`
+  `ts.import.outside-projects`); JSON/CSS and other non-source files produce nothing; unresolved → `Warning`
+  `ts.import.unresolved`. `Imports` connect file modules (rules `ts.{import|export|require|dynamic-import}.
+  {relative|path-alias|workspace|package|package-undeclared}`); syntax errors → `Info` `ts.file.syntax-errors`.
+  Oracle: `ts-monorepo-workspaces` §6–8, `js-commonjs` §4–6, `mixed-polyglot` §4.
 
 **Python (`treesitter.python`)**
 
@@ -261,6 +296,20 @@ warning (`csharp.project.reference-cycle`).
 - Resolution against package roots in the repository; otherwise match to declared PyPI
   dependencies (with import-name ↔ distribution-name mapping table for common mismatches, e.g.
   `yaml` ↔ `PyYAML` — heuristic).
+- **Implemented (ANALYSIS-012, `Languages/Python`):** `PythonAnalyzer` (`treesitter.python`), per project. Module
+  names are dotted paths relative to `src/` (projects with `layout=src`, files below it) or the project root; folders
+  with Python files are `Package` modules (also namespace packages), files `FileModule`s; `__init__.py` belongs to its
+  package. Entities: top-level classes and functions (also decorated and `async`), `Private` for `_` names, symbol
+  key `{module}:{name}`. Imports anywhere in a file (also in functions and `try` blocks; `__future__` ignored):
+  relative (`py.import.relative`) and absolute imports of modules of the repository (`py.import.absolute`; a global
+  index over all projects' Python files, preferring the importing project and packages; `from x import y` targets
+  the submodule `x.y` if it exists, `import a.b.c` the longest existing prefix) → `Confirmed`; standard-library
+  modules (`PythonNames.StandardLibrary`) produce nothing; otherwise PyPI: the top-level name declared in a manifest of
+  the project's folder → `Syntactic` `py.import.package`; mapped by `PythonNames.ImportToDistribution` (e.g. `yaml`
+  → `PyYAML`, `bs4` → `beautifulsoup4`) to a declared distribution → `Heuristic` `py.import.package-mapped`; else
+  `Heuristic` `py.import.package-undeclared` (target: mapped name or import name). Unresolvable relative imports
+  (also above the source root) → `Warning` `py.import.unresolved`. Oracle: `python-src-layout` §5–7,
+  `mixed-polyglot` §4.
 
 **Tree-sitter integration** (decided in spike **ANALYSIS-008**, ADR-004 "Spike result"): `TreeSitter.DotNet`
 1.3.0 in-process, wrapped by `Languages/TreeSitter` (`TreeSitterParser`: grammars TypeScript, TSX, JavaScript,
@@ -350,7 +399,7 @@ reports violations, the result is the error `analysis.model-invalid`.
 | File size for parsing | 2 MB | File recorded, not parsed; `Info` diagnostic. |
 | Manifest size | 1 MB | Not parsed; `Warning`. |
 | Number of files | 500,000 | Scan stops; run `PartiallySucceeded`; `Warning`. |
-| Per-file parse time | 5 s (target; depends on parser support) | Parse aborted; `Warning`. |
+| Per-file parse time | 5 s (`AnalysisLimits.MaxParseDuration`) | Tree-sitter analyzers (ANALYSIS-013): a parse cannot be interrupted, so a file whose parse took longer is dropped afterwards and the extraction walk is cancelled when the budget runs out; the file's module stays, its declarations and imports are skipped, `Warning` `analysis.parse-timeout`. Bounded in practice by the 2 MB parse limit (≤ ~3.3 s measured, ADR-004). Roslyn parses are not timed (C# files are parsed per project with cancellation). |
 | Path length / depth | OS limits; depth 64 | Directory skipped; `Warning`. |
 | XML parsing | DTD processing prohibited, external entities disabled, max characters limited | Parse error diagnostic. |
 
@@ -358,7 +407,15 @@ reports violations, the result is the error `analysis.model-invalid`.
 
 The same repository content and analyzer versions must produce the same model (IDs, relationships,
 evidence). Enumeration order is sorted (ordinal) before ID assignment and output.
-Tests assert determinism by analyzing a fixture twice and comparing models.
+Tests assert determinism by analyzing a fixture twice and comparing models. **Implemented (ANALYSIS-013):**
+`DeterminismAndLimitsTests` analyzes every fixture twice through the real module registration — once sequentially
+(`MaxDegreeOfParallelism = 1`), once with 8 workers — and requires byte-identical JSON of the whole model (all
+public properties of files, projects, modules, entities, external dependencies, relationships and evidence) and of
+the diagnostics.
+
+**Statistics per stage:** `AnalysisStatistics.StageDurations` holds the stages (`scan`, `project-systems`,
+`languages`, `link`, `validate`) and, since ANALYSIS-013, the total time of every analyzer (`analyzer.<id>`, summed
+over its calls across parallel workers).
 
 ## 7. Scaling strategy
 

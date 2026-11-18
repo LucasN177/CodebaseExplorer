@@ -39,15 +39,24 @@ M3: graph layouts (force/fcose default, hierarchical/dagre, concentric) with a p
 evidence a read-only source snippet (`GetSourceSnippet`, UI-007).
 M4: the Tree-sitter binding is decided and wrapped (`Languages/TreeSitter`, ANALYSIS-008, ADR-004 spike result);
 polyglot fixtures exist (REPO-007); the Node project-system analyzer reads `package.json`, workspaces and `tsconfig.json`
-(ANALYSIS-009, hostile npm fixture).
-M5 (started in parallel to M4): LibGit2Sharp is verified (GIT-006, GIT_INTEGRATION.md §3.1), Git histories for tests come
-from `GitRepositoryBuilder` (GIT-002), and the Git module reads local repositories (`IGitRepositoryReader`: detect,
-snapshot with sanitized remotes; GIT-001) and computes per-file activity from the history (GIT-004); HTTPS remotes are
-cloned into the app's clones directory and analyzed (`ImportRemoteRepository`, `IGitRemoteCloner`; GIT-003); imports store a Git
-snapshot and per-file statistics (`GitSnapshots`/`GitChanges`, `IGitActivityStore`) shown as the *Git activity* overlay and in
-the inspector (`GitActivityIndex`, GIT-005); the start page clones HTTPS remotes through an inline form with a masked token (UI-008).
-No Tree-sitter analyzer or AI functionality exists yet. Next: the open M1 checks (macOS/Linux) and the remaining M4
-tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
+(ANALYSIS-009, hostile npm fixture), the Python project-system analyzer reads `pyproject.toml` (Tomlyn), `setup.cfg` and
+requirement files (ANALYSIS-011, hostile Python fixture); the Tree-sitter TS/JS analyzer extracts folder/file modules, top-level
+declarations and resolved imports (ANALYSIS-010), the Python analyzer packages, file modules, top-level classes/functions
+and imports with PyPI name mapping (ANALYSIS-012); every fixture is analyzed deterministically and parse time is limited
+(ANALYSIS-013); graph views respect a node budget with an "N more" aggregate and refused expansions (GRAPH-008); generated repositories
+benchmark import and first graph (QA-002; ADR-012: whole-model reads stay for the MVP); the explorer has filters (tests hidden by default), search
+(`SearchElements`, Ctrl/Cmd+K) and a neighborhood view with breadcrumbs (GRAPH-007), a grouped repository level, *Back* and a
+folder graph for repositories without projects (GRAPH-009). All M4 tasks are implemented; the new explorer features are
+verified by tests only.
+M5 (started in parallel to M4, all tasks implemented): LibGit2Sharp is verified (GIT-006, GIT_INTEGRATION.md §3.1), Git
+histories for tests come from `GitRepositoryBuilder` (GIT-002), and the Git module reads local repositories
+(`IGitRepositoryReader`: detect, snapshot with sanitized remotes; GIT-001) and computes per-file activity from the history
+(GIT-004); HTTPS remotes are cloned into the app's clones directory and analyzed (`ImportRemoteRepository`,
+`IGitRemoteCloner`; GIT-003); imports store a Git snapshot and per-file statistics (`GitSnapshots`/`GitChanges`,
+`IGitActivityStore`) shown as the *Git activity* overlay and in the inspector (`GitActivityIndex`, GIT-005); the start page
+clones HTTPS remotes through an inline form with a masked token (UI-008).
+No AI functionality exists yet. Next: the open manual checks (M1 on macOS/Linux, M4 explorer features, M5 overlay and
+clone form) in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 
 ## Commands
 

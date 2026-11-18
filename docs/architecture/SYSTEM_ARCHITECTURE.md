@@ -207,8 +207,9 @@ Principles:
 - The model is written once per run (batched, transactional) and read in **slices** (by level,
   focus element, filters) — the full model of a monorepo is never loaded into the UI. *Current state
   (STORE-004, decided 2026-11-18):* the Application layer reads the whole current model (cached per run)
-  and the UI only receives projected DTOs; SQL slice queries follow with the node budget and benchmarks in
-  M4 (GRAPH-008, QA-002); see ADR-010.
+  and the UI only receives projected DTOs (ADR-010). After the M4 benchmarks this stays for the MVP — the targets are met
+  and the node budget caps every view; slices remain the target architecture and are re-evaluated on the triggers of
+  ADR-012 (accepted 2026-11-18).
 
 ## 7. Analyzer pipeline (overview)
 

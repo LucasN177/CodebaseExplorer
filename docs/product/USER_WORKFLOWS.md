@@ -49,7 +49,7 @@ repository already cloned (offer *update* = fetch + checkout of the selected bra
 
 ## WF-03 Explore the architecture graph
 
-**Persona:** all · **Capabilities:** MVP-09, MVP-10 · **Status:** project-level graph with a selection panel (UI-003, M1) and layout switching (GRAPH-005) implemented; drill-down, filters, search planned (M3–M4)
+**Persona:** all · **Capabilities:** MVP-09, MVP-10 · **Status:** project-level graph with a selection panel (UI-003, M1), layout switching (GRAPH-005), drill-down (GRAPH-006), node budget (GRAPH-008), filters, neighborhood and breadcrumbs (GRAPH-007), grouped view (repository level), *Back* and the folder graph of repositories without projects (GRAPH-009) implemented; the M4 features are verified by tests, not yet manually
 
 1. The explorer opens at the **project level**: one node per project/package, grouped by
    ecosystem or solution folder; edges are aggregated project dependencies with counts.
@@ -78,7 +78,7 @@ If an expansion would exceed the budget, the app offers a filtered or neighborho
 
 ## WF-05 Find a component and its neighborhood
 
-**Persona:** Nina · **Capabilities:** MVP-09 · **Status:** planned (M4)
+**Persona:** Nina · **Capabilities:** MVP-09 · **Status:** implemented (GRAPH-007): search box with `Ctrl/Cmd+K`, results with kind and container, a result opens its neighborhood (depth 1–3, direction selectable); verified by tests, not yet manually in the running app
 
 1. Nina presses `Ctrl/Cmd+K` and types "InvoiceService".
 2. Results show matching entities, modules and projects with their container path.

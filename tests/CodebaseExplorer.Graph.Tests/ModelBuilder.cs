@@ -44,6 +44,79 @@ internal sealed class ModelBuilder
         return project;
     }
 
+    /// <summary>A project of any ecosystem/language with files of given classifications (GRAPH-007 filter tests).</summary>
+    public CodeProject Project(string name, Ecosystem ecosystem, LanguageId language, params (string Path, FileClassification Classification)[] files)
+    {
+        var manifest = RelativePath.Create($"src/{name}/manifest");
+        var project = CodeProject.Create(Repository, name, ProjectKind.Unknown, ecosystem, language, manifest, RelativePath.Create($"src/{name}"));
+        _projects.Add(project);
+        _files.Add(File(manifest.Value, FileClassification.ProjectManifest, project.Id));
+        foreach (var (path, classification) in files)
+        {
+            _files.Add(File($"src/{name}/{path}", classification, project.Id));
+        }
+
+        return project;
+    }
+
+    /// <summary>A type declared in a given file of its project (path relative to the project folder).</summary>
+    public CodeEntity TypeIn(CodeProject project, CodeModule module, string name, string file, LanguageId? language = null)
+    {
+        var declaration = _files.First(f => f.Path.Value == $"{project.RootDirectory.Value}/{file}");
+        var entity = CodeEntity.Create(project, module, EntityKind.Class, name, $"{module.QualifiedName}.{name}", language ?? project.PrimaryLanguage,
+            $"T:{module.QualifiedName}.{name}", [SourceLocation.Line(declaration.Id, 1, 1, 10)]);
+        _entities.Add(entity);
+        return entity;
+    }
+
+    /// <summary>A relationship whose single evidence lies in a given repository file.</summary>
+    public CodeRelationship RelateIn(
+        string evidencePath, ElementKind sourceKind, ElementId source, RelationshipKind kind, ElementKind targetKind, ElementId target,
+        EvidenceLevel level = EvidenceLevel.Confirmed)
+    {
+        var sourceRef = new ElementReference(sourceKind, source);
+        var targetRef = new ElementReference(targetKind, target);
+        var file = _files.First(f => f.Path.Value == evidencePath);
+        var relationship = CodeRelationship.Create(sourceRef, kind, targetRef,
+            [AnalysisEvidence.Create(CodeRelationship.IdFor(sourceRef, kind, targetRef), AnalyzerId.Create("test.analyzer"), "1", level,
+                "test.rule", SourceLocation.Line(file.Id, 1, 1, 5), Run)]);
+        _relationships.Add(relationship);
+        return relationship;
+    }
+
+    public ExternalDependency Package(string name, PackageEcosystem ecosystem)
+    {
+        var dependency = ExternalDependency.Create(Repository, ecosystem, name);
+        _dependencies.Add(dependency);
+        return dependency;
+    }
+
+    /// <summary>A project with kind, properties and solution memberships (GRAPH-009 grouping tests).</summary>
+    public CodeProject GroupedProject(string name, ProjectKind kind, Ecosystem ecosystem, IReadOnlyDictionary<string, string>? properties = null, params string[] solutions)
+    {
+        var memberships = new List<SolutionMembership>();
+        foreach (var solution in solutions)
+        {
+            var file = _files.FirstOrDefault(f => f.Path.Value == solution) ?? File(solution, FileClassification.SolutionFile);
+            if (!_files.Contains(file))
+            {
+                _files.Add(file);
+            }
+
+            memberships.Add(new SolutionMembership(file.Id));
+        }
+
+        var manifest = RelativePath.Create($"src/{name}/manifest");
+        var project = CodeProject.Create(Repository, name, kind, ecosystem, LanguageId.CSharp, manifest, RelativePath.Create($"src/{name}"), properties, memberships);
+        _projects.Add(project);
+        _files.Add(File(manifest.Value, FileClassification.ProjectManifest, project.Id));
+        _files.Add(File($"src/{name}/code.cs", FileClassification.Source, project.Id));
+        return project;
+    }
+
+    /// <summary>A file that belongs to no project (folder fallback tests).</summary>
+    public void LooseFile(string path) => _files.Add(File(path, FileClassification.Documentation));
+
     public CodeProject Placeholder(string name)
     {
         var project = CodeProject.Create(Repository, name, ProjectKind.Unknown, Ecosystem.DotNet, LanguageId.CSharp, null,

@@ -71,8 +71,8 @@ public sealed class GitActivityEndToEndTests : IAsyncLifetime
             new GraphQuery { RepositoryId = summary.RepositoryId, IncludeActivity = true, Expanded = expanded }, Ct)).Value;
         var plain = (await Get<GetGraphView>().ExecuteAsync(new GraphQuery { RepositoryId = summary.RepositoryId, Expanded = expanded }, Ct)).Value;
 
-        // Independent recomputation from the persisted rows: projects sum their own files.
-        foreach (var project in model.Projects)
+        // Independent recomputation from the persisted rows: projects sum their own files (test projects are hidden by default).
+        foreach (var project in model.Projects.Where(p => view.Nodes.Any(n => n.Id == p.Id.ToString())))
         {
             var expected = model.Files.Where(f => f.ProjectId == project.Id).Sum(f => git.Files.TryGetValue(f.Id, out var c) ? c.CommitCount : 0);
             Assert.Equal(expected, view.Nodes.Single(n => n.Id == project.Id.ToString()).Metrics.ChangeCount);

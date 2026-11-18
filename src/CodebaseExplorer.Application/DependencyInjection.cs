@@ -27,6 +27,7 @@ public static class DependencyInjection
         services.AddSingleton<GetRepositoryOverview>();
         services.AddSingleton<Source.GetSourceSnippet>();
         services.AddSingleton<Inspector.GetElementDetails>();
+        services.AddSingleton<Search.SearchElements>();
         services.AddSingleton<GetGraphView>();
         services.AddSingleton<GetGraphEdgeDetails>();
 

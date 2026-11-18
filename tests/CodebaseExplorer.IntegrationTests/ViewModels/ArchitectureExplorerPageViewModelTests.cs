@@ -34,7 +34,8 @@ public sealed class ArchitectureExplorerPageViewModelTests : IAsyncLifetime
         _viewModel = new ArchitectureExplorerPageViewModel(
             _host, _app.Services.GetRequiredService<GetGraphView>(), _app.Services.GetRequiredService<GetGraphEdgeDetails>(),
             _app.Services.GetRequiredService<CodebaseExplorer.Application.Source.GetSourceSnippet>(),
-            _app.Services.GetRequiredService<CodebaseExplorer.Application.Inspector.GetElementDetails>(), _clipboard,
+            _app.Services.GetRequiredService<CodebaseExplorer.Application.Inspector.GetElementDetails>(),
+            _app.Services.GetRequiredService<CodebaseExplorer.Application.Search.SearchElements>(), _clipboard,
             _session, Substitute.For<IUserSettingsStore>(), _shell, NullLogger<ArchitectureExplorerPageViewModel>.Instance);
     }
 
@@ -62,9 +63,9 @@ public sealed class ArchitectureExplorerPageViewModelTests : IAsyncLifetime
         Assert.Equal("dotnet-layered", _viewModel.RepositoryName);
         Assert.Equal(GraphLevels.Project, view.Level);
         Assert.Equal(
-            ["Shop.Application", "Shop.Domain", "Shop.Infrastructure", "Shop.Legacy", "Shop.Tests", "Shop.Web"],
-            view.Nodes.Select(n => n.Label));
-        Assert.Equal(8, view.Edges.Count);
+            ["Shop.Application", "Shop.Domain", "Shop.Infrastructure", "Shop.Legacy", "Shop.Web"],
+            view.Nodes.Select(n => n.Label)); // the test project is hidden by default (GRAPH-007)
+        Assert.Equal(6, view.Edges.Count);
     }
 
     [Fact]
@@ -379,6 +380,142 @@ public sealed class ArchitectureExplorerPageViewModelTests : IAsyncLifetime
 
         var call = Assert.Single(_host.ReceivedCalls(), c => c.GetMethodInfo().Name == nameof(IGraphViewHost.ShowGraphAsync));
         return (GraphViewDto)call.GetArguments()[0]!;
+    }
+
+    // ---- GRAPH-007: filters, search, neighborhood ----
+
+    private GraphViewDto LastShown() =>
+        (GraphViewDto)_host.ReceivedCalls().Last(c => c.GetMethodInfo().Name == nameof(IGraphViewHost.ShowGraphAsync)).GetArguments()[0]!;
+
+    [Fact]
+    public async Task Filters_OfferTheRepositoryValues_AndTogglingTestsReloadsTheGraph()
+    {
+        await ImportFixtureAsync();
+
+        Assert.Equal(["csharp"], _viewModel.LanguageFilters.Select(o => o.Token));
+        Assert.Equal([".NET"], _viewModel.EcosystemFilters.Select(o => o.Display));
+        Assert.Null(_viewModel.FilterSummary);
+
+        _viewModel.IncludeTests = true;
+        await WaitUntilAsync(() => LastShown().Nodes.Any(n => n.Label == "Shop.Tests"));
+        Assert.Equal("1 filter setting changed", _viewModel.FilterSummary);
+
+        _viewModel.RelationshipKindFilters.Single(o => o.Token == "package-reference").IsChecked = true;
+        _viewModel.IncludeExternalDependencies = true;
+        await WaitUntilAsync(() => LastShown().Edges.All(e => e.Kinds.ContainsKey("package-reference")) && LastShown().Nodes.Any(n => n.Kind == GraphNodeKinds.ExternalDependency));
+
+        await _viewModel.ResetFiltersCommand.ExecuteAsync(null);
+        Assert.DoesNotContain(LastShown().Nodes, n => n.Label == "Shop.Tests");
+        Assert.Null(_viewModel.FilterSummary);
+    }
+
+    [Fact]
+    public async Task Search_ListsMatches_AndOpeningOneShowsItsNeighborhood()
+    {
+        await ImportFixtureAsync();
+        _host.FocusAsync(default!, Arg.Any<CancellationToken>()).ReturnsForAnyArgs(true);
+
+        _viewModel.SearchText = "PlaceOrderHandler";
+        await WaitUntilAsync(() => _viewModel.SearchResults.Count > 0);
+
+        var handler = _viewModel.SearchResults[0];
+        Assert.Equal(("Shop.Application.Orders.PlaceOrderHandler", "Class"), (handler.Label, handler.KindText));
+        Assert.Equal($"{_viewModel.SearchResults.Count} results", _viewModel.SearchMessage); // the class first, then e.g. its members and tests
+
+        await _viewModel.OpenSearchResultCommand.ExecuteAsync(handler);
+
+        var view = LastShown();
+        Assert.True(_viewModel.IsNeighborhood);
+        Assert.Contains(view.Nodes, n => n.Id == handler.Reference.GraphNodeId);
+        Assert.Equal("Repository", _viewModel.Breadcrumbs[0].Label);
+        Assert.Equal("PlaceOrderHandler", _viewModel.Breadcrumbs[^1].Label);
+        await _host.Received(1).FocusAsync(handler.Reference.GraphNodeId!, Arg.Any<CancellationToken>());
+        Assert.Null(_viewModel.SearchText);
+        Assert.Empty(_viewModel.SearchResults);
+
+        // Depth 2 reaches further; the repository breadcrumb returns to the whole graph.
+        var neighbors = view.Nodes.Count;
+        _viewModel.NeighborhoodDepth = 2;
+        await WaitUntilAsync(() => LastShown().Nodes.Count > neighbors);
+        await _viewModel.OpenBreadcrumbCommand.ExecuteAsync(_viewModel.Breadcrumbs[0]);
+        Assert.False(_viewModel.IsNeighborhood);
+    }
+
+    [Fact]
+    public async Task Neighborhood_OfTheSelectedProject_AndBackToTheWholeGraph()
+    {
+        var view = await ImportFixtureAsync();
+        var domain = view.Nodes.Single(n => n.Label == "Shop.Domain");
+        Select(view, [domain.Id], []);
+        _viewModel.SelectedDirection = _viewModel.DirectionOptions.Single(o => o.Token == GraphDirections.Incoming);
+
+        await _viewModel.ShowNeighborhoodCommand.ExecuteAsync(null);
+
+        Assert.Equal(["Shop.Application", "Shop.Domain", "Shop.Infrastructure"], LastShown().Nodes.Select(n => n.Label));
+        Assert.Equal(["Repository", "Shop.Domain"], _viewModel.Breadcrumbs.Select(b => b.Label));
+
+        await _viewModel.ShowWholeGraphCommand.ExecuteAsync(null);
+        Assert.False(_viewModel.IsNeighborhood);
+        Assert.Equal(5, LastShown().Nodes.Count);
+    }
+
+    // ---- GRAPH-009: Back and the grouped view ----
+
+    [Fact]
+    public async Task Back_RestoresExpansionFiltersAndNeighborhoodStepByStep()
+    {
+        var view = await ImportFixtureAsync();
+        _host.PatchGraphAsync(default!, Arg.Any<CancellationToken>()).ReturnsForAnyArgs(true);
+        Assert.False(_viewModel.CanGoBack);
+        var domain = view.Nodes.Single(n => n.Label == "Shop.Domain");
+
+        await _viewModel.SetExpandedAsync(domain.Id, expanded: true, TestContext.Current.CancellationToken);
+        _viewModel.IncludeTests = true;
+        await WaitUntilAsync(() => LastShown().Nodes.Any(n => n.Label == "Shop.Tests"));
+        Select(LastShown(), [domain.Id], []);
+        await _viewModel.ShowNeighborhoodCommand.ExecuteAsync(null);
+        Assert.True(_viewModel.IsNeighborhood);
+        Assert.True(_viewModel.CanGoBack);
+
+        // 1: leaves the neighborhood, tests still shown, Shop.Domain still expanded.
+        await _viewModel.BackCommand.ExecuteAsync(null);
+        Assert.False(_viewModel.IsNeighborhood);
+        Assert.True(_viewModel.IncludeTests);
+        Assert.Contains(LastShown().Nodes, n => n.Label == "Shop.Tests");
+        Assert.True(LastShown().Nodes.Single(n => n.Id == domain.Id).IsExpanded);
+
+        // 2: the test filter is restored to hidden, the expansion stays.
+        await _viewModel.BackCommand.ExecuteAsync(null);
+        Assert.False(_viewModel.IncludeTests);
+        Assert.DoesNotContain(LastShown().Nodes, n => n.Label == "Shop.Tests");
+        Assert.True(LastShown().Nodes.Single(n => n.Id == domain.Id).IsExpanded);
+
+        // 3: the initial view, collapsed; nothing earlier.
+        await _viewModel.BackCommand.ExecuteAsync(null);
+        Assert.False(LastShown().Nodes.Single(n => n.Id == domain.Id).IsExpanded);
+        Assert.False(_viewModel.CanGoBack);
+    }
+
+    [Fact]
+    public async Task GroupedView_ShowsTheSolutionGroup_AndGroupsAreNotInspected()
+    {
+        await ImportFixtureAsync();
+
+        _viewModel.SelectedViewMode = _viewModel.ViewModes.Single(m => m.Token == GraphLevels.Repository);
+        await WaitUntilAsync(() => LastShown().Level == GraphLevels.Repository);
+
+        // The solution's projects (Shop.sln comes before Shop.slnx) and the placeholder Shop.Legacy, which no solution lists.
+        Assert.Equal([".NET projects", "Shop.sln"], LastShown().Nodes.Select(n => n.Label));
+        var group = LastShown().Nodes.Single(n => n.Label == "Shop.sln");
+        Assert.Equal((GraphNodeKinds.Group, "4 projects"), (group.Kind, group.Sublabel)); // Shop.Tests is hidden by default
+        Select(LastShown(), [group.Id], []);
+        Assert.Equal("Group of projects", _viewModel.SelectionKind);
+        Assert.False(_viewModel.HasDetails);
+        Assert.Null(_viewModel.InspectorMessage);
+
+        await _viewModel.BackCommand.ExecuteAsync(null);
+        Assert.Equal(GraphLevels.Project, LastShown().Level);
+        Assert.Equal(GraphLevels.Project, _viewModel.SelectedViewMode.Token);
     }
 
     private void Select(GraphViewDto view, IReadOnlyList<string> nodeIds, IReadOnlyList<string> edgeIds)

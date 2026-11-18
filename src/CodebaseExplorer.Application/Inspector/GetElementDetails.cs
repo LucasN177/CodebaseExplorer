@@ -89,7 +89,7 @@ public sealed class GetElementDetails(IArchitectureModelStore store, IGitActivit
         if (model.FindModule(id) is { } module)
         {
             var modules = Descendants(model, module).Select(m => m.Id).ToHashSet();
-            return Build(model, ElementKind.Module, id, module.QualifiedName, "Namespace", ModuleFacts(model, module),
+            return Build(model, ElementKind.Module, id, module.QualifiedName, ModuleKindText(module.Kind), ModuleFacts(model, module),
                 model.Entities.Count(e => modules.Contains(e.ModuleId)),
                 model.Entities.Where(e => e.ModuleId == id && e.ContainingEntityId is null).OrderBy(e => e.Name, StringComparer.Ordinal)
                     .Select(e => Reference(model, new ElementReference(ElementKind.Entity, e.Id))),
@@ -181,7 +181,7 @@ public sealed class GetElementDetails(IArchitectureModelStore store, IGitActivit
                         r.Inner.Id == inspected ? null : Label(model, r.Inner)))]))];
 
     /// <summary>A related element with the graph node that represents it and the expansions that make that node visible.</summary>
-    private static ElementReferenceDto Reference(ArchitectureModel model, ElementReference reference)
+    internal static ElementReferenceDto Reference(ArchitectureModel model, ElementReference reference)
     {
         var label = Label(model, reference);
         switch (reference.Kind)
@@ -216,7 +216,7 @@ public sealed class GetElementDetails(IArchitectureModelStore store, IGitActivit
         }
     }
 
-    private static string Label(ArchitectureModel model, ElementReference reference) => reference.Kind switch
+    internal static string Label(ArchitectureModel model, ElementReference reference) => reference.Kind switch
     {
         ElementKind.Project => model.FindProject(reference.Id)?.Name,
         ElementKind.File => model.FindFile(reference.Id)?.Path.Value,
@@ -250,7 +250,7 @@ public sealed class GetElementDetails(IArchitectureModelStore store, IGitActivit
             facts.Add(new("Referenced file (missing)", project.Properties.GetValueOrDefault(ProjectPropertyKeys.ReferencedPath) ?? "?"));
         }
 
-        facts.Add(new("Namespaces", model.Modules.Count(m => m.ProjectId == project.Id).ToString(CultureInfo.InvariantCulture)));
+        facts.Add(new("Modules", model.Modules.Count(m => m.ProjectId == project.Id).ToString(CultureInfo.InvariantCulture)));
         facts.Add(new("Types", model.Entities.Count(e => e.ProjectId == project.Id && e.ContainingEntityId is null).ToString(CultureInfo.InvariantCulture)));
         return facts;
     }
@@ -259,8 +259,18 @@ public sealed class GetElementDetails(IArchitectureModelStore store, IGitActivit
     [
         new("Project", model.FindProject(module.ProjectId)?.Name ?? "?"),
         new("Kind", module.Kind.ToKeyToken()),
-        new("Sub-namespaces", model.Modules.Count(m => m.ParentModuleId == module.Id).ToString(CultureInfo.InvariantCulture)),
+        new("Sub-modules", model.Modules.Count(m => m.ParentModuleId == module.Id).ToString(CultureInfo.InvariantCulture)),
     ];
+
+    /// <summary>Display name of a module kind: C# namespace, TS/JS folder or file, Python package or module.</summary>
+    internal static string ModuleKindText(ModuleKind kind) => kind switch
+    {
+        ModuleKind.Namespace => "Namespace",
+        ModuleKind.Directory => "Folder",
+        ModuleKind.Package => "Package",
+        ModuleKind.FileModule => "File module",
+        _ => "Module",
+    };
 
     private static List<ElementFactDto> EntityFacts(ArchitectureModel model, CodeEntity entity)
     {
@@ -268,7 +278,7 @@ public sealed class GetElementDetails(IArchitectureModelStore store, IGitActivit
         {
             new("Qualified name", entity.QualifiedName),
             new("Project", model.FindProject(entity.ProjectId)?.Name ?? "?"),
-            new("Namespace", model.FindModule(entity.ModuleId)?.QualifiedName ?? "?"),
+            new(model.FindModule(entity.ModuleId) is { } owner ? ModuleKindText(owner.Kind) : "Module", model.FindModule(entity.ModuleId)?.QualifiedName ?? "?"),
             new("Visibility", entity.Visibility.ToString()),
         };
         if (entity.Modifiers != EntityModifiers.None)
@@ -346,7 +356,7 @@ public sealed class GetElementDetails(IArchitectureModelStore store, IGitActivit
         _ => "file",
     };
 
-    private static string KindText(EntityKind kind) => kind switch
+    internal static string KindText(EntityKind kind) => kind switch
     {
         EntityKind.TypeAlias => "Type alias",
         _ => kind.ToString(),

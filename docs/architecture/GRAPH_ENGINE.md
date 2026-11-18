@@ -8,7 +8,7 @@
 > expand/collapse implemented** (GRAPH-006: `GraphQuery.Expanded`, compound nodes, `graph/patch`,
 > `node/expandRequested`/`collapseRequested`). The Architecture Explorer page shows the graph of the imported
 > repository (UI-003) and the evidence of a selected edge (GRAPH-010, §6.2). Focus/neighborhood, filters and
-> the node budget are not implemented yet (GRAPH-007/008).
+> the node budget (GRAPH-008, §4), filters, neighborhood view, breadcrumbs and search (GRAPH-007, §3) are implemented.
 > Related: [ADR-006](../decisions/ADR-006-cytoscape-visualization.md).
 
 ## 1. Components
@@ -24,7 +24,7 @@
 
 | Level | Nodes | Edges (aggregated from stored relationships) |
 |---|---|---|
-| L0 Repository | Ecosystem groups / solution groups / workspace roots | Group-to-group dependency counts |
+| L0 Repository | Ecosystem groups / solution groups / workspace roots (GRAPH-009) | Group-to-group dependency counts |
 | L1 Project | `CodeProject`s (+ optional external dependency nodes) | Project→project (`ProjectReference` + aggregated code relationships), project→package |
 | L2 Module | `CodeModule`s of one or more expanded projects | Module→module aggregated from entity relationships and imports |
 | L3 Entity | `CodeEntity`s of one or more expanded modules | Entity relationships as stored |
@@ -97,8 +97,44 @@ expanded nodes add children (mixed levels, `parentId` = compound parent, parents
   projection is pure, so collapsing restores exactly the previous view. The explorer keeps hidden
   expansions, so re-expanding a project restores its inner expansions.
 
-The whole model is still read per run (ADR-010); the Storage slice queries listed for GRAPH-006 in the
-task breakdown follow with the node budget in M4 (GRAPH-008, QA-002).
+The whole model is still read per run (ADR-010; kept for the MVP after the QA-002 benchmarks, ADR-012).
+
+**Implemented (GRAPH-007):** `GraphQuery.Filters` (`GraphFilters`) and the neighborhood mode (`Focus`, `Depth`,
+`Direction`), evaluated by `GraphFilter` and `GraphProjector`:
+
+- **Filters** (empty lists = all): `Languages` (projects by primary language, code elements by their language),
+  `Ecosystems` (projects; external dependencies by package manager: NuGet/framework → `dotnet`, npm → `node`,
+  PyPI → `python`), `RelationshipKinds` and `MinLevel` (only relationships; nodes stay), `IncludeTests` and
+  `IncludeGenerated` (**default false**): a project whose code files are all tests is hidden, an entity declared only
+  in test/generated files is hidden (with its relationships), and a relationship whose every evidence location lies
+  in such files is not aggregated. Edge details use the same filters.
+- **Neighborhood:** `Focus` is a node of the view or any model element (shown by its deepest visible node; hidden or
+  unknown → `graph.focus-not-found`). The view is built with the maximum budget, reduced to the focus (with its
+  content), every node within `Depth` (1–3) hops along `Direction` (`incoming`, `outgoing`, `both`; else
+  `graph.neighborhood-invalid`) and their compound parents, and then cut to `NodeBudget` nearest-first
+  (`truncation.reason = node-budget`).
+- **Breadcrumbs:** always start with the repository (`level = repository`); in neighborhood mode they continue with the
+  compound parents of the focus and the focus itself.
+
+**Implemented (GRAPH-009):** `GraphQuery.Level = repository` (L0): projects are grouped — npm/yarn/pnpm workspace
+(root and members), else the first .NET solution that lists the project (ordinal path), else the ecosystem (".NET
+projects", "Node packages", "Python projects", "Other projects"). Groups are nodes of kind `group` (stable id from the
+repository and the group key, `sublabel` = project count, expandable into their projects, which expand further as at
+the project level); relationships attach to the deepest visible node, so collapsed groups carry group-to-group edges.
+Groups count as roots for the node budget; a group expansion that does not fit is refused. A neighborhood focus on a
+project inside a collapsed group focuses the group. **Folder fallback:** a model without projects is shown as folders
+(`view.level = folder`, kind `folder`): top-level folders plus a `(repository root)` node for the root's own files,
+`size` = files below, expandable into subfolders; there are no edges because no language analysis runs without
+projects. **Back** is a view-model feature: the explorer remembers up to 50 earlier queries (expansions, filters, level,
+neighborhood) and restores them including the filter controls. Known limitation: in the grouped view, *Show in graph*
+from the inspector cannot reveal an element inside a collapsed group (the group must be expanded first).
+
+**Search** is an Application use case (`SearchElements`, Contracts `Search/SearchResultsDto`): case-insensitive over
+project, module, entity and package names (exact › prefix › contained › qualified name contains; shorter names
+first), at most 200 results, each with the graph node and expansions of *Show in graph*; the name index is built once
+per loaded model. In the explorer `Ctrl/Cmd+K` focuses the search box (only while the Avalonia part of the window has
+the keyboard focus — the embedded web view does not forward keys), and choosing a result opens its neighborhood
+(WF-05).
 
 ## 4. Node budget and large graphs
 
@@ -110,6 +146,18 @@ task breakdown follow with the node budget in M4 (GRAPH-008, QA-002).
      neighborhood view or filters.
 3. The UI never receives more than `NodeBudget` nodes; layouts run in the web view on at most that
    many nodes.
+
+**Implemented (GRAPH-008):** `GraphQuery.NodeBudget` (default 500, accepted 2 … 5,000, else
+`graph.node-budget-invalid`). Roots (projects and, if requested, external dependencies): if there are more than the
+budget, the `budget − 1` roots with the highest root-level degree (fan-in + fan-out over all relationships,
+ties in display order) stay and the rest collapse into one node of kind `aggregate` (`"N more"`, stable id derived
+from the repository, not expandable, not inspectable) that takes their edges; `truncation.reason = node-budget`.
+Expansions are applied in display order only while their children still fit; a refused expansion stays collapsed and
+yields `truncation.reason = expansion-refused` with the number of children not shown (only one aggregate per view —
+the root level — is needed because deeper levels are refused instead of truncated). `truncation.suggestions` carry
+readable hints; the explorer shows them in a banner above the graph. Verified by parameterized tests over random
+models (`GraphNodeBudgetTests`: no view exceeds the budget, edges and parents stay consistent, untruncated views equal
+the unlimited projection). File and entity counts per node are now precomputed (they were O(n²)).
 
 ## 5. DTOs (Contracts)
 

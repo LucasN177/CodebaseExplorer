@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using CodebaseExplorer.Application.Graph;
 using CodebaseExplorer.Application.Inspector;
+using CodebaseExplorer.Application.Search;
 using CodebaseExplorer.Application.Source;
 using CodebaseExplorer.Contracts.Inspector;
 using CodebaseExplorer.Application.Settings;
@@ -27,6 +28,15 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
     private readonly GetGraphEdgeDetails _getEdgeDetails;
     private readonly GetSourceSnippet _getSnippet;
     private readonly GetElementDetails _getDetails;
+    private readonly SearchElements _search;
+    private int _searchNumber;
+    private bool _suppressFilterChanges;
+
+    /// <summary>Earlier view states for <see cref="BackCommand"/> (GRAPH-009), newest last.</summary>
+    private readonly List<GraphQuery> _history = [];
+
+    /// <summary>At most this many view states are remembered for <c>Back</c>.</summary>
+    public const int MaxHistory = 50;
     private int _detailsNumber;
     private readonly IClipboardService _clipboard;
     private int _snippetNumber;
@@ -46,6 +56,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         GetGraphEdgeDetails getEdgeDetails,
         GetSourceSnippet getSnippet,
         GetElementDetails getDetails,
+        SearchElements search,
         IClipboardService clipboard,
         RepositorySession session,
         IUserSettingsStore settings,
@@ -57,6 +68,16 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         _getEdgeDetails = getEdgeDetails;
         _getSnippet = getSnippet;
         _getDetails = getDetails;
+        _search = search;
+        RelationshipKindFilters = [.. RelationshipKindNames.Select(k => new FilterOption(k.Token, k.Display, OnFilterOptionChanged))];
+        MinLevelOptions = [new(null, "All evidence"), new(GraphEvidenceLevels.Syntactic, "Syntactic or confirmed"), new(GraphEvidenceLevels.Confirmed, "Confirmed only")];
+        DirectionOptions = [new(GraphDirections.Both, "Both directions"), new(GraphDirections.Outgoing, "Outgoing"), new(GraphDirections.Incoming, "Incoming")];
+        ViewModes = [new(GraphLevels.Project, "Projects"), new(GraphLevels.Repository, "Grouped")];
+        _suppressFilterChanges = true;
+        SelectedViewMode = ViewModes[0];
+        SelectedMinLevel = MinLevelOptions[0];
+        SelectedDirection = DirectionOptions[0];
+        _suppressFilterChanges = false;
         _clipboard = clipboard;
         _session = session;
         _settings = settings;
@@ -105,6 +126,18 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
 
     [ObservableProperty]
     public partial bool IsLoading { get; private set; }
+
+    /// <summary>What the node budget left out of the shown graph and how to see it (GRAPH-008); null if nothing.</summary>
+    [ObservableProperty]
+    public partial string? TruncationText { get; private set; }
+
+    private void ShowTruncation(GraphViewDto view) =>
+        TruncationText = view.Truncation is { } truncation
+            ? (truncation.Reason == TruncationReasons.ExpansionRefused
+                ? $"Not expanded: {truncation.OmittedNodeCount} more elements would exceed the limit of {_query?.NodeBudget ?? GraphQuery.DefaultNodeBudget} nodes. "
+                : $"{truncation.OmittedNodeCount} elements are not shown individually (limit {_query?.NodeBudget ?? GraphQuery.DefaultNodeBudget} nodes). ")
+              + string.Join(" ", truncation.Suggestions.Skip(1))
+            : null;
 
     /// <summary>Why the graph could not be shown; displayed inline.</summary>
     [ObservableProperty]
@@ -175,6 +208,8 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             // The repository was closed (removed): back to the empty state; late results of a running load are dropped.
             ++_loadNumber;
             _query = null;
+            TruncationText = null;
+            ResetNavigation();
             RepositoryName = null;
             ErrorMessage = null;
             HasGraph = false;
@@ -184,6 +219,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         }
 
         var loadNumber = ++_loadNumber;
+        ResetNavigation();
         RepositoryName = repository.Name;
         ErrorMessage = null;
         IsLoading = true;
@@ -191,7 +227,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
 
         try
         {
-            var query = new GraphQuery { RepositoryId = repository.RepositoryId, IncludeActivity = ShowActivity };
+            var query = new GraphQuery { RepositoryId = repository.RepositoryId, Filters = CurrentFilters(), IncludeActivity = ShowActivity };
             var result = await _getGraphView.ExecuteAsync(query, cancellationToken);
             if (loadNumber != _loadNumber)
             {
@@ -211,6 +247,9 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
 
             HasGraph = true;
             UpdateActivityHint(view);
+            ShowTruncation(view);
+            ShowNavigation(view, query);
+            OfferFilterValues(view);
             if (!await Graph.ShowGraphAsync(view, cancellationToken))
             {
                 ErrorMessage = "The graph view did not accept the graph. Details are in the application log.";
@@ -266,7 +305,9 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
                 return;
             }
 
+            Remember(query);
             _query = next;
+            ShowTruncation(view);
             if (!await Graph.PatchGraphAsync(view, cancellationToken))
             {
                 ErrorMessage = "The graph view did not accept the change. Details are in the application log.";
@@ -382,7 +423,15 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             SelectionDetail = node.Kind == GraphNodeKinds.Entity ? null : node.Sublabel; // an entity's sublabel is its kind, shown above
             SelectionName = node.Label;
             ClearEvidence();
-            _ = LoadDetailsAsync(node.Id);
+            if (node.Kind is GraphNodeKinds.Aggregate or GraphNodeKinds.Group or GraphNodeKinds.Folder)
+            {
+                ClearDetails(); // not a model element: there is nothing to inspect
+                SelectionDetail = node.Sublabel;
+            }
+            else
+            {
+                _ = LoadDetailsAsync(node.Id);
+            }
         }
         else if (graph is not null && selection.EdgeIds.Count > 0 && graph.Edges.FirstOrDefault(e => e.Id == selection.EdgeIds[0]) is { } edge)
         {
@@ -629,7 +678,9 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
                 return;
             }
 
+            Remember(query);
             _query = next;
+            ShowTruncation(view);
             await Graph.PatchGraphAsync(view, CancellationToken.None);
         }
 
@@ -738,13 +789,460 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             evidence.Path, evidence.StartLine, evidence.EndLine);
     }
 
+    // ---- Filters, search and neighborhood (GRAPH-007) ----
+
+    private static readonly (string Token, string Display)[] RelationshipKindNames =
+    [
+        ("project-reference", "Project references"), ("package-reference", "Package references"), ("framework-reference", "Framework references"),
+        ("imports", "Imports"), ("inherits", "Inheritance"), ("implements", "Implementations"), ("uses-type", "Type usages"),
+        ("instantiates", "Instantiations"), ("calls", "Calls"), ("registers-service", "DI registrations"), ("depends-on", "Other dependencies"),
+    ];
+
+    /// <summary>Languages of the repository's projects; none checked means all.</summary>
+    public System.Collections.ObjectModel.ObservableCollection<FilterOption> LanguageFilters { get; } = [];
+
+    /// <summary>Ecosystems of the repository's projects; none checked means all.</summary>
+    public System.Collections.ObjectModel.ObservableCollection<FilterOption> EcosystemFilters { get; } = [];
+
+    /// <summary>Relationship kinds; none checked means all.</summary>
+    public IReadOnlyList<FilterOption> RelationshipKindFilters { get; }
+
+    public IReadOnlyList<ChoiceOption> MinLevelOptions { get; }
+
+    [ObservableProperty]
+    public partial ChoiceOption SelectedMinLevel { get; set; }
+
+    /// <summary>Show test projects and test code (hidden by default, GRAPH_ENGINE.md §3).</summary>
+    [ObservableProperty]
+    public partial bool IncludeTests { get; set; }
+
+    /// <summary>Show generated code (hidden by default).</summary>
+    [ObservableProperty]
+    public partial bool IncludeGenerated { get; set; }
+
+    /// <summary>Show external packages as nodes.</summary>
+    [ObservableProperty]
+    public partial bool IncludeExternalDependencies { get; set; }
+
+    /// <summary>E.g. <c>2 filters active</c>; null when nothing beyond the defaults is filtered.</summary>
+    [ObservableProperty]
+    public partial string? FilterSummary { get; private set; }
+
+    partial void OnSelectedMinLevelChanged(ChoiceOption value) => OnFilterOptionChanged();
+
+    partial void OnIncludeTestsChanged(bool value) => OnFilterOptionChanged();
+
+    partial void OnIncludeGeneratedChanged(bool value) => OnFilterOptionChanged();
+
+    partial void OnIncludeExternalDependenciesChanged(bool value) => OnFilterOptionChanged();
+
+    private void OnFilterOptionChanged()
+    {
+        if (!_suppressFilterChanges && _query is { } query)
+        {
+            _ = NavigateAsync(query with { Filters = CurrentFilters(), IncludeExternalDependencies = IncludeExternalDependencies });
+        }
+    }
+
+    /// <summary>Clears every filter (tests and generated code hidden again, as by default).</summary>
+    [RelayCommand]
+    private Task ResetFiltersAsync()
+    {
+        _suppressFilterChanges = true;
+        foreach (var option in LanguageFilters.Concat(EcosystemFilters).Concat(RelationshipKindFilters))
+        {
+            option.IsChecked = false;
+        }
+
+        SelectedMinLevel = MinLevelOptions[0];
+        IncludeTests = false;
+        IncludeGenerated = false;
+        IncludeExternalDependencies = false;
+        FilterSummary = null;
+        _suppressFilterChanges = false;
+        return _query is { } query
+            ? NavigateAsync(query with { Filters = GraphFilters.Default, IncludeExternalDependencies = false })
+            : Task.CompletedTask;
+    }
+
+    private GraphFilters CurrentFilters()
+    {
+        var filters = new GraphFilters
+        {
+            Languages = [.. LanguageFilters.Where(o => o.IsChecked).Select(o => o.Token)],
+            Ecosystems = [.. EcosystemFilters.Where(o => o.IsChecked).Select(o => o.Token)],
+            RelationshipKinds = [.. RelationshipKindFilters.Where(o => o.IsChecked).Select(o => o.Token)],
+            MinLevel = SelectedMinLevel?.Token,
+            IncludeTests = IncludeTests,
+            IncludeGenerated = IncludeGenerated,
+        };
+        var active = filters.Languages.Count + filters.Ecosystems.Count + filters.RelationshipKinds.Count
+            + (filters.MinLevel is null ? 0 : 1) + (IncludeTests ? 1 : 0) + (IncludeGenerated ? 1 : 0);
+        FilterSummary = active == 0 ? null : active == 1 ? "1 filter setting changed" : $"{active} filter settings changed";
+        return filters;
+    }
+
+    /// <summary>Offers the languages and ecosystems of the shown projects as filter values (kept while the repository stays).</summary>
+    private void OfferFilterValues(GraphViewDto view)
+    {
+        _suppressFilterChanges = true;
+        foreach (var language in view.Nodes.Where(n => n.Kind == GraphNodeKinds.Project).Select(n => n.Language).OfType<string>().Distinct().Order(StringComparer.Ordinal))
+        {
+            if (LanguageFilters.All(o => o.Token != language))
+            {
+                LanguageFilters.Add(new FilterOption(language, language, OnFilterOptionChanged));
+            }
+        }
+
+        foreach (var ecosystem in view.Nodes.Where(n => n.Kind == GraphNodeKinds.Project).Select(n => n.Ecosystem).OfType<string>().Distinct().Order(StringComparer.Ordinal))
+        {
+            if (EcosystemFilters.All(o => o.Token != ecosystem))
+            {
+                EcosystemFilters.Add(new FilterOption(ecosystem, EcosystemName(ecosystem), OnFilterOptionChanged));
+            }
+        }
+
+        _suppressFilterChanges = false;
+    }
+
+    private static string EcosystemName(string token) => token switch
+    {
+        "dotnet" => ".NET",
+        "node" => "Node",
+        "python" => "Python",
+        _ => "Other",
+    };
+
+    private void ResetNavigation()
+    {
+        _suppressFilterChanges = true;
+        LanguageFilters.Clear();
+        EcosystemFilters.Clear();
+        foreach (var option in RelationshipKindFilters)
+        {
+            option.IsChecked = false;
+        }
+
+        SelectedMinLevel = MinLevelOptions[0];
+        IncludeTests = false;
+        IncludeGenerated = false;
+        IncludeExternalDependencies = false;
+        FilterSummary = null;
+        _suppressFilterChanges = false;
+        Breadcrumbs.Clear();
+        IsNeighborhood = false;
+        FolderHint = null;
+        SelectedViewMode = ViewModes[0];
+        _history.Clear();
+        CanGoBack = false;
+        SearchText = null;
+        SearchResults.Clear();
+        SearchMessage = null;
+    }
+
+    // Neighborhood (WF-05)
+
+    public IReadOnlyList<int> DepthOptions { get; } = [1, 2, 3];
+
+    /// <summary>Hops shown around the focused element (1 … 3).</summary>
+    [ObservableProperty]
+    public partial int NeighborhoodDepth { get; set; } = 1;
+
+    public IReadOnlyList<ChoiceOption> DirectionOptions { get; }
+
+    [ObservableProperty]
+    public partial ChoiceOption SelectedDirection { get; set; }
+
+    /// <summary>True while the graph shows the neighborhood of one element instead of the whole graph.</summary>
+    [ObservableProperty]
+    public partial bool IsNeighborhood { get; private set; }
+
+    /// <summary>The path to the focused element (repository first), GRAPH_ENGINE.md §3.</summary>
+    public System.Collections.ObjectModel.ObservableCollection<BreadcrumbDto> Breadcrumbs { get; } = [];
+
+    partial void OnNeighborhoodDepthChanged(int value) => OnNeighborhoodOptionChanged();
+
+    partial void OnSelectedDirectionChanged(ChoiceOption value) => OnNeighborhoodOptionChanged();
+
+    private void OnNeighborhoodOptionChanged()
+    {
+        if (!_suppressFilterChanges && _query is { Focus: not null } query)
+        {
+            _ = NavigateAsync(query with { Depth = NeighborhoodDepth, Direction = SelectedDirection.Token ?? GraphDirections.Both });
+        }
+    }
+
+    /// <summary>Shows the neighborhood of the selected node.</summary>
+    [RelayCommand]
+    private Task ShowNeighborhoodAsync()
+    {
+        var selected = Graph.Selection.NodeIds.FirstOrDefault();
+        return selected is null || _query is not { } query
+            ? Task.CompletedTask
+            : NavigateAsync(query with { Focus = selected, Depth = NeighborhoodDepth, Direction = SelectedDirection.Token ?? GraphDirections.Both });
+    }
+
+    /// <summary>Leaves the neighborhood view.</summary>
+    [RelayCommand]
+    private Task ShowWholeGraphAsync() =>
+        _query is { Focus: not null } query ? NavigateAsync(query with { Focus = null }) : Task.CompletedTask;
+
+    /// <summary>A breadcrumb: the repository leaves the neighborhood, any other step focuses that element.</summary>
+    [RelayCommand]
+    private Task OpenBreadcrumbAsync(BreadcrumbDto? crumb)
+    {
+        if (crumb is null || _query is not { } query)
+        {
+            return Task.CompletedTask;
+        }
+
+        return string.Equals(crumb.Id, query.RepositoryId, StringComparison.OrdinalIgnoreCase)
+            ? NavigateAsync(query with { Focus = null })
+            : NavigateAsync(query with { Focus = crumb.Id, Depth = NeighborhoodDepth, Direction = SelectedDirection.Token ?? GraphDirections.Both });
+    }
+
+    // Search (Ctrl/Cmd+K, WF-05)
+
+    /// <summary>The search text; results update while typing.</summary>
+    [ObservableProperty]
+    public partial string? SearchText { get; set; }
+
+    public System.Collections.ObjectModel.ObservableCollection<SearchResultItem> SearchResults { get; } = [];
+
+    /// <summary>E.g. <c>12 results</c>, <c>50 of 340 results</c> or <c>No results</c>.</summary>
+    [ObservableProperty]
+    public partial string? SearchMessage { get; private set; }
+
+    partial void OnSearchTextChanged(string? value) => _ = SearchAsync(value);
+
+    private async Task SearchAsync(string? text)
+    {
+        var searchNumber = ++_searchNumber;
+        if (string.IsNullOrWhiteSpace(text) || _query is not { } query)
+        {
+            SearchResults.Clear();
+            SearchMessage = null;
+            return;
+        }
+
+        try
+        {
+            var result = await _search.ExecuteAsync(query.RepositoryId, text, SearchElements.DefaultLimit, CancellationToken.None);
+            if (searchNumber != _searchNumber)
+            {
+                return; // the text changed meanwhile
+            }
+
+            SearchResults.Clear();
+            if (!result.TryGetValue(out var found, out var error))
+            {
+                SearchMessage = error.Message;
+                return;
+            }
+
+            foreach (var item in found.Items)
+            {
+                SearchResults.Add(new SearchResultItem(item.Element.Label, item.KindText, item.Container, item.Element));
+            }
+
+            SearchMessage = found.TotalCount == 0 ? "No results"
+                : found.TotalCount > found.Items.Count ? $"{found.Items.Count} of {found.TotalCount} results"
+                : found.TotalCount == 1 ? "1 result" : $"{found.TotalCount} results";
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.LogError(exception, "Searching failed unexpectedly");
+            SearchMessage = "The search failed. Details are in the application log.";
+        }
+    }
+
+    /// <summary>Opens the neighborhood of a search result (WF-05 step 3) and selects it.</summary>
+    [RelayCommand]
+    private async Task OpenSearchResultAsync(SearchResultItem? item)
+    {
+        if (item is null || _query is not { } query)
+        {
+            return;
+        }
+
+        var expanded = query.Expanded.ToHashSet(StringComparer.Ordinal);
+        expanded.UnionWith(item.Reference.ExpandPath);
+        var focus = item.Reference.GraphNodeId ?? item.Reference.Id;
+        var next = query with
+        {
+            Expanded = [.. expanded.Order(StringComparer.Ordinal)],
+            Focus = focus,
+            Depth = NeighborhoodDepth,
+            Direction = SelectedDirection.Token ?? GraphDirections.Both,
+            IncludeExternalDependencies = query.IncludeExternalDependencies || item.Reference.Kind == GraphNodeKinds.ExternalDependency,
+        };
+
+        if (await NavigateAsync(next))
+        {
+            SearchText = null;
+            await Graph.FocusAsync(focus, CancellationToken.None);
+        }
+    }
+
+    /// <summary>Loads the view for <paramref name="next"/> and replaces the shown graph (filters, neighborhood, search).</summary>
+    private async Task<bool> NavigateAsync(GraphQuery next, bool remember = true)
+    {
+        var loadNumber = _loadNumber;
+        try
+        {
+            var result = await _getGraphView.ExecuteAsync(next, CancellationToken.None);
+            if (loadNumber != _loadNumber)
+            {
+                return false; // another repository was loaded meanwhile
+            }
+
+            if (!result.TryGetValue(out var view, out var error))
+            {
+                _logger.LogWarning("Changing the graph view failed with {ErrorCode}", error.Code);
+                ErrorMessage = error.Message;
+                return false;
+            }
+
+            ErrorMessage = null;
+            if (remember && _query is { } previous)
+            {
+                Remember(previous);
+            }
+
+            _query = next;
+            ShowTruncation(view);
+            ShowNavigation(view, next);
+            if (!await Graph.ShowGraphAsync(view, CancellationToken.None))
+            {
+                ErrorMessage = "The graph view did not accept the graph. Details are in the application log.";
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.LogError(exception, "Changing the graph view failed unexpectedly");
+            ErrorMessage = "The graph could not be changed. Details are in the application log.";
+            return false;
+        }
+    }
+
+    private void ShowNavigation(GraphViewDto view, GraphQuery query)
+    {
+        Breadcrumbs.Clear();
+        foreach (var crumb in view.Breadcrumbs)
+        {
+            Breadcrumbs.Add(crumb);
+        }
+
+        IsNeighborhood = query.Focus is not null;
+        FolderHint = view.Level == GraphLevels.Folder
+            ? "No projects were recognized in this repository, so the graph shows its folders. Double-click a folder to see its subfolders."
+            : null;
+    }
+
+    // ---- Repository level, folder graph and Back (GRAPH-009) ----
+
+    /// <summary>Project level or grouped by workspace/solution/ecosystem (L0).</summary>
+    public IReadOnlyList<ChoiceOption> ViewModes { get; }
+
+    [ObservableProperty]
+    public partial ChoiceOption SelectedViewMode { get; set; }
+
+    /// <summary>Shown when the repository has no projects and the graph shows folders (WF-01).</summary>
+    [ObservableProperty]
+    public partial string? FolderHint { get; private set; }
+
+    /// <summary>True if <see cref="BackCommand"/> can restore an earlier view state.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(BackCommand))]
+    public partial bool CanGoBack { get; private set; }
+
+    partial void OnSelectedViewModeChanged(ChoiceOption value)
+    {
+        if (!_suppressFilterChanges && _query is { } query && value.Token is { } level && level != query.Level)
+        {
+            _ = NavigateAsync(query with { Level = level });
+        }
+    }
+
+    /// <summary>Restores the previous view state: level, expansions, filters and neighborhood (WF-03 step 5).</summary>
+    [RelayCommand(CanExecute = nameof(CanGoBack))]
+    private async Task BackAsync()
+    {
+        if (_history.Count == 0)
+        {
+            return;
+        }
+
+        // The Git-activity overlay is a display option, not navigation state: Back keeps the current toggle (GIT-005).
+        var previous = _history[^1] with { IncludeActivity = ShowActivity };
+        _history.RemoveAt(_history.Count - 1);
+        CanGoBack = _history.Count > 0;
+        ShowControlsOf(previous);
+        if (!await NavigateAsync(previous, remember: false))
+        {
+            Remember(previous); // keep it for another try
+        }
+    }
+
+    private void Remember(GraphQuery previous)
+    {
+        if (_history.Count > 0 && _history[^1] == previous)
+        {
+            return;
+        }
+
+        _history.Add(previous);
+        if (_history.Count > MaxHistory)
+        {
+            _history.RemoveAt(0);
+        }
+
+        CanGoBack = true;
+    }
+
+    /// <summary>Sets filter, neighborhood and view-mode controls to a restored query without triggering reloads.</summary>
+    private void ShowControlsOf(GraphQuery query)
+    {
+        _suppressFilterChanges = true;
+        foreach (var option in LanguageFilters)
+        {
+            option.IsChecked = query.Filters.Languages.Contains(option.Token);
+        }
+
+        foreach (var option in EcosystemFilters)
+        {
+            option.IsChecked = query.Filters.Ecosystems.Contains(option.Token);
+        }
+
+        foreach (var option in RelationshipKindFilters)
+        {
+            option.IsChecked = query.Filters.RelationshipKinds.Contains(option.Token);
+        }
+
+        SelectedMinLevel = MinLevelOptions.FirstOrDefault(o => o.Token == query.Filters.MinLevel) ?? MinLevelOptions[0];
+        IncludeTests = query.Filters.IncludeTests;
+        IncludeGenerated = query.Filters.IncludeGenerated;
+        IncludeExternalDependencies = query.IncludeExternalDependencies;
+        NeighborhoodDepth = query.Depth;
+        SelectedDirection = DirectionOptions.FirstOrDefault(o => o.Token == query.Direction) ?? DirectionOptions[0];
+        SelectedViewMode = ViewModes.FirstOrDefault(o => o.Token == query.Level) ?? ViewModes[0];
+        _ = CurrentFilters(); // updates the summary
+        _suppressFilterChanges = false;
+    }
+
     private static string KindText(GraphNodeDto node)
     {
         var kind = node.Kind switch
         {
             GraphNodeKinds.Project => "Project",
             GraphNodeKinds.ExternalDependency => "External dependency",
-            GraphNodeKinds.Module => "Namespace",
+            GraphNodeKinds.Aggregate => "Elements hidden by the node limit",
+            GraphNodeKinds.Group => "Group of projects",
+            GraphNodeKinds.Folder => "Folder",
+            GraphNodeKinds.Module => "Module",
             GraphNodeKinds.Entity => node.Sublabel is { Length: > 0 } entityKind ? char.ToUpperInvariant(entityKind[0]) + entityKind[1..] : "Code element",
             _ => node.Kind,
         };

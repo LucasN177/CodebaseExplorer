@@ -78,9 +78,11 @@ Planned fixtures:
 | `dotnet-advanced` | REPO-006 (**exists**) | Partial and nested types, generics, multi-targeting, true/false/unsupported conditions, CPM `VersionOverride`, missing project reference, DI registrations with negative cases; oracle for ANALYSIS-005 … 007, regression input for the M1 parsers (`DotnetAdvancedFixtureTests`). |
 | `dotnet-hostile` | QA-003 (**exists**) | MSBuild `Exec`, property functions, imported targets, analyzer/generator references, module initializer; payloads write markers (§5.1). |
 | `node-hostile` | ANALYSIS-009 (**exists**) | npm lifecycle scripts, `.npmrc` `script-shell`, node-gyp action, `file:` dependency with `postinstall`, module with a top-level side effect, TypeScript plugin; payloads write markers (`HostileNodeFixtureTests`). |
+| `python-hostile` | ANALYSIS-011 (**exists**) | `setup.py`, in-tree PEP 517 build backend, `conftest.py`, `sitecustomize.py`/`usercustomize.py`, `.pth`, package `__init__`/`__main__`, `-e .`; payloads write markers (`HostilePythonFixtureTests`). |
 | `ts-monorepo-workspaces` | REPO-007 | npm workspaces (root + 3 packages), `workspace:*` and version-spec project references, JSONC `tsconfig` with `extends`, `paths` and project references, solution-style root `tsconfig`, `exports`/`main` entry points, lifecycle script, unresolved and undeclared imports, dynamic `import()`. pnpm workspaces are covered by analyzer tests with temporary repositories. |
 | `js-commonjs` | REPO-007 | CommonJS package: `require` (relative, directory `index.js`, explicit extension, JSON, built-ins, computed argument), `module.exports`/`exports.x`. |
 | `python-src-layout` | REPO-007 | PEP 621 `pyproject.toml` with optional dependencies, `requirements-dev.txt` (options, marker, include outside the repository), `src/` layout, relative/absolute/package imports, import-name mapping (`yaml` → `PyYAML`), undeclared and standard-library imports. |
+| `plain-folders` | GRAPH-009 (**exists**) | No project manifest at all; folder graph fallback. |
 | `mixed-polyglot` | REPO-007 | .NET + TS + Poetry-based Python in one repository, no root project. |
 | `hostile-*` | QA-003 | MSBuild `Exec`, analyzer packages, npm lifecycle scripts, `setup.py`, Git hooks/fsmonitor. |
 | `edge-files` | REPO-001/002 | Symlinks, huge files, binary files, deep nesting, unusual encodings. |
@@ -101,9 +103,8 @@ Planned fixtures:
 ### 5.1 Hostile fixtures and the zero-execution harness (QA-003)
 
 Every ecosystem that can carry executable build or install logic gets a hostile fixture whose payloads only
-write `MARKER-*.txt` files when executed (`dotnet-hostile` for .NET, `node-hostile` for npm since ANALYSIS-009, builder-created Git repositories with hostile
-`.git/config` and hooks since GIT-001 — Git histories are never committed as fixtures; Python follows in
-ANALYSIS-011). Tests use `ZeroExecutionHarness`
+write `MARKER-*.txt` files when executed (`dotnet-hostile` for .NET, `node-hostile` for npm since ANALYSIS-009, `python-hostile` since ANALYSIS-011, builder-created Git repositories with hostile `.git/config` and
+hooks since GIT-001 — Git histories are never committed as fixtures). Tests use `ZeroExecutionHarness`
 (`tests/CodebaseExplorer.IntegrationTests/Security`):
 
 1. `CopyFixture(name)` copies the fixture to a temporary folder (fixtures stay read-only);
@@ -175,6 +176,16 @@ dotnet test --solution CodebaseExplorer.slnx --coverlet --coverlet-output-format
 | 2026-11-17 | Scanner, 10,000 small files in 100 directories (`RepositoryScannerTests.Scan_TenThousandFiles_CompletesWithinFiveSeconds`, explicit test) | 2.7 s | Debug build, Windows 11, local SSD; target < 5 s (REPO-002). Run: `dotnet test --project tests/CodebaseExplorer.Analysis.Tests --filter-method "*Scan_TenThousandFiles*" --explicit only --output Detailed` |
 | 2026-11-18 | Save 1,000,000 synthetic relationships (+ 1,000,000 evidence) with `ArchitectureModelStore` (`ArchitectureModelStoreBenchmarks.SaveOneMillionRelationships_StaysBelowOnePointFiveGigabytes`, explicit test) | peak working set **1,331 MB** with `System.GC.ConserveMemory=9`; save 147 s; DB 1.4 GB | Release, Windows 11; target < 1.5 GB (STORE-004). The model alone is 914 MB live; the store adds ~18 MB live, but with default GC settings uncollected batch garbage raised the peak to 1,951 MB (level 5: 1,762 MB, 7: 1,505 MB, 9: 1,331 MB at ~20 % more save time). The app sets level 9 (Desktop csproj). Run: `dotnet test --project tests/CodebaseExplorer.Storage.Tests -c Release --filter-method "*SaveOneMillionRelationships*" --explicit only --output Detailed` |
 | 2026-11-18 | Git file activity (`GitFileActivityTests.Walk_Benchmark_OnRepositoryFromEnvironment`, explicit test) on a full clone of `libgit2/libgit2sharp` (2,837 commits, 2,511 without merges, 2,952 paths) | **8.8 s** | Release, Windows 11, 16 logical CPUs (8 workers), local SSD (GIT-004). Sequential walk with line counts was 26.5 s in GIT-006; without line counts 1.4 s. Line totals equal `git log --no-merges --no-renames --numstat`. Not yet measured on the performance fixture (QA-002). Run: set `CODEBASE_EXPLORER_BENCH_GIT_REPO`, then `dotnet test --project tests/CodebaseExplorer.IntegrationTests -c Release --filter-method "*Walk_Benchmark*" --explicit only --output Detailed` |
+
+| 2026-11-18 | QA-002: 100 generated .NET projects (602 files) imported through the composition root (`PerformanceBenchmarks.DotNet_100Projects_FirstGraphWithin30Seconds`) | import **5.2 s**, first graph 0.37 s → **5.6 s** to the first graph; peak 265 MB | Release, Windows 11, local SSD; target < 30 s (PRODUCT_CONCEPT.md §8) **met**. 2,281 relationships. |
+| 2026-11-18 | QA-002: 2,000 generated .NET projects (12,002 files, 45,969 relationships) (`…DotNet_2000Projects_FirstGraphWithin3Minutes`) | import **74.2 s**, first graph 7.3 s (cold model load + projection; cached projection 120 ms) → **81.5 s**; peak 783 MB | Target < 3 min **met**; the graph is capped at 500 nodes (`node-budget`, GRAPH-008). Memory budget 4 GB (ANALYSIS_ENGINE.md §7) met. |
+| 2026-11-18 | QA-002: npm workspace with 250 packages and 50,502 generated TypeScript files (106,979 relationships) (`…TypeScript_50000Files`) | import **132.0 s**, first graph 16.0 s (cached projection 227 ms) → **148.1 s**; peak 1,186 MB | No MVP target for TS; the cold model load is the slowest step (ADR-012: whole-model reads are kept for the MVP). |
+| 2026-11-18 | GRAPH-007: search on the 2,000-project repository (`PerformanceBenchmarks.Search_OnGeneratedRepository_Within200Milliseconds`, ~94,000 searchable elements) | 8 terms: **max 14.4 ms**, mean 6.1 ms; first search 7.8 s (cold model load from SQLite + name index) | Release, Windows 11; target < 200 ms **met** for searches on the loaded model (the explorer has loaded the model for the graph before anyone searches). |
+
+Run the QA-002 benchmarks with `pwsh tools/development/Run-Benchmarks.ps1 [-Scenario All|DotNet100|DotNet2000|TypeScript50k|ModelStore|Search]`
+(Release build, explicit tests; the generator is `tests/CodebaseExplorer.TestRepositories/SyntheticRepository.cs`,
+output goes to a temporary folder and is deleted). The figures above were measured with the equivalent `dotnet test`
+commands; the script itself was checked with the PowerShell parser only (no PowerShell 7 on the measuring machine).
 
 ## 9. Accessibility checklist (QA-005)
 

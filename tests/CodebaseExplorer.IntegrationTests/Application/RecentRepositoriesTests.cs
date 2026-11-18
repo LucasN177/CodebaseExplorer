@@ -96,7 +96,7 @@ public sealed class RecentRepositoriesTests : IAsyncLifetime
 
         Assert.Equal(imported.AnalysisRunId, opened.AnalysisRunId);
         Assert.Equal(imported.Name, opened.Name);
-        Assert.Equal(6, graph.Value.Nodes.Count(n => n.Kind == GraphNodeKinds.Project));
+        Assert.Equal(5, graph.Value.Nodes.Count(n => n.Kind == GraphNodeKinds.Project)); // Shop.Tests is hidden by default (GRAPH-007)
     }
 
     [Theory]
