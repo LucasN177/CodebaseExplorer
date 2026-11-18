@@ -27,6 +27,16 @@ internal sealed class CodebaseExplorerDbContext(DbContextOptions<CodebaseExplore
 
     public DbSet<ModuleRecord> Modules => Set<ModuleRecord>();
 
+    public DbSet<CodeEntityRecord> CodeEntities => Set<CodeEntityRecord>();
+
+    public DbSet<CodeEntityDeclarationRecord> CodeEntityDeclarations => Set<CodeEntityDeclarationRecord>();
+
+    public DbSet<ExternalDependencyRecord> ExternalDependencies => Set<ExternalDependencyRecord>();
+
+    public DbSet<CodeRelationshipRecord> CodeRelationships => Set<CodeRelationshipRecord>();
+
+    public DbSet<AnalysisEvidenceRecord> AnalysisEvidence => Set<AnalysisEvidenceRecord>();
+
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
         configurationBuilder.Properties<Guid>().HaveConversion<GuidToBytesConverter>();

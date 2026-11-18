@@ -290,11 +290,12 @@ Status overview (keep in sync):
 - **Note:** EF Core SQLite 10.0.15 (re-verified). Decided: timestamps as fixed-width ISO-8601 UTC TEXT (`UtcIsoTextConverter`) because EF cannot order `DateTimeOffset` in SQLite; `AnalysisDiagnostics` got `Ordinal`, `StartColumn`, `EndColumn` so diagnostics round-trip exactly; the cyclic FKs (Files↔Projects, Repositories↔AnalysisRuns) need the insert order documented in DATABASE_SCHEMA.md §2. Schema is created with `EnsureCreated` in tests until migrations exist (STORE-003); the app does not read or write the database yet (STORE-004).
 
 ### STORE-002 — Persistence for entities, relationships, evidence, dependencies
-- **Priority:** P0 · **Milestone:** M2 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M2 · **Status:** done
 - **Prerequisites:** STORE-001
 - **Projects:** Storage, Storage.Tests
 - **Description:** Tables `CodeEntities`, `CodeEntityDeclarations`, `CodeRelationships` (incl. denormalized container IDs), `AnalysisEvidence`, `ExternalDependencies`; decide on evidence sampling for very high-occurrence relationships (ADR-007).
 - **Acceptance criteria:** Round-trip tests; indexes from DATABASE_SCHEMA.md exist (verified via migration SQL test).
+- **Note:** Evidence sampling decided: none for now (ADR-007, DATABASE_SCHEMA.md §4.10). `CodeEntities` got a `SymbolKey` column (the id derives from it). Relationship rows carry the denormalized project/module ids computed from the model. Indexes are verified against `sqlite_master` of the created schema; the same check runs on the migration once it exists (STORE-003). Read-back verifies ids, natural keys, level and occurrence count.
 
 ### STORE-003 — Migrations, startup migration and backup
 - **Priority:** P0 · **Milestone:** M2 · **Status:** todo

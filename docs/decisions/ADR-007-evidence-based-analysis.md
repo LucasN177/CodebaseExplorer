@@ -46,5 +46,6 @@ Analyzers may not emit relationships without evidence; the Domain model rejects 
 **Negative**
 - More storage (evidence rows can outnumber relationships); mitigated by excerpt length limits,
   indexing, and optional evidence sampling for very high-occurrence relationships (decided in
-  STORE-002 if needed, with counts preserved in `Occurrences`).
+  STORE-002 if needed, with counts preserved in `Occurrences`). **Decided in STORE-002: no sampling for
+  now** — all evidence is stored; revisit with the QA-002 benchmarks before M3 (DATABASE_SCHEMA.md §4.10).
 - Analyzer implementations must carry locations through all stages.

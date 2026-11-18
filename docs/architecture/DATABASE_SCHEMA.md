@@ -1,8 +1,9 @@
 # Database Schema — Codebase Explorer
 
 > Status: **accepted (specification)** · Last reviewed: 2026-11-17
-> Implementation status: **core tables implemented** (STORE-001: `Repositories`, `AnalysisRuns`,
-> `AnalysisDiagnostics`, `Files`, `Projects`, `Modules` — DbContext, records, mapping; schema created
+> Implementation status: **model tables implemented** (STORE-001: `Repositories`, `AnalysisRuns`,
+> `AnalysisDiagnostics`, `Files`, `Projects`, `Modules`; STORE-002: `CodeEntities`, `CodeEntityDeclarations`,
+> `CodeRelationships`, `AnalysisEvidence`, `ExternalDependencies` — DbContext, records, mapping; schema created
 > by migrations from STORE-003, nothing is read or written by the app yet). Implemented by STORE-001 … STORE-005 (core and
 > settings tables), GIT-005 (Git tables), AI-003 and AI-006 (search index and AI tables) in
 > `src/CodebaseExplorer.Storage` using EF Core with the SQLite provider
@@ -35,7 +36,8 @@
 
 - **Insert order (found in STORE-001):** `Files.ProjectId` ↔ `Projects.ProjectFileId` and
   `Repositories.LastAnalysisRunId` ↔ `AnalysisRuns.RepositoryId` reference each other. A model is written
-  repository → run → files (without project) → projects → file-project links and modules → current run of
+  repository → run → files (without project) → projects → file-project links, modules, entities with
+  declarations, external dependencies, relationships with evidence → current run of
   the repository; EF cannot save both sides of such a cycle in one step.
 
 ## 3. Entity-relationship overview
@@ -177,6 +179,7 @@ Indexes: `IX_Modules_ProjectId`, `IX_Modules_ParentModuleId`, `IX_Modules_Reposi
 | ContainingEntityId | BLOB(16) | FK → CodeEntities (CASCADE) |
 | Name / QualifiedName | TEXT | NN |
 | NaturalKey | TEXT | NN |
+| SymbolKey | TEXT | NN — language-specific symbol key the id is derived from (*addition in STORE-002*: needed to rebuild the entity) |
 | Kind | TEXT | NN |
 | Language | TEXT | NN |
 | Visibility | TEXT | NN |
@@ -241,6 +244,11 @@ Indexes: `IX_CodeRelationships_SourceId`, `IX_CodeRelationships_TargetId`,
 | Excerpt | TEXT | ≤ 240 chars |
 
 Indexes: `IX_AnalysisEvidence_RelationshipId`, `IX_AnalysisEvidence_FileId`.
+
+**Evidence sampling (ADR-007, decided in STORE-002): none.** Every evidence record is stored and
+`CodeRelationships.Occurrences` equals the number of stored records (checked on read). Current analyzers
+emit one record per manifest relationship; sampling is reconsidered with the QA-002 benchmarks before
+code-level analysis (M3) produces high-occurrence relationships.
 
 ### 4.11 ExternalDependencies
 

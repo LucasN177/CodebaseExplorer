@@ -16,7 +16,7 @@ namespace CodebaseExplorer.Storage.Persistence;
 /// a stored id or natural key that does not match the re-derived one means corrupted data or an id
 /// collision and fails with <see cref="InvalidDataException"/> (DOMAIN_MODEL.md, collision detection).
 /// </summary>
-internal static class RecordMapper
+internal static partial class RecordMapper
 {
     // ---------------------------------------------------------------- Repositories
 

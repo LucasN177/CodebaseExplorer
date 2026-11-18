@@ -175,7 +175,8 @@ public sealed class CoreTablesTests : IDisposable
             await context.SaveChangesAsync(Token);
         }
 
-        foreach (var table in new[] { "Repositories", "AnalysisRuns", "AnalysisDiagnostics", "Files", "Projects", "Modules" })
+        foreach (var table in new[] { "Repositories", "AnalysisRuns", "AnalysisDiagnostics", "Files", "Projects", "Modules",
+            "CodeEntities", "CodeEntityDeclarations", "ExternalDependencies", "CodeRelationships", "AnalysisEvidence" })
         {
             Assert.Equal(0L, await _database.ScalarAsync($"SELECT count(*) FROM {table}"));
         }
@@ -250,36 +251,9 @@ public sealed class CoreTablesTests : IDisposable
         Assert.Contains(types, t => t == typeof(RepositoryRecord));
     }
 
-    /// <summary>
-    /// Saves the whole sample model in the order the foreign keys require: repository, run, files
-    /// (without project), projects, file→project links, modules, then the current run of the repository.
-    /// </summary>
-    private async Task SaveAllAsync()
-    {
-        var runId = _samples.Run.Id;
-        var fileRecords = _samples.Files.Select(f => RecordMapper.ToRecord(f, runId)).ToList();
-        var projectIds = fileRecords.ToDictionary(f => f.Id, f => f.ProjectId);
+    private Task SaveAllAsync() => SampleStore.SaveAsync(_database, _samples, Token);
 
-        await using var context = _database.CreateContext();
-        context.Repositories.Add(RecordMapper.ToRecord(Unanalyzed(_samples.Repository)));
-        await context.SaveChangesAsync(Token);
-
-        context.AnalysisRuns.Add(RecordMapper.ToRecord(_samples.Run));
-        fileRecords.ForEach(f => f.ProjectId = null);
-        context.Files.AddRange(fileRecords);
-        await context.SaveChangesAsync(Token);
-
-        context.Projects.AddRange(RecordMapper.ToRecord(_samples.Web, runId), RecordMapper.ToRecord(_samples.Legacy, runId));
-        await context.SaveChangesAsync(Token);
-
-        fileRecords.ForEach(f => f.ProjectId = projectIds[f.Id]);
-        context.Modules.AddRange(RecordMapper.ToRecord(_samples.RootModule, runId), RecordMapper.ToRecord(_samples.ChildModule, runId));
-        (await context.Repositories.SingleAsync(Token)).LastAnalysisRunId = runId.Value;
-        await context.SaveChangesAsync(Token);
-    }
-
-    private static Repository Unanalyzed(Repository repository) =>
-        new(repository.Id, repository.Name, repository.Location, repository.AddedAt);
+    private static Repository Unanalyzed(Repository repository) => SampleStore.Unanalyzed(repository);
 
     private static void AssertSameRepository(Repository expected, Repository actual)
     {
