@@ -23,7 +23,7 @@ Status overview (keep in sync):
 | M0 Foundation | (initialization) | ✅ |
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
-| M3 Deep C# & Inspector | 9 | 3 |
+| M3 Deep C# & Inspector | 9 | 4 |
 | M4 Polyglot & scale | 11 | 0 |
 | M5 Git | 7 | 0 |
 | M6 Export | 2 | 0 |
@@ -388,11 +388,12 @@ Status overview (keep in sync):
 - **Note:** `RelationshipCollector` (second phase of `CSharpAnalyzer`, after all declarations): `Inherits`, `Implements`, `UsesType` (incl. generic arguments and constraints), `Instantiates`, `Calls` (incl. `base`/`this` initializers) between repository entities; rules `csharp.<Kind>`, one evidence per occurrence, no excerpts. Per ADR-011 neither SDK packs nor NuGet assemblies are used, so the first acceptance criterion is met by construction: in-repository resolution never depends on packs; the `Syntactic` fallback (unique name + arity match, e.g. a missing project reference) is tested with a temporary two-project repository. Compilations are released after the run (weak-reference test). All 16 rows of `dotnet-advanced` EXPECTED.md §9 are found as `Confirmed` with the documented evidence location (one oracle location corrected in this task: the `Instantiates` evidence is the type name after `new`, as in the other row); no relationship from the comment or string. `dotnet-layered` now has 29 relationships (13 manifest + 16 code); project edges in the graph are unchanged and aggregate the code relationships in their details.
 
 ### ANALYSIS-007 — DI registration heuristics (C#)
-- **Priority:** P2 · **Milestone:** M3 · **Status:** todo
+- **Priority:** P2 · **Milestone:** M3 · **Status:** done
 - **Prerequisites:** ANALYSIS-006
 - **Projects:** Analysis, Analysis.Tests
 - **Description:** Detect `services.Add{Singleton|Scoped|Transient}<TService, TImpl>()` and common overloads → `RegistersService` with `Heuristic` evidence.
 - **Acceptance criteria:** All detections carry rule ids; no false positives on the fixture's negative cases.
+- **Note:** Part of `RelationshipCollector`: `Add|TryAdd{Singleton|Scoped|Transient}<TService, TImpl>()`, `<TImpl>()` and the `typeof(TService), typeof(TImpl)` overload → `RegistersService` (source: registering member, target: implementation; attributes `serviceType`, `lifetime`; `Heuristic`; rules `csharp.di.generic-registration` / `csharp.di.typeof-registration`). Recognized by shape and name because `IServiceCollection` is never resolved (ADR-011); calls that resolve to a repository method are excluded. Both registrations of `dotnet-advanced` EXPECTED.md §10 are found; the comment, the string and `Catalog.AddSingleton` produce none; a temporary repository covers the `typeof` overload and a repository-defined `AddScoped<TA, TB>()`.
 
 ### REPO-006 — Fixture `dotnet-advanced`
 - **Priority:** P1 · **Milestone:** M3 · **Status:** done

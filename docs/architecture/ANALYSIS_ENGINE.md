@@ -216,7 +216,11 @@ warning (`csharp.project.reference-cycle`).
 4. Evidence level: symbol resolved by the semantic model → `Confirmed`; unresolved symbol but
    name (and arity) matching exactly one repository type → `Syntactic` (e.g. missing project reference;
    a single overload candidate the compiler did not pick → `Syntactic` too); patterns (e.g.
-   `services.AddScoped<IFoo, Foo>()`) → `Heuristic` (ANALYSIS-007).
+   `services.AddScoped<IFoo, Foo>()`) → `Heuristic` (ANALYSIS-007). *Implemented (ANALYSIS-007):*
+   `Add|TryAdd{Singleton|Scoped|Transient}<TService, TImpl>()`, `…<TImpl>()` and `…(typeof(TService), typeof(TImpl))`
+   → `RegistersService` from the registering member to the implementation with attributes `serviceType` and
+   `lifetime`; recognized by shape and name (ADR-011: `IServiceCollection` is never resolved), calls that
+   resolve to a repository method are excluded.
 5. **Never** load analyzers, source generators or any assembly from the repository or its
    packages for execution. Generated code is therefore invisible (documented limitation).
 

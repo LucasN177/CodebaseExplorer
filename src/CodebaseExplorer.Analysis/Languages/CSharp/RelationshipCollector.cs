@@ -10,8 +10,8 @@ namespace CodebaseExplorer.Analysis.Languages.CSharp;
 
 /// <summary>
 /// Extracts entity-to-entity relationships from a project's semantic model (ANALYSIS-006): <c>Inherits</c>,
-/// <c>Implements</c>, <c>UsesType</c>, <c>Instantiates</c>, <c>Calls</c>. Rules: fixture
-/// <c>dotnet-advanced</c> EXPECTED.md §9.
+/// <c>Implements</c>, <c>UsesType</c>, <c>Instantiates</c>, <c>Calls</c> and heuristic <c>RegistersService</c> (ANALYSIS-007). Rules: fixture
+/// <c>dotnet-advanced</c> EXPECTED.md §9 and §10.
 /// </summary>
 /// <remarks>
 /// <list type="bullet">
@@ -30,12 +30,14 @@ internal sealed class RelationshipCollector
     public const string RuleUsesType = "csharp.UsesType";
     public const string RuleInstantiates = "csharp.Instantiates";
     public const string RuleCalls = "csharp.Calls";
+    public const string RuleRegistersServiceGeneric = "csharp.di.generic-registration";
+    public const string RuleRegistersServiceTypeof = "csharp.di.typeof-registration";
 
     private readonly Func<ISymbol, CodeEntity?> _entityOf;
     private readonly ILookup<(string Name, int Arity), CodeEntity> _typesByName;
     private readonly IReadOnlyDictionary<SyntaxTree, SourceFile> _files;
     private readonly AnalysisRunId _runId;
-    private readonly Dictionary<ElementId, (ElementReference Source, RelationshipKind Kind, ElementReference Target, List<AnalysisEvidence> Evidence)> _relationships = [];
+    private readonly Dictionary<ElementId, (ElementReference Source, RelationshipKind Kind, ElementReference Target, List<AnalysisEvidence> Evidence, Dictionary<string, string>? Attributes)> _relationships = [];
 
     /// <param name="entityOf">The repository entity of a symbol (declared in this project or a referenced one), if any.</param>
     /// <param name="knownTypes">Type entities known so far, for the name-based (syntactic) fallback.</param>
@@ -52,7 +54,7 @@ internal sealed class RelationshipCollector
     }
 
     public IEnumerable<CodeRelationship> Relationships => _relationships.Values
-        .Select(r => CodeRelationship.Create(r.Source, r.Kind, r.Target, r.Evidence));
+        .Select(r => CodeRelationship.Create(r.Source, r.Kind, r.Target, r.Evidence, r.Attributes));
 
     public void Collect(Compilation compilation, CancellationToken cancellationToken)
     {
@@ -72,6 +74,7 @@ internal sealed class RelationshipCollector
                         break;
                     case InvocationExpressionSyntax invocation:
                         AddCall(model, invocation, NameOf(invocation.Expression) ?? (SyntaxNode)invocation, cancellationToken);
+                        AddRegistration(model, invocation, cancellationToken);
                         break;
                     case ConstructorInitializerSyntax initializer:
                         AddCall(model, initializer, initializer.ThisOrBaseKeyword, cancellationToken);
@@ -143,6 +146,71 @@ internal sealed class RelationshipCollector
         }
     }
 
+    /// <summary>
+    /// DI registration heuristics (ANALYSIS-007, EXPECTED.md §10): <c>Add|TryAdd{Singleton|Scoped|Transient}&lt;TService, TImpl&gt;()</c>,
+    /// <c>…&lt;TImpl&gt;()</c> and <c>…(typeof(TService), typeof(TImpl))</c> → <c>RegistersService</c> from the registering
+    /// member to the implementation, <c>Heuristic</c>. Recognized by shape and name only (ADR-011: <c>IServiceCollection</c>
+    /// is never resolved); calls that resolve to a method of the repository are not registrations.
+    /// </summary>
+    private void AddRegistration(SemanticModel model, InvocationExpressionSyntax invocation, CancellationToken cancellationToken)
+    {
+        if (invocation.Expression is not MemberAccessExpressionSyntax { Name: var name }
+            || DiLifetime(name.Identifier.ValueText) is not { } lifetime
+            || EntityOf(model.GetSymbolInfo(invocation, cancellationToken).Symbol) is not null)
+        {
+            return;
+        }
+
+        TypeSyntax? service;
+        TypeSyntax? implementation;
+        string rule;
+        if (name is GenericNameSyntax generic && invocation.ArgumentList.Arguments.Count == 0)
+        {
+            (service, implementation, rule) = generic.TypeArgumentList.Arguments switch
+            {
+                [var both] => (both, both, RuleRegistersServiceGeneric),
+                [var serviceType, var implementationType] => (serviceType, implementationType, RuleRegistersServiceGeneric),
+                _ => (null, null, RuleRegistersServiceGeneric),
+            };
+        }
+        else if (name is IdentifierNameSyntax
+            && invocation.ArgumentList.Arguments is [{ Expression: TypeOfExpressionSyntax serviceOf }, { Expression: TypeOfExpressionSyntax implementationOf }])
+        {
+            (service, implementation, rule) = (serviceOf.Type, implementationOf.Type, RuleRegistersServiceTypeof);
+        }
+        else
+        {
+            return;
+        }
+
+        if (service is null || implementation is null)
+        {
+            return;
+        }
+
+        var (target, _) = ResolveType(model, implementation, cancellationToken);
+        var (serviceEntity, _) = ResolveType(model, service, cancellationToken);
+        if (target is null || serviceEntity is null)
+        {
+            return;
+        }
+
+        var attributes = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["serviceType"] = serviceEntity.SymbolKey,
+            ["lifetime"] = lifetime,
+        };
+        Add(SourceOf(model, invocation, cancellationToken), RelationshipKind.RegistersService, target, EvidenceLevel.Heuristic, rule, invocation, attributes);
+    }
+
+    private static string? DiLifetime(string methodName) => methodName switch
+    {
+        "AddSingleton" or "TryAddSingleton" => "singleton",
+        "AddScoped" or "TryAddScoped" => "scoped",
+        "AddTransient" or "TryAddTransient" => "transient",
+        _ => null,
+    };
+
     private void AddTypeUsage(SemanticModel model, SimpleNameSyntax name, CancellationToken cancellationToken)
     {
         // Handled elsewhere: the type of a base list entry, the type of `new T()`, names in member access/invocation
@@ -200,7 +268,7 @@ internal sealed class RelationshipCollector
         return _typesByName[(name.Identifier.ValueText, arity)].ToArray() is [var single] ? single : null;
     }
 
-    private void Add(CodeEntity? source, RelationshipKind kind, CodeEntity target, EvidenceLevel level, string rule, SyntaxNodeOrToken location)
+    private void Add(CodeEntity? source, RelationshipKind kind, CodeEntity target, EvidenceLevel level, string rule, SyntaxNodeOrToken location, Dictionary<string, string>? attributes = null)
     {
         if (source is null || (source.Id == target.Id && kind != RelationshipKind.Calls))
         {
@@ -227,7 +295,7 @@ internal sealed class RelationshipCollector
 
         if (!_relationships.TryGetValue(id, out var relationship))
         {
-            relationship = (sourceReference, kind, targetReference, []);
+            relationship = (sourceReference, kind, targetReference, [], attributes);
             _relationships.Add(id, relationship);
         }
 

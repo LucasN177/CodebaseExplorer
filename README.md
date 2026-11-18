@@ -43,7 +43,7 @@ analysis. Full vision: [docs/product/VISION.md](docs/product/VISION.md).
 | Run history: every analysis run with status, duration and statistics; its diagnostics (analyzer, file and line) filterable by severity | ✅ available (commit hashes from M5) |
 | Clone GitHub/GitLab remotes | ⏳ planned (M5) |
 | Repository scanner, language and project detection | 🟡 partial (scanner and .NET project analysis available; other ecosystems M4) |
-| C# analysis with Roslyn (no build required) | 🟡 partial (namespaces, types and members; inheritance, implementation, type usage, instantiation and calls between them, also across projects, each with evidence; DI registrations follow) |
+| C# analysis with Roslyn (no build required) | 🟡 partial (namespaces, types and members; inheritance, implementation, type usage, instantiation and calls between them, also across projects, each with evidence; heuristic DI registrations) |
 | TypeScript, JavaScript and Python analysis (Tree-sitter, manifests) | ⏳ planned (M4) |
 | Hierarchical drill-down, layouts, filters and search in the graph (Cytoscape.js) | ⏳ planned (M2–M4) |
 | Component Inspector with evidence and source snippets | ⏳ planned (M3) |

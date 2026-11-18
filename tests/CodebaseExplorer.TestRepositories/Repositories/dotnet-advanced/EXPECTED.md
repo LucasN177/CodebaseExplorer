@@ -222,7 +222,9 @@ any relationship produced by the comment or string literal in `ServiceCollection
 ## 10. DI registrations (ANALYSIS-007, `Heuristic`)
 
 Source: the registering method; target: the implementation type; attributes `serviceType` (symbol key of
-the service type definition) and `lifetime`. Evidence location: start of the invocation (`services`).
+the service type definition) and `lifetime`. Evidence location: start of the invocation (`services`). Rule
+`csharp.di.generic-registration` (the `typeof(…)` overload: `csharp.di.typeof-registration`), analyzer
+`csharp.roslyn`.
 
 | Source | Target | `serviceType` | `lifetime` | Evidence |
 |---|---|---|---|---|

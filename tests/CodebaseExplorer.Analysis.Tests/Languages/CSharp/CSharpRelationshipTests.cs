@@ -88,8 +88,62 @@ public sealed class CSharpRelationshipTests
             Location(model, e).StartsWith($"{Services}/ServiceCollectionExtensions.cs:16:", StringComparison.Ordinal)
             || Location(model, e).StartsWith($"{Services}/ServiceCollectionExtensions.cs:17:", StringComparison.Ordinal));
         Assert.All(code, r => Assert.True(r.Kind is RelationshipKind.Inherits or RelationshipKind.Implements or RelationshipKind.UsesType
-            or RelationshipKind.Instantiates or RelationshipKind.Calls, r.Kind.ToString()));
+            or RelationshipKind.Instantiates or RelationshipKind.Calls or RelationshipKind.RegistersService, r.Kind.ToString()));
         Assert.All(code, r => Assert.NotEqual(r.Source.Id, r.Target.Id));
+    }
+
+    [Fact]
+    public async Task DiRegistrations_MatchExpectedSection10()
+    {
+        // ANALYSIS-007
+        var model = (await AnalyzeAsync(TestRepositoryCatalog.GetFixturePath("dotnet-advanced"))).Model;
+
+        var registrations = model.Relationships
+            .Where(r => r.Kind == RelationshipKind.RegistersService)
+            .Select(r => (Key(model, r.Source), Key(model, r.Target), r.Attributes["serviceType"], r.Attributes["lifetime"],
+                Location(model, Assert.Single(r.Evidence)), r.Level, Assert.Single(r.Evidence).Rule))
+            .OrderBy(r => r.Item5, StringComparer.Ordinal)
+            .ToArray();
+
+        const string Source = "M:Advanced.Services.ServiceCollectionExtensions.AddAdvancedServices(IServiceCollection)";
+        Assert.Equal(
+            [
+                (Source, "T:Advanced.Services.Customers.CustomerService", "T:Advanced.Services.Customers.ICustomerService", "scoped",
+                    $"{Services}/ServiceCollectionExtensions.cs:12:9", EvidenceLevel.Heuristic, RelationshipCollector.RuleRegistersServiceGeneric),
+                (Source, "T:Advanced.Services.Customers.InMemoryCustomerRepository", "T:Advanced.Core.Abstractions.IRepository`1", "singleton",
+                    $"{Services}/ServiceCollectionExtensions.cs:13:9", EvidenceLevel.Heuristic, RelationshipCollector.RuleRegistersServiceGeneric),
+            ],
+            registrations);
+    }
+
+    [Fact]
+    public async Task DiRegistrations_TypeofOverload_AndNoFalsePositives()
+    {
+        using var repository = new TempDirectory();
+        repository.WriteText("App/App.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\" />\n");
+        repository.WriteText("App/Setup.cs", """
+            namespace App;
+            public interface IClock { }
+            public sealed class Clock : IClock { }
+            public sealed class Registry { public void AddScoped<TA, TB>() { } }
+            public static class Setup
+            {
+                public static void Configure(object services, Registry registry)
+                {
+                    ((dynamic)services).AddTransient(typeof(IClock), typeof(Clock));
+                    registry.AddScoped<IClock, Clock>();
+                }
+            }
+
+            """.Replace("\r", string.Empty, StringComparison.Ordinal));
+
+        var model = (await AnalyzeAsync(repository.FullPath)).Model;
+
+        // The typeof overload is recognized; the call to the repository's own Registry.AddScoped is not a registration.
+        var registration = Assert.Single(model.Relationships, r => r.Kind == RelationshipKind.RegistersService);
+        Assert.Equal("T:App.Clock", Key(model, registration.Target));
+        Assert.Equal(("T:App.IClock", "transient"), (registration.Attributes["serviceType"], registration.Attributes["lifetime"]));
+        Assert.Equal(RelationshipCollector.RuleRegistersServiceTypeof, Assert.Single(registration.Evidence).Rule);
     }
 
     [Fact]
