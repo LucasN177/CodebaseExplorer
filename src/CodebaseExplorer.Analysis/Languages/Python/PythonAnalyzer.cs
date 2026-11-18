@@ -68,10 +68,12 @@ internal sealed class PythonAnalyzer : ILanguageAnalyzer
                 continue;
             }
 
-            PythonFileFacts facts;
-            using (var tree = TreeSitterParser.Parse(TreeSitterGrammar.Python, source))
+            var facts = TreeSitterParser.ParseWithin(TreeSitterGrammar.Python, source, context.Limits.MaxParseDuration, PythonSyntax.Extract, cancellationToken);
+            if (facts is null)
             {
-                facts = PythonSyntax.Extract(tree, cancellationToken);
+                result.Report(DiagnosticSeverity.Warning, TreeSitterParser.ParseTimeoutCode,
+                    $"{file.Path}: parsing took longer than {context.Limits.MaxParseDuration.TotalSeconds:0.#} s; the file's declarations and imports are skipped.", result.At(file.Path, 1, 1));
+                continue;
             }
 
             if (facts.HasSyntaxErrors)

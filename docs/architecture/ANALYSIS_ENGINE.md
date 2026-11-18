@@ -399,7 +399,7 @@ reports violations, the result is the error `analysis.model-invalid`.
 | File size for parsing | 2 MB | File recorded, not parsed; `Info` diagnostic. |
 | Manifest size | 1 MB | Not parsed; `Warning`. |
 | Number of files | 500,000 | Scan stops; run `PartiallySucceeded`; `Warning`. |
-| Per-file parse time | 5 s (target; depends on parser support) | Parse aborted; `Warning`. |
+| Per-file parse time | 5 s (`AnalysisLimits.MaxParseDuration`) | Tree-sitter analyzers (ANALYSIS-013): a parse cannot be interrupted, so a file whose parse took longer is dropped afterwards and the extraction walk is cancelled when the budget runs out; the file's module stays, its declarations and imports are skipped, `Warning` `analysis.parse-timeout`. Bounded in practice by the 2 MB parse limit (≤ ~3.3 s measured, ADR-004). Roslyn parses are not timed (C# files are parsed per project with cancellation). |
 | Path length / depth | OS limits; depth 64 | Directory skipped; `Warning`. |
 | XML parsing | DTD processing prohibited, external entities disabled, max characters limited | Parse error diagnostic. |
 
@@ -407,7 +407,15 @@ reports violations, the result is the error `analysis.model-invalid`.
 
 The same repository content and analyzer versions must produce the same model (IDs, relationships,
 evidence). Enumeration order is sorted (ordinal) before ID assignment and output.
-Tests assert determinism by analyzing a fixture twice and comparing models.
+Tests assert determinism by analyzing a fixture twice and comparing models. **Implemented (ANALYSIS-013):**
+`DeterminismAndLimitsTests` analyzes every fixture twice through the real module registration — once sequentially
+(`MaxDegreeOfParallelism = 1`), once with 8 workers — and requires byte-identical JSON of the whole model (all
+public properties of files, projects, modules, entities, external dependencies, relationships and evidence) and of
+the diagnostics.
+
+**Statistics per stage:** `AnalysisStatistics.StageDurations` holds the stages (`scan`, `project-systems`,
+`languages`, `link`, `validate`) and, since ANALYSIS-013, the total time of every analyzer (`analyzer.<id>`, summed
+over its calls across parallel workers).
 
 ## 7. Scaling strategy
 

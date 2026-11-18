@@ -110,10 +110,13 @@ internal sealed class TypeScriptAnalyzer : ILanguageAnalyzer
                 return;
             }
 
-            SourceFileFacts facts;
-            using (var tree = TreeSitterParser.Parse(TreeSitterGrammars.For(language)!.Value, source))
+            var facts = TreeSitterParser.ParseWithin(
+                TreeSitterGrammars.For(language)!.Value, source, context.Limits.MaxParseDuration, TypeScriptSyntax.Extract, cancellationToken);
+            if (facts is null)
             {
-                facts = TypeScriptSyntax.Extract(tree, cancellationToken);
+                Result.Report(DiagnosticSeverity.Warning, TreeSitterParser.ParseTimeoutCode,
+                    $"{path}: parsing took longer than {context.Limits.MaxParseDuration.TotalSeconds:0.#} s; the file's declarations and imports are skipped.", Result.At(path, 1, 1));
+                return;
             }
 
             if (facts.HasSyntaxErrors)

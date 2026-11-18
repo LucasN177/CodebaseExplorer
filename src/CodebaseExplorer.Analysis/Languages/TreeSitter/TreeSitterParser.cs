@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using TreeSitter;
 
 namespace CodebaseExplorer.Analysis.Languages.TreeSitter;
@@ -22,6 +23,9 @@ namespace CodebaseExplorer.Analysis.Languages.TreeSitter;
 /// </remarks>
 internal static class TreeSitterParser
 {
+    /// <summary>Diagnostic code for a file whose parse and extraction exceeded <c>AnalysisLimits.MaxParseDuration</c>.</summary>
+    public const string ParseTimeoutCode = "analysis.parse-timeout";
+
     private static readonly ConcurrentDictionary<TreeSitterGrammar, Language> Languages = new();
 
     /// <summary>Parses <paramref name="source"/>; the caller disposes the tree.</summary>
@@ -34,5 +38,36 @@ internal static class TreeSitterParser
         using var parser = new Parser(language);
         return parser.Parse(source)
             ?? throw new InvalidOperationException($"Tree-sitter returned no tree for grammar '{grammar}'.");
+    }
+
+    /// <summary>
+    /// Parses and extracts within <paramref name="budget"/> (ANALYSIS-013): the result is dropped if the parse alone took
+    /// longer, and the extraction is cancelled when the remaining budget runs out. Returns <see langword="null"/> on
+    /// timeout; the caller's own cancellation still throws.
+    /// </summary>
+    public static T? ParseWithin<T>(
+        TreeSitterGrammar grammar, string source, TimeSpan budget, Func<Tree, CancellationToken, T> extract, CancellationToken cancellationToken)
+        where T : class
+    {
+        ArgumentNullException.ThrowIfNull(extract);
+
+        var started = Stopwatch.GetTimestamp();
+        using var tree = Parse(grammar, source);
+        var remaining = budget - Stopwatch.GetElapsedTime(started);
+        if (remaining <= TimeSpan.Zero)
+        {
+            return null;
+        }
+
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(remaining);
+        try
+        {
+            return extract(tree, timeout.Token);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
     }
 }

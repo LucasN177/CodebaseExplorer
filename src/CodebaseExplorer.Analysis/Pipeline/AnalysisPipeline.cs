@@ -1,4 +1,5 @@
-using CodebaseExplorer.Domain.Projects;
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Globalization;
 using CodebaseExplorer.Analysis.Scanning;
 using CodebaseExplorer.Application.Analysis;
@@ -7,6 +8,7 @@ using CodebaseExplorer.Application.Repositories;
 using CodebaseExplorer.Domain.Common;
 using CodebaseExplorer.Domain.Evidence;
 using CodebaseExplorer.Domain.Model;
+using CodebaseExplorer.Domain.Projects;
 using CodebaseExplorer.Domain.Relationships;
 using CodebaseExplorer.Domain.Runs;
 
@@ -44,6 +46,7 @@ internal sealed class AnalysisPipeline(
         ArgumentNullException.ThrowIfNull(request);
 
         var durations = new Dictionary<string, TimeSpan>(StringComparer.Ordinal);
+        var times = new ConcurrentDictionary<string, long>(StringComparer.Ordinal);
         var diagnostics = new List<AnalysisDiagnostic>();
         var versions = new SortedDictionary<string, string>(StringComparer.Ordinal)
         {
@@ -60,13 +63,13 @@ internal sealed class AnalysisPipeline(
 
         // Stage 2 — project systems (parallel, isolated)
         started = timeProvider.GetTimestamp();
-        var projectSystemFragments = await RunProjectSystemAnalyzersAsync(request, scan, progress, diagnostics, versions, cancellationToken);
+        var projectSystemFragments = await RunProjectSystemAnalyzersAsync(request, scan, progress, diagnostics, versions, times, cancellationToken);
         durations["project-systems"] = timeProvider.GetElapsedTime(started);
 
         // Stage 3 — languages (per project, isolated)
         started = timeProvider.GetTimestamp();
         var languageFragments = await RunLanguageAnalyzersAsync(
-            request, scan, projectSystemFragments, progress, diagnostics, versions, cancellationToken);
+            request, scan, projectSystemFragments, progress, diagnostics, versions, times, cancellationToken);
         durations["languages"] = timeProvider.GetElapsedTime(started);
 
         // Stage 4 — link
@@ -82,6 +85,10 @@ internal sealed class AnalysisPipeline(
         started = timeProvider.GetTimestamp();
         var violations = model.Validate();
         durations["validate"] = timeProvider.GetElapsedTime(started);
+        foreach (var (analyzer, ticks) in times)
+        {
+            durations[$"analyzer.{analyzer}"] = Stopwatch.GetElapsedTime(0, ticks);
+        }
 
         if (violations.Count > 0)
         {
@@ -104,6 +111,7 @@ internal sealed class AnalysisPipeline(
         IProgress<AnalysisProgress>? progress,
         List<AnalysisDiagnostic> diagnostics,
         SortedDictionary<string, string> versions,
+        ConcurrentDictionary<string, long> times,
         CancellationToken cancellationToken)
     {
         var applicable = _projectSystemAnalyzers.Where(a => a.AppliesTo(scan)).ToArray();
@@ -115,7 +123,7 @@ internal sealed class AnalysisPipeline(
         var completed = 0;
         var results = await Task.WhenAll(applicable.Select(async analyzer =>
         {
-            var outcome = await RunIsolatedAsync(analyzer.Descriptor, scope: null, () => analyzer.AnalyzeAsync(context, cancellationToken));
+            var outcome = await RunIsolatedAsync(analyzer.Descriptor, scope: null, times, () => analyzer.AnalyzeAsync(context, cancellationToken));
             progress?.Report(new AnalysisProgress(
                 AnalysisStage.DetectingProjects, Interlocked.Increment(ref completed), applicable.Length, analyzer.Descriptor.Id.Value));
             return outcome;
@@ -137,6 +145,7 @@ internal sealed class AnalysisPipeline(
         IProgress<AnalysisProgress>? progress,
         List<AnalysisDiagnostic> diagnostics,
         SortedDictionary<string, string> versions,
+        ConcurrentDictionary<string, long> times,
         CancellationToken cancellationToken)
     {
         // Ownership is needed before linking: attach files to their innermost project.
@@ -181,7 +190,7 @@ internal sealed class AnalysisPipeline(
                     request.RepositoryId, request.AnalysisRunId, request.Root, inputs, references, request.Limits, fileReader,
                     projectName => progress?.Report(new AnalysisProgress(
                         AnalysisStage.AnalyzingCode, Interlocked.Increment(ref completed), total, projectName)));
-                repositoryResults.Add(await RunIsolatedAsync(analyzer.Descriptor, scope: null, () => analyzer.AnalyzeAsync(context, cancellationToken)));
+                repositoryResults.Add(await RunIsolatedAsync(analyzer.Descriptor, scope: null, times, () => analyzer.AnalyzeAsync(context, cancellationToken)));
                 versions[analyzer.Descriptor.Id.Value] = analyzer.Descriptor.Version;
             }
         }
@@ -199,7 +208,7 @@ internal sealed class AnalysisPipeline(
             var context = new LanguageAnalysisContext(
                 request.RepositoryId, request.AnalysisRunId, request.Root, project, files, scan.Files, request.Limits, fileReader, projects);
 
-            results[index] = await RunIsolatedAsync(analyzer.Descriptor, project.Name, () => analyzer.AnalyzeProjectAsync(context, token));
+            results[index] = await RunIsolatedAsync(analyzer.Descriptor, project.Name, times, () => analyzer.AnalyzeProjectAsync(context, token));
             progress?.Report(new AnalysisProgress(
                 AnalysisStage.AnalyzingCode, Interlocked.Increment(ref completed), total, project.Name));
         });
@@ -225,8 +234,10 @@ internal sealed class AnalysisPipeline(
     private static async Task<(AnalyzerFragment Fragment, AnalysisDiagnostic? Failure)> RunIsolatedAsync(
         AnalyzerDescriptor descriptor,
         string? scope,
+        ConcurrentDictionary<string, long> times,
         Func<Task<AnalyzerFragment>> run)
     {
+        var started = Stopwatch.GetTimestamp();
         try
         {
             return (await run() ?? AnalyzerFragment.Empty, null);
@@ -244,6 +255,12 @@ internal sealed class AnalysisPipeline(
                 $"Analyzer '{descriptor.Id}' failed{target}: {exception.GetType().Name}: {exception.Message}",
                 descriptor.Id);
             return (AnalyzerFragment.Empty, failure);
+        }
+        finally
+        {
+            // Statistics per analyzer (ANALYSIS-013): total time over all its calls, summed across parallel workers.
+            var elapsed = Stopwatch.GetTimestamp() - started;
+            times.AddOrUpdate(descriptor.Id.Value, elapsed, (_, total) => total + elapsed);
         }
     }
 

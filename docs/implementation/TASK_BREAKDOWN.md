@@ -24,7 +24,7 @@ Status overview (keep in sync):
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 9 |
-| M4 Polyglot & scale | 11 | 6 |
+| M4 Polyglot & scale | 11 | 7 |
 | M5 Git | 7 | 0 |
 | M6 Export | 2 | 0 |
 | M7 Local AI | 7 | 0 |
@@ -488,11 +488,12 @@ Status overview (keep in sync):
 - **Note:** Done 2026-11-18. `PythonAnalyzer` (`treesitter.python`, ANALYSIS_ENGINE.md Stage 3 "Implemented"): package and file modules (dotted, relative to `src/` or the project root), top-level classes/functions, imports anywhere in a file resolved relative/absolute against a repository-wide module index, standard library skipped, PyPI by declared name (`Syntactic`), mapping table (`Heuristic`) or undeclared (`Heuristic`). Declared distributions are re-read from the manifests of the project's folder (`pyproject.toml`, `setup.cfg`, `requirements*.txt` without includes). `Span` moved to `Languages/TreeSitter`. Tests: EXPECTED.md of `python-src-layout` §5–7 and `mixed-polyglot` §4; edge cases (star/aliased/nested/`try` imports, `__future__`, imports above the root, unresolved relative imports, decorated `async` functions, duplicate names).
 
 ### ANALYSIS-013 — Determinism and limits hardening
-- **Priority:** P1 · **Milestone:** M4 · **Status:** todo
+- **Priority:** P1 · **Milestone:** M4 · **Status:** done
 - **Prerequisites:** ANALYSIS-010, ANALYSIS-012
 - **Projects:** Analysis, Analysis.Tests
 - **Description:** Determinism test across all fixtures; limit enforcement (file count, depth, parse timeouts) with diagnostics; statistics per stage.
 - **Acceptance criteria:** All fixtures analyzed twice produce byte-identical serialized models.
+- **Note:** Done 2026-11-18. `DeterminismAndLimitsTests`: all 10 fixtures, sequential vs. 8 workers, byte-identical JSON of model and diagnostics. Limits: file count and depth were already enforced with diagnostics by the scanner (REPO-002, tested); new `AnalysisLimits.MaxParseDuration` (5 s) for the Tree-sitter analyzers (`TreeSitterParser.ParseWithin`: a parse that exceeded the budget is dropped, the extraction is cancelled when it runs out; `Warning` `analysis.parse-timeout`, the module stays). Statistics: per-analyzer durations `analyzer.<id>` in `StageDurations` (stored with the run; not yet shown in the UI).
 
 ### REPO-007 — Polyglot fixtures
 - **Priority:** P0 · **Milestone:** M4 · **Status:** done

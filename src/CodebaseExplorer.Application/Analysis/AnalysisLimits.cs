@@ -26,6 +26,13 @@ public sealed record AnalysisLimits
     /// <summary>Directories nested deeper than this below the root are skipped (default 64).</summary>
     public int MaxDirectoryDepth { get; init; } = 64;
 
+    /// <summary>
+    /// Time budget for parsing and extracting one source file (default 5 s, ANALYSIS_ENGINE.md §5). Tree-sitter
+    /// cannot interrupt a running parse, so a file whose parse exceeds it is dropped afterwards; the extraction walk is
+    /// cancelled when the budget runs out.
+    /// </summary>
+    public TimeSpan MaxParseDuration { get; init; } = TimeSpan.FromSeconds(5);
+
     /// <summary>Parallel workers for file inspection and per-project analysis (default: processors − 1, at least 1).</summary>
     public int MaxDegreeOfParallelism { get; init; } = Math.Max(1, Environment.ProcessorCount - 1);
 
