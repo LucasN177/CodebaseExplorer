@@ -126,13 +126,13 @@ public sealed class StartPageViewModelTests : IDisposable
     public async Task Import_NeverRunsAnalysisWorkOnTheCallingThread()
     {
         // The analyzer blocks synchronously before returning its task. If the ViewModel ran the use case on
-        // the calling (UI) thread, ExecuteAsync would not return until the gate opens.
+        // the calling (UI) thread, ExecuteAsync would not return until the gate opens. Thread ids are not
+        // compared: the thread pool may reuse the test's thread once it is free (flaky on CI runners).
         using var gate = new ManualResetEventSlim();
-        var callingThread = Environment.CurrentManagedThreadId;
-        var analyzerThread = 0;
+        using var analyzerStarted = new ManualResetEventSlim();
         _analyzer.AnalyzeAsync(default!, default, Arg.Any<CancellationToken>()).ReturnsForAnyArgs(_ =>
         {
-            analyzerThread = Environment.CurrentManagedThreadId;
+            analyzerStarted.Set();
             gate.Wait(Timeout);
             return Task.FromResult<Result<RepositoryAnalysis>>(ApplicationError.Failure("test", "stopped"));
         });
@@ -140,11 +140,15 @@ public sealed class StartPageViewModelTests : IDisposable
 
         var running = viewModel.OpenLocalFolderCommand.ExecuteAsync(null);
 
+        // The command has returned while the analysis is blocked: the work runs elsewhere.
         Assert.False(running.IsCompleted);
         Assert.True(viewModel.IsImporting);
+        Assert.True(analyzerStarted.Wait(Timeout, TestContext.Current.CancellationToken), "the analysis did not start in the background");
+        Assert.False(running.IsCompleted);
+
         gate.Set();
         await running.WaitAsync(Timeout, TestContext.Current.CancellationToken);
-        Assert.NotEqual(callingThread, analyzerThread);
+        Assert.False(viewModel.IsImporting);
     }
 
     [Fact]
