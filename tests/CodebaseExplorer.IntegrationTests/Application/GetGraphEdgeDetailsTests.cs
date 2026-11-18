@@ -1,7 +1,6 @@
 using CodebaseExplorer.Application.Graph;
 using CodebaseExplorer.Application.Repositories;
 using CodebaseExplorer.Contracts.Graph;
-using CodebaseExplorer.Desktop.Composition;
 using CodebaseExplorer.TestRepositories;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,17 +10,19 @@ namespace CodebaseExplorer.IntegrationTests.Application;
 /// GRAPH-010: fixture <c>dotnet-layered</c> → import → evidence of every project edge, with the
 /// locations listed in EXPECTED.md §3 (real composition root).
 /// </summary>
-public sealed class GetGraphEdgeDetailsTests : IDisposable
+public sealed class GetGraphEdgeDetailsTests : IAsyncLifetime
 {
-    private readonly ServiceProvider _services = CompositionRoot.BuildServiceProvider();
+    private readonly TestApplication _app = new();
 
-    public void Dispose() => _services.Dispose();
+    public ValueTask InitializeAsync() => _app.InitializeAsync();
+
+    public ValueTask DisposeAsync() => _app.DisposeAsync();
 
     [Fact]
     public async Task EveryEdge_HasEvidenceWithFileAndLine()
     {
         var (query, view) = await ImportAsync();
-        var getDetails = _services.GetRequiredService<GetGraphEdgeDetails>();
+        var getDetails = _app.Services.GetRequiredService<GetGraphEdgeDetails>();
         var labels = view.Nodes.ToDictionary(n => n.Id, n => n.Label);
 
         var locations = new List<(string, string, string)>();
@@ -43,7 +44,7 @@ public sealed class GetGraphEdgeDetailsTests : IDisposable
     {
         var (query, _) = await ImportAsync();
 
-        var result = await _services.GetRequiredService<GetGraphEdgeDetails>()
+        var result = await _app.Services.GetRequiredService<GetGraphEdgeDetails>()
             .ExecuteAsync(query, "unknown|edge", TestContext.Current.CancellationToken);
 
         Assert.Equal(GraphErrorCodes.EdgeNotFound, result.Error.Code);
@@ -52,7 +53,7 @@ public sealed class GetGraphEdgeDetailsTests : IDisposable
     [Fact]
     public async Task NotAnalyzedRepository_IsNotFound()
     {
-        var result = await _services.GetRequiredService<GetGraphEdgeDetails>()
+        var result = await _app.Services.GetRequiredService<GetGraphEdgeDetails>()
             .ExecuteAsync(new GraphQuery { RepositoryId = new string('a', 32) }, "a|b", TestContext.Current.CancellationToken);
 
         Assert.Equal(RepositoryErrorCodes.NotAnalyzed, result.Error.Code);
@@ -60,10 +61,10 @@ public sealed class GetGraphEdgeDetailsTests : IDisposable
 
     private async Task<(GraphQuery Query, GraphViewDto View)> ImportAsync()
     {
-        var summary = (await _services.GetRequiredService<ImportLocalRepository>().ExecuteAsync(
+        var summary = (await _app.Services.GetRequiredService<ImportLocalRepository>().ExecuteAsync(
             TestRepositoryCatalog.GetFixturePath("dotnet-layered"), null, TestContext.Current.CancellationToken)).Value;
         var query = new GraphQuery { RepositoryId = summary.RepositoryId };
-        var view = (await _services.GetRequiredService<GetGraphView>().ExecuteAsync(query, TestContext.Current.CancellationToken)).Value;
+        var view = (await _app.Services.GetRequiredService<GetGraphView>().ExecuteAsync(query, TestContext.Current.CancellationToken)).Value;
         return (query, view);
     }
 }

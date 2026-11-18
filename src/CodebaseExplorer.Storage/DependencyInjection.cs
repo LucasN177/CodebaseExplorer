@@ -1,5 +1,7 @@
 using CodebaseExplorer.Application.Abstractions;
+using CodebaseExplorer.Application.Repositories;
 using CodebaseExplorer.Storage.Persistence;
+using CodebaseExplorer.Storage.Stores;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,15 +15,16 @@ public static class DependencyInjection
 {
     /// <summary>
     /// Registers the services of the Storage module: the <see cref="IDbContextFactory{TContext}"/> for
-    /// the database at <see cref="IApplicationPaths.DatabaseFilePath"/> (STORE-001) and the
-    /// <see cref="IDatabaseInitializer"/> that creates, backs up and migrates it at startup (STORE-003).
-    /// Nothing is opened at registration; the stores (ports) follow with STORE-004/005.
+    /// the database at <see cref="IApplicationPaths.DatabaseFilePath"/> (STORE-001), the
+    /// <see cref="IDatabaseInitializer"/> that creates, backs up and migrates it at startup (STORE-003),
+    /// and the <see cref="IArchitectureModelStore"/> (STORE-004). Nothing is opened at registration.
     /// </summary>
     public static IServiceCollection AddStorageModule(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddSingleton<IDatabaseInitializer, DatabaseInitializer>();
+        services.AddSingleton<IArchitectureModelStore, ArchitectureModelStore>();
         services.AddDbContextFactory<CodebaseExplorerDbContext>((provider, options) =>
             Configure(options, ConnectionString(provider.GetRequiredService<IApplicationPaths>().DatabaseFilePath)));
 

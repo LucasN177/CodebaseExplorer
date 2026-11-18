@@ -175,7 +175,7 @@ ordered by kind, then endpoint labels; endpoints are named by project name, file
 module/entity name or package display name. Evidence carries analyzer, rule, level and the
 repository-relative path with lines — no excerpt (snippets: UI-007). Errors: the projection's
 validation errors, or `graph.edge-not-found` (`NotFound`). The use case `GetGraphEdgeDetails` reads
-the model from the session cache like `GetGraphView`. The explorer side panel lists up to 50 evidence
+the model from the model store like `GetGraphView` (STORE-004). The explorer side panel lists up to 50 evidence
 records of a selected edge (`kind · level`, `path:line`, `analyzer · rule`).
 
 ## 7. Web view rules

@@ -10,15 +10,12 @@ namespace CodebaseExplorer.Application;
 public static class DependencyInjection
 {
     /// <summary>
-    /// Registers the application use cases and the session model cache. Ports are implemented and
+    /// Registers the application use cases. Ports (e.g. <see cref="IArchitectureModelStore"/>) are implemented and
     /// registered by the technical modules.
     /// </summary>
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
-
-        // Session-scoped model storage for M1 (replaced by the SQLite model store in STORE-004).
-        services.AddSingleton<IArchitectureModelCache, InMemoryArchitectureModelCache>();
 
         // Singletons: ImportLocalRepository tracks running imports across calls.
         services.AddSingleton<ImportLocalRepository>();

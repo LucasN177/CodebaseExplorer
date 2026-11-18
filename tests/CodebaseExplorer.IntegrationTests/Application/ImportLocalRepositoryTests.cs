@@ -5,19 +5,23 @@ using CodebaseExplorer.Application.Repositories;
 using CodebaseExplorer.Contracts.Graph;
 using CodebaseExplorer.Domain.Model;
 using CodebaseExplorer.Domain.Runs;
+using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
 namespace CodebaseExplorer.IntegrationTests.Application;
 
-/// <summary>ImportLocalRepository and GetGraphView with a substituted analyzer (no file system).</summary>
-public sealed class ImportLocalRepositoryTests
+/// <summary>
+/// ImportLocalRepository and GetGraphView with a substituted analyzer and the real SQLite model store
+/// (temporary database, STORE-004).
+/// </summary>
+public sealed class ImportLocalRepositoryTests : IAsyncLifetime
 {
     private static readonly string FolderPath = Path.Combine(Path.GetTempPath(), "ce-import-test", "shop");
 
     private readonly IRepositoryRootValidator _validator = Substitute.For<IRepositoryRootValidator>();
     private readonly IRepositoryAnalyzer _analyzer = Substitute.For<IRepositoryAnalyzer>();
-    private readonly IArchitectureModelCache _cache = new InMemoryArchitectureModelCache();
+    private readonly TestApplication _app = new();
     private readonly ImportLocalRepository _import;
 
     public ImportLocalRepositoryTests()
@@ -25,7 +29,20 @@ public sealed class ImportLocalRepositoryTests
         _validator.Validate(Arg.Any<string>()).Returns(Result<RepositoryRoot>.Success(new RepositoryRoot(FolderPath)));
         _analyzer.AnalyzeAsync(Arg.Any<AnalysisRequest>(), Arg.Any<IProgress<AnalysisProgress>?>(), Arg.Any<CancellationToken>())
             .Returns(call => Task.FromResult(EmptyAnalysis(call.Arg<AnalysisRequest>())));
-        _import = new ImportLocalRepository(_validator, _analyzer, _cache, TimeProvider.System);
+        _import = new ImportLocalRepository(_validator, _analyzer, Store, TimeProvider.System);
+    }
+
+    private IArchitectureModelStore Store => _app.Services.GetRequiredService<IArchitectureModelStore>();
+
+    public ValueTask InitializeAsync() => _app.InitializeAsync();
+
+    public ValueTask DisposeAsync() => _app.DisposeAsync();
+
+    /// <summary>The stored current model of the test folder, or null.</summary>
+    private async Task<StoredRepositoryModel?> StoredAsync()
+    {
+        var repository = await Store.FindRepositoryByRootAsync(FolderPath, TestContext.Current.CancellationToken);
+        return repository is null ? null : await Store.LoadCurrentModelAsync(repository.Id, TestContext.Current.CancellationToken);
     }
 
     private static Result<RepositoryAnalysis> EmptyAnalysis(AnalysisRequest request, params AnalysisDiagnostic[] diagnostics) =>
@@ -43,7 +60,7 @@ public sealed class ImportLocalRepositoryTests
     {
         var summary = (await ImportAsync()).Value;
 
-        var entry = _cache.FindByRoot(FolderPath);
+        var entry = await StoredAsync();
         Assert.NotNull(entry);
         Assert.Equal(summary.RepositoryId, entry.Repository.Id.ToString());
         Assert.Equal("shop", summary.Name);
@@ -61,7 +78,7 @@ public sealed class ImportLocalRepositoryTests
 
         Assert.Equal(first.RepositoryId, second.RepositoryId);
         Assert.NotEqual(first.AnalysisRunId, second.AnalysisRunId);
-        Assert.Equal(AnalysisTrigger.Manual, _cache.FindByRoot(FolderPath)!.Run.Trigger);
+        Assert.Equal(AnalysisTrigger.Manual, (await StoredAsync())!.Run.Trigger);
     }
 
     [Fact]
@@ -92,7 +109,7 @@ public sealed class ImportLocalRepositoryTests
     }
 
     [Fact]
-    public async Task AnalyzerFailure_IsReturnedAndNothingIsCached()
+    public async Task AnalyzerFailure_IsReturnedAndNoModelIsStored()
     {
         _analyzer.AnalyzeAsync(Arg.Any<AnalysisRequest>(), Arg.Any<IProgress<AnalysisProgress>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<RepositoryAnalysis>.Failure(ApplicationError.Failure(AnalysisErrorCodes.ModelInvalid, "inconsistent")));
@@ -100,7 +117,7 @@ public sealed class ImportLocalRepositoryTests
         var result = await ImportAsync();
 
         Assert.Equal(AnalysisErrorCodes.ModelInvalid, result.Error.Code);
-        Assert.Null(_cache.FindByRoot(FolderPath));
+        Assert.Null(await StoredAsync());
     }
 
     [Fact]
@@ -112,7 +129,7 @@ public sealed class ImportLocalRepositoryTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => ImportAsync(cancellation.Token));
 
-        Assert.Null(_cache.FindByRoot(FolderPath));
+        Assert.Null(await StoredAsync());
     }
 
     [Fact]
@@ -124,7 +141,7 @@ public sealed class ImportLocalRepositoryTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => ImportAsync());
 
-        Assert.Equal(first.AnalysisRunId, _cache.FindByRoot(FolderPath)!.Run.Id.ToString());
+        Assert.Equal(first.AnalysisRunId, (await StoredAsync())!.Run.Id.ToString());
     }
 
     [Fact]
@@ -152,7 +169,7 @@ public sealed class ImportLocalRepositoryTests
     [Fact]
     public async Task GetGraphView_UnknownOrInvalidRepository_IsRejected()
     {
-        var getGraph = new GetGraphView(_cache, Substitute.For<IGraphProjector>());
+        var getGraph = new GetGraphView(Store, Substitute.For<IGraphProjector>());
 
         var notAnalyzed = await getGraph.ExecuteAsync(
             new GraphQuery { RepositoryId = Guid.NewGuid().ToString("N") }, TestContext.Current.CancellationToken);
@@ -164,17 +181,17 @@ public sealed class ImportLocalRepositoryTests
     }
 
     [Fact]
-    public async Task GetGraphView_ProjectsTheCachedModel()
+    public async Task GetGraphView_ProjectsTheStoredModel()
     {
         var summary = (await ImportAsync()).Value;
         var projector = Substitute.For<IGraphProjector>();
         var expected = new GraphViewDto { RepositoryId = summary.RepositoryId, Level = GraphLevels.Project };
         projector.Project(Arg.Any<ArchitectureModel>(), Arg.Any<GraphQuery>()).Returns(Result<GraphViewDto>.Success(expected));
 
-        var result = await new GetGraphView(_cache, projector).ExecuteAsync(
+        var result = await new GetGraphView(Store, projector).ExecuteAsync(
             new GraphQuery { RepositoryId = summary.RepositoryId }, TestContext.Current.CancellationToken);
 
         Assert.Same(expected, result.Value);
-        projector.Received(1).Project(_cache.FindByRoot(FolderPath)!.Model, Arg.Any<GraphQuery>());
+        projector.Received(1).Project(Arg.Is<ArchitectureModel>(m => m.AnalysisRunId.ToString() == summary.AnalysisRunId), Arg.Any<GraphQuery>());
     }
 }

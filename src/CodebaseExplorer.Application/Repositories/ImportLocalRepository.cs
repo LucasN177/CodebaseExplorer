@@ -10,17 +10,17 @@ namespace CodebaseExplorer.Application.Repositories;
 
 /// <summary>
 /// Use case: import (or re-import) a local folder (USER_WORKFLOWS.md WF-01). Validates the folder,
-/// runs the analysis as one <see cref="AnalysisRun"/>, and keeps the resulting model in the session
-/// cache. Only one import per folder runs at a time.
+/// runs the analysis as one <see cref="AnalysisRun"/>, and saves the run and the resulting model in the
+/// <see cref="IArchitectureModelStore"/>. Only one import per folder runs at a time.
 /// </summary>
 /// <remarks>
-/// Cancellation: the run is marked cancelled, the cache is left unchanged (a previous model of the
-/// folder stays available) and <see cref="OperationCanceledException"/> propagates.
+/// Failed and cancelled runs are recorded, but the stored model is left unchanged (a previous model of
+/// the folder stays available); on cancellation <see cref="OperationCanceledException"/> propagates.
 /// </remarks>
 public sealed class ImportLocalRepository(
     IRepositoryRootValidator rootValidator,
     IRepositoryAnalyzer analyzer,
-    IArchitectureModelCache cache,
+    IArchitectureModelStore store,
     TimeProvider timeProvider)
 {
     private readonly ConcurrentDictionary<string, byte> _running = new(RootPathComparer.Instance);
@@ -56,8 +56,8 @@ public sealed class ImportLocalRepository(
         RepositoryRoot root, IProgress<AnalysisProgress>? progress, CancellationToken cancellationToken)
     {
         var started = timeProvider.GetUtcNow();
-        var previous = cache.FindByRoot(root.FullPath);
-        var repository = previous?.Repository
+        var previous = await store.FindRepositoryByRootAsync(root.FullPath, cancellationToken);
+        var repository = previous
             ?? Repository.Register(NameOf(root), RepositoryLocation.Local(root.FullPath), started);
 
         var run = AnalysisRun.Create(repository.Id, previous is null ? AnalysisTrigger.Initial : AnalysisTrigger.Manual, started);
@@ -71,12 +71,16 @@ public sealed class ImportLocalRepository(
         catch (OperationCanceledException)
         {
             run.Cancel(timeProvider.GetUtcNow());
+            // Recorded for the run history; the stored model stays as it was. Not cancellable: the user's
+            // cancellation already happened and this write is short.
+            await store.SaveRunAsync(repository, run, model: null, CancellationToken.None);
             throw;
         }
 
         if (!result.TryGetValue(out var analysis, out var error))
         {
             run.Fail(timeProvider.GetUtcNow(), [new AnalysisDiagnostic(DiagnosticSeverity.Error, error.Code, error.Message)]);
+            await store.SaveRunAsync(repository, run, model: null, cancellationToken);
             return error;
         }
 
@@ -89,8 +93,8 @@ public sealed class ImportLocalRepository(
         run.Complete(timeProvider.GetUtcNow(), analysis.Statistics);
         repository.MarkAnalyzed(run);
 
-        cache.Store(new CachedRepositoryModel(repository, run, analysis.Model));
-
+        progress?.Report(new AnalysisProgress(AnalysisStage.Saving, 0, 1));
+        await store.SaveRunAsync(repository, run, analysis.Model, cancellationToken);
         progress?.Report(new AnalysisProgress(AnalysisStage.Saving, 1, 1));
         return Summarize(repository, run, analysis.Model);
     }

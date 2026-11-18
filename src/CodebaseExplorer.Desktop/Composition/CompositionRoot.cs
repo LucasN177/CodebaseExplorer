@@ -19,7 +19,9 @@ namespace CodebaseExplorer.Desktop.Composition;
 /// </summary>
 public static class CompositionRoot
 {
-    public static ServiceProvider BuildServiceProvider()
+    /// <param name="overrides">Registrations applied last (later registrations win); used by tests to point the
+    /// application at a temporary data directory. The application itself passes nothing.</param>
+    public static ServiceProvider BuildServiceProvider(Action<IServiceCollection>? overrides = null)
     {
         var services = new ServiceCollection();
 
@@ -38,6 +40,8 @@ public static class CompositionRoot
             .AddGitModule()
             .AddAiModule()
             .AddDesktop();
+
+        overrides?.Invoke(services);
 
         return services.BuildServiceProvider(new ServiceProviderOptions
         {

@@ -4,7 +4,8 @@
 > Implementation status: **model tables implemented** (STORE-001: `Repositories`, `AnalysisRuns`,
 > `AnalysisDiagnostics`, `Files`, `Projects`, `Modules`; STORE-002: `CodeEntities`, `CodeEntityDeclarations`,
 > `CodeRelationships`, `AnalysisEvidence`, `ExternalDependencies` — DbContext, records, mapping; schema created
-> by the startup migration (STORE-003); the app does not read or write model data yet (STORE-004)). Implemented by STORE-001 … STORE-005 (core and
+> by the startup migration (STORE-003); runs and the current model are written and read by
+> `ArchitectureModelStore` (STORE-004)). Implemented by STORE-001 … STORE-005 (core and
 > settings tables), GIT-005 (Git tables), AI-003 and AI-006 (search index and AI tables) in
 > `src/CodebaseExplorer.Storage` using EF Core with the SQLite provider
 > ([ADR-005](../decisions/ADR-005-sqlite-storage.md)).

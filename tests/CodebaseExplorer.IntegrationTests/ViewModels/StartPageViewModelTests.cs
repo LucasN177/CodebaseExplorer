@@ -1,7 +1,6 @@
 using CodebaseExplorer.Application.Analysis;
 using CodebaseExplorer.Application.Common;
 using CodebaseExplorer.Application.Repositories;
-using CodebaseExplorer.Desktop.Composition;
 using CodebaseExplorer.Desktop.Services;
 using CodebaseExplorer.Desktop.ViewModels.Pages;
 using CodebaseExplorer.TestRepositories;
@@ -15,11 +14,11 @@ namespace CodebaseExplorer.IntegrationTests.ViewModels;
 /// UI-002: import flow of the start page without UI. The use case is real; its analyzer port is the
 /// real pipeline (success) or a substitute (error, cancellation, progress, threading).
 /// </summary>
-public sealed class StartPageViewModelTests : IDisposable
+public sealed class StartPageViewModelTests : IAsyncLifetime
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(10);
 
-    private readonly ServiceProvider _services = CompositionRoot.BuildServiceProvider();
+    private readonly TestApplication _app = new();
     private readonly IFolderPicker _picker = Substitute.For<IFolderPicker>();
     private readonly IRepositoryAnalyzer _analyzer = Substitute.For<IRepositoryAnalyzer>();
     private readonly RepositorySession _session = new();
@@ -28,12 +27,14 @@ public sealed class StartPageViewModelTests : IDisposable
     public StartPageViewModelTests() =>
         _picker.PickFolderAsync(default!, Arg.Any<CancellationToken>()).ReturnsForAnyArgs(TestRepositoryCatalog.GetFixturePath("dotnet-layered"));
 
-    public void Dispose() => _services.Dispose();
+    public ValueTask InitializeAsync() => _app.InitializeAsync();
+
+    public ValueTask DisposeAsync() => _app.DisposeAsync();
 
     [Fact]
     public async Task OpenLocalFolder_Success_SetsCurrentRepository()
     {
-        var viewModel = CreateViewModel(_services.GetRequiredService<IRepositoryAnalyzer>());
+        var viewModel = CreateViewModel(_app.Services.GetRequiredService<IRepositoryAnalyzer>());
 
         // Like the UI thread, the inline context applies progress reports in order, before completion;
         // without a context Progress<T> would apply them on the thread pool, racing with completion.
@@ -220,9 +221,9 @@ public sealed class StartPageViewModelTests : IDisposable
 
     private StartPageViewModel CreateViewModel(IRepositoryAnalyzer analyzer) => new(
         new ImportLocalRepository(
-            _services.GetRequiredService<IRepositoryRootValidator>(),
+            _app.Services.GetRequiredService<IRepositoryRootValidator>(),
             analyzer,
-            _services.GetRequiredService<IArchitectureModelCache>(),
+            _app.Services.GetRequiredService<IArchitectureModelStore>(),
             TimeProvider.System),
         _picker,
         _session,

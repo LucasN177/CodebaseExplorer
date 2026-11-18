@@ -19,6 +19,7 @@ spike changes the decision itself, a new superseding ADR is written instead.
 | [ADR-007](ADR-007-evidence-based-analysis.md) | Evidence-Based Analysis | Accepted |
 | [ADR-008](ADR-008-hybrid-ai.md) | Hybrid, Local-First AI via Microsoft.Extensions.AI | Accepted |
 | [ADR-009](ADR-009-incremental-analysis.md) | Incremental Analysis as a Long-Term Core Goal | Accepted |
+| [ADR-010](ADR-010-model-read-path-and-gc.md) | Whole-Model Reads in M2 and Memory-Conserving GC | Proposed |
 
 ## Template
 

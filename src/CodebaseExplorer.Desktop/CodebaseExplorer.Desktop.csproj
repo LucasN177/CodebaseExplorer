@@ -45,4 +45,11 @@
     <Content Include="GraphView/**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- GC: collect and compact aggressively instead of growing the heap (decided in STORE-004). Saving a
+         large model otherwise leaves hundreds of MB of uncollected batch garbage; with level 9 saving
+         1,000,000 relationships peaks at ~1.3 GB instead of ~1.95 GB (TEST_STRATEGY.md §8). -->
+    <RuntimeHostConfigurationOption Include="System.GC.ConserveMemory" Value="9" />
+  </ItemGroup>
+
 </Project>

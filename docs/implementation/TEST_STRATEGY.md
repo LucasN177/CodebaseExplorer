@@ -8,9 +8,9 @@
 > language/marker detection, `dotnet-layered` fixture tests, analysis pipeline, solution and
 > project-file parsers, the .NET project-system analyzer, graph projection and graph JSON
 > round-trips, and the import/graph use cases including an end-to-end test over `dotnet-layered`
-> — and the graph host bridge, navigation policy and app manifest (GRAPH-004), and the Start page import ViewModel (UI-002) the Architecture Explorer ViewModel (UI-003) and the shell status (UI-001), edge evidence (GRAPH-010), the persistence tables (STORE-001, STORE-002) and the startup migration (STORE-003) — 807 tests in total (5 skipped on
+> — and the graph host bridge, navigation policy and app manifest (GRAPH-004), and the Start page import ViewModel (UI-002) the Architecture Explorer ViewModel (UI-003) and the shell status (UI-001), edge evidence (GRAPH-010), the persistence tables (STORE-001, STORE-002) the startup migration (STORE-003) and the model store (STORE-004) — 818 tests in total (6 skipped on
 > this Windows machine: 3 symbolic-link tests without link permission, 1 explicit benchmark, 1 Unix-only
-> file-permission test).
+> file-permission test, 1 explicit store memory benchmark).
 
 ## 1. Goals
 
@@ -147,6 +147,7 @@ dotnet test --solution CodebaseExplorer.slnx --coverlet --coverlet-output-format
 | Date | Benchmark | Result | Notes |
 |---|---|---|---|
 | 2026-11-17 | Scanner, 10,000 small files in 100 directories (`RepositoryScannerTests.Scan_TenThousandFiles_CompletesWithinFiveSeconds`, explicit test) | 2.7 s | Debug build, Windows 11, local SSD; target < 5 s (REPO-002). Run: `dotnet test --project tests/CodebaseExplorer.Analysis.Tests --filter-method "*Scan_TenThousandFiles*" --explicit only --output Detailed` |
+| 2026-11-18 | Save 1,000,000 synthetic relationships (+ 1,000,000 evidence) with `ArchitectureModelStore` (`ArchitectureModelStoreBenchmarks.SaveOneMillionRelationships_StaysBelowOnePointFiveGigabytes`, explicit test) | peak working set **1,331 MB** with `System.GC.ConserveMemory=9`; save 147 s; DB 1.4 GB | Release, Windows 11; target < 1.5 GB (STORE-004). The model alone is 914 MB live; the store adds ~18 MB live, but with default GC settings uncollected batch garbage raised the peak to 1,951 MB (level 5: 1,762 MB, 7: 1,505 MB, 9: 1,331 MB at ~20 % more save time). The app sets level 9 (Desktop csproj). Run: `dotnet test --project tests/CodebaseExplorer.Storage.Tests -c Release --filter-method "*SaveOneMillionRelationships*" --explicit only --output Detailed` |
 
 ## 9. Accessibility checklist (QA-005)
 

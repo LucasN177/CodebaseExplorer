@@ -16,7 +16,7 @@ the repository scanner and language/marker detection (REPO-001 … REPO-003) and
 `dotnet-layered` fixture (REPO-004), and the analysis pipeline with the static .NET project-system
 analyzer (ANALYSIS-001 … ANALYSIS-004), and the project-level graph projection plus graph DTOs and
 message envelope (GRAPH-002), and the use cases `ImportLocalRepository` / `GetGraphView` with an
-in-memory session cache (CORE-006), the graph web view bundle (GRAPH-003; after changing
+model store (CORE-006, persisted since STORE-004), the graph web view bundle (GRAPH-003; after changing
 `src/CodebaseExplorer.GraphView.Web` run `npm ci && npm run build` and commit `Desktop/GraphView`), and the
 graph host control with its message bridge (`IGraphViewHost`, GRAPH-004), and the Start page import flow
 (folder picker, progress, cancel, `RepositorySession`; UI-002), and
@@ -25,8 +25,9 @@ the shell status bar and notifications (`ShellStatus`, UI-001), edge evidence in
 (`GetGraphEdgeDetails`, GRAPH-010), and CI on Windows/macOS/Linux (QA-001).
 M2 in progress: the EF Core SQLite context with all model tables and Domain mapping exists (STORE-001/002), the app
 creates, backs up and migrates the database at startup (STORE-003; `dotnet tool restore` + `dotnet ef`, see
-DEVELOPMENT_GUIDE §6), but it
-does not persist analysis results yet (STORE-004). No language analyzer, Git or AI functionality exists yet. Next: the remaining M2
+DEVELOPMENT_GUIDE §6), and saves every run and the current model in SQLite (`IArchitectureModelStore`, STORE-004;
+the whole model is read and cached per run, slice queries follow in M4). No language analyzer, Git or AI
+functionality exists yet. Next: the remaining M2
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 
 ## Commands

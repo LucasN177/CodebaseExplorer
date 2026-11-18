@@ -174,13 +174,15 @@ sequenceDiagram
     VM->>UC: GetComponentDetailsAsync(elementId, ct)
 ```
 
-**Implemented in M1 (CORE-006):** `ImportLocalRepository` (validate → `AnalysisRun` Pending →
-Running → analyze → complete or fail/cancel → store in the session `IArchitectureModelCache`) and
-`GetGraphView` (cache → `IGraphProjector`). Until STORE-004 the "Storage" participant above is the
-in-memory session cache; models are lost when the app exits. One import per folder at a time
-(`repository.import-in-progress`); cancellation leaves the cache unchanged and propagates
-`OperationCanceledException`; re-importing a folder keeps its `RepositoryId`. The use cases return
-Contracts DTOs (`RepositoryImportSummaryDto`, `GraphViewDto`), so ViewModels never see Domain types.
+**Implemented (CORE-006, STORE-004):** `ImportLocalRepository` (validate → `AnalysisRun` Pending →
+Running → analyze → complete or fail/cancel → `IArchitectureModelStore.SaveRunAsync`) and
+`GetGraphView` / `GetGraphEdgeDetails` (`IArchitectureModelStore.LoadCurrentModelAsync` →
+`IGraphProjector`). The store is SQLite (Storage); models survive restarts. Every finished run is
+recorded; only a run that produced a model replaces the stored model, in one transaction, so failed and
+cancelled runs leave the previous model intact. One import per folder at a time
+(`repository.import-in-progress`); cancellation propagates `OperationCanceledException`; re-importing a
+folder keeps its `RepositoryId`. The use cases return Contracts DTOs (`RepositoryImportSummaryDto`,
+`GraphViewDto`), so ViewModels never see Domain types.
 
 Principles:
 
@@ -188,7 +190,10 @@ Principles:
   `IProgress<T>` where progress is meaningful.
 - The UI thread only dispatches commands and applies results; analysis runs on background tasks.
 - The model is written once per run (batched, transactional) and read in **slices** (by level,
-  focus element, filters) — the full model of a monorepo is never loaded into the UI.
+  focus element, filters) — the full model of a monorepo is never loaded into the UI. *Current state
+  (STORE-004, decided 2026-11-18):* the Application layer reads the whole current model (cached per run)
+  and the UI only receives projected DTOs; SQL slice queries follow with the node budget and benchmarks in
+  M4 (GRAPH-008, QA-002); see ADR-010 (Proposed).
 
 ## 7. Analyzer pipeline (overview)
 

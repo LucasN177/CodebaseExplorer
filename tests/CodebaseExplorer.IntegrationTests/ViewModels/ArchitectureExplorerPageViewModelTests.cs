@@ -3,7 +3,6 @@ using CodebaseExplorer.Application.Graph;
 using CodebaseExplorer.Application.Repositories;
 using CodebaseExplorer.Contracts.Graph;
 using CodebaseExplorer.Contracts.Repositories;
-using CodebaseExplorer.Desktop.Composition;
 using CodebaseExplorer.Desktop.Services;
 using CodebaseExplorer.Desktop.ViewModels.Pages;
 using CodebaseExplorer.TestRepositories;
@@ -17,9 +16,9 @@ namespace CodebaseExplorer.IntegrationTests.ViewModels;
 /// UI-003: the explorer loads the project graph of the current repository into the graph host and
 /// shows name and kind of the selection. Real use cases, substituted graph host (no WebView).
 /// </summary>
-public sealed class ArchitectureExplorerPageViewModelTests : IDisposable
+public sealed class ArchitectureExplorerPageViewModelTests : IAsyncLifetime
 {
-    private readonly ServiceProvider _services = CompositionRoot.BuildServiceProvider();
+    private readonly TestApplication _app = new();
     private readonly IGraphViewHost _host = Substitute.For<IGraphViewHost>();
     private readonly RepositorySession _session = new();
     private readonly ShellStatus _shell = new(TimeProvider.System);
@@ -30,11 +29,13 @@ public sealed class ArchitectureExplorerPageViewModelTests : IDisposable
         _host.ShowGraphAsync(default!, Arg.Any<CancellationToken>()).ReturnsForAnyArgs(true);
         _host.Selection.Returns(GraphSelection.Empty);
         _viewModel = new ArchitectureExplorerPageViewModel(
-            _host, _services.GetRequiredService<GetGraphView>(), _services.GetRequiredService<GetGraphEdgeDetails>(),
+            _host, _app.Services.GetRequiredService<GetGraphView>(), _app.Services.GetRequiredService<GetGraphEdgeDetails>(),
             _session, _shell, NullLogger<ArchitectureExplorerPageViewModel>.Instance);
     }
 
-    public void Dispose() => _services.Dispose();
+    public ValueTask InitializeAsync() => _app.InitializeAsync();
+
+    public ValueTask DisposeAsync() => _app.DisposeAsync();
 
     [Fact]
     public void WithoutRepository_ShowsEmptyState()
@@ -68,10 +69,10 @@ public sealed class ArchitectureExplorerPageViewModelTests : IDisposable
         await Task.Yield();
 
         Assert.False(_viewModel.HasGraph);
-        Assert.Equal("The repository has not been analyzed in this session.", _viewModel.ErrorMessage);
+        Assert.Equal("The repository has not been analyzed yet.", _viewModel.ErrorMessage);
         await _host.DidNotReceiveWithAnyArgs().ShowGraphAsync(default!, Arg.Any<CancellationToken>());
         Assert.Equal(
-            "The graph of unknown could not be shown: The repository has not been analyzed in this session.",
+            "The graph of unknown could not be shown: The repository has not been analyzed yet.",
             Assert.Single(_shell.Notifications).Message);
         Assert.False(_shell.IsBusy);
     }
@@ -189,7 +190,7 @@ public sealed class ArchitectureExplorerPageViewModelTests : IDisposable
 
     private async Task<GraphViewDto> ImportFixtureAsync()
     {
-        var summary = (await _services.GetRequiredService<ImportLocalRepository>().ExecuteAsync(
+        var summary = (await _app.Services.GetRequiredService<ImportLocalRepository>().ExecuteAsync(
             TestRepositoryCatalog.GetFixturePath("dotnet-layered"), null, TestContext.Current.CancellationToken)).Value;
 
         // GetGraphView and the substituted host complete synchronously, so the load triggered by the session

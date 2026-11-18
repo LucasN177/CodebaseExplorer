@@ -1,7 +1,6 @@
 using CodebaseExplorer.Application.Graph;
 using CodebaseExplorer.Application.Repositories;
 using CodebaseExplorer.Contracts.Graph;
-using CodebaseExplorer.Desktop.Composition;
 using CodebaseExplorer.TestRepositories;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,17 +10,19 @@ namespace CodebaseExplorer.IntegrationTests.Application;
 /// CORE-006 acceptance: fixture <c>dotnet-layered</c> → import → project-level graph matching EXPECTED.md,
 /// using the real composition root (all modules wired as in the application).
 /// </summary>
-public sealed class ImportAndGraphEndToEndTests : IDisposable
+public sealed class ImportAndGraphEndToEndTests : IAsyncLifetime
 {
-    private readonly ServiceProvider _services = CompositionRoot.BuildServiceProvider();
+    private readonly TestApplication _app = new();
 
-    public void Dispose() => _services.Dispose();
+    public ValueTask InitializeAsync() => _app.InitializeAsync();
+
+    public ValueTask DisposeAsync() => _app.DisposeAsync();
 
     [Fact]
     public async Task ImportFixture_ThenProjectGraph_MatchesExpected()
     {
-        var import = _services.GetRequiredService<ImportLocalRepository>();
-        var getGraph = _services.GetRequiredService<GetGraphView>();
+        var import = _app.Services.GetRequiredService<ImportLocalRepository>();
+        var getGraph = _app.Services.GetRequiredService<GetGraphView>();
 
         var summary = (await import.ExecuteAsync(
             TestRepositoryCatalog.GetFixturePath("dotnet-layered"), progress: null, TestContext.Current.CancellationToken)).Value;
@@ -67,10 +68,10 @@ public sealed class ImportAndGraphEndToEndTests : IDisposable
     [Fact]
     public async Task ImportFixture_WithExternalDependencies_ShowsPackages()
     {
-        var summary = (await _services.GetRequiredService<ImportLocalRepository>().ExecuteAsync(
+        var summary = (await _app.Services.GetRequiredService<ImportLocalRepository>().ExecuteAsync(
             TestRepositoryCatalog.GetFixturePath("dotnet-layered"), null, TestContext.Current.CancellationToken)).Value;
 
-        var view = (await _services.GetRequiredService<GetGraphView>().ExecuteAsync(
+        var view = (await _app.Services.GetRequiredService<GetGraphView>().ExecuteAsync(
             new GraphQuery { RepositoryId = summary.RepositoryId, IncludeExternalDependencies = true },
             TestContext.Current.CancellationToken)).Value;
 

@@ -7,11 +7,12 @@ software repositories and turns their structure, architecture, dependencies and 
 interactive architecture model. It helps developers understand unfamiliar or complex codebases
 quickly — without uploading code and without executing it.
 
-> **Project status: milestone M1 (vertical slice) in progress.**
+> **Project status: milestone M1 (vertical slice) functionally complete (manual macOS/Linux checks pending); M2 (persistence) in progress.**
 > The repository contains the complete product and architecture documentation, a buildable .NET 10
 > solution and an application in which a local folder can be imported and its .NET projects analyzed.
-> Its project-level dependency graph is shown in the Architecture Explorer (verified on Windows).
-> **There are no Git, AI or persistence features yet, and no code-level (C#/TypeScript/Python) analysis.** See [Project status](#project-status).
+> Its project-level dependency graph is shown in the Architecture Explorer (verified on Windows), and the analysis is
+> saved in a local SQLite database.
+> **There are no Git or AI features yet, no code-level (C#/TypeScript/Python) analysis, and saved repositories cannot be reopened from the UI yet (REPO-005).** See [Project status](#project-status).
 
 ---
 
@@ -36,14 +37,14 @@ analysis. Full vision: [docs/product/VISION.md](docs/product/VISION.md).
 |---|---|
 | App shell: navigation, Start page, Settings (theme System/Light/Dark, local data directory), status bar with busy indicator, error notifications | ✅ available |
 | Architecture Explorer: project-level graph of the imported repository, selection panel with the evidence (file + line) of a selected edge, light/dark theme | ✅ available (verified on Windows; macOS/Linux not yet tested) |
-| Import a local folder (folder picker, progress with stages, cancel) | ✅ available (results kept in memory for the session) |
+| Import a local folder (folder picker, progress with stages, cancel) | ✅ available (results are saved locally in SQLite) |
 | Clone GitHub/GitLab remotes | ⏳ planned (M5) |
 | Repository scanner, language and project detection | 🟡 partial (scanner and .NET project analysis available; other ecosystems M4) |
 | C# analysis with Roslyn (no build required) | ⏳ planned (M1 projects, M3 types) |
 | TypeScript, JavaScript and Python analysis (Tree-sitter, manifests) | ⏳ planned (M4) |
 | Hierarchical drill-down, layouts, filters and search in the graph (Cytoscape.js) | ⏳ planned (M2–M4) |
 | Component Inspector with evidence and source snippets | ⏳ planned (M3) |
-| Local persistence (SQLite) and analysis history | 🚧 in progress (M2: the local database is created and migrated at startup; analysis results are not stored yet) |
+| Local persistence (SQLite) and analysis history | 🚧 in progress (M2: database created and migrated at startup; analysis runs and models are saved — reopening a saved repository from the UI follows with REPO-005) |
 | Git metadata and change-activity overlays | ⏳ planned (M5) |
 | Markdown/Mermaid architecture export | ⏳ planned (M6) |
 | Optional local AI (Ollama) with cited answers | ⏳ planned (M7) |
@@ -110,8 +111,9 @@ enforced by architecture tests. Details: [docs/architecture/SYSTEM_ARCHITECTURE.
 | Milestone | Status |
 |---|---|
 | M0 Foundation — docs, solution, app shell | ✅ done |
-| M1 Vertical slice — local repo → .NET projects → project graph | 🚧 in progress |
-| M2 Persistence · M3 Deep C# & Inspector · M4 Polyglot & scale | ⏳ planned |
+| M1 Vertical slice — local repo → .NET projects → project graph | ✅ functionally complete (manual macOS/Linux WebView checks pending) |
+| M2 Persistence and analysis runs | 🚧 in progress (STORE-001 … STORE-004 done) |
+| M3 Deep C# & Inspector · M4 Polyglot & scale | ⏳ planned |
 | M5 Git · M6 Export · M7 Local AI · M8 Release | ⏳ planned |
 
 What exists today: 10 source projects and 6 test projects, central package management, module
@@ -125,7 +127,7 @@ project-system analyzer that builds the model of .NET repositories — projects,
 project/package/framework references with evidence — without running MSBuild (ANALYSIS-001 …
 ANALYSIS-004), the project-level graph projection with its JSON wire format (GRAPH-002), and the
 use cases that tie them together — import a local folder, then query its project graph (CORE-006;
-models are kept in memory for the session until persistence arrives in M2). The Start page imports a
+since STORE-004 the analysis results are saved in a local SQLite database). The Start page imports a
 local folder with a progress panel and cancel (UI-002). The graph web view (TypeScript + Cytoscape.js, GRAPH-003) is built and
 shipped with the app; the host control embeds it in the window (GRAPH-004), and the Architecture Explorer shows the project graph of the imported repository with a selection panel (UI-003, verified on Windows).
 

@@ -4,4 +4,9 @@
     <ProjectReference Include="..\..\src\CodebaseExplorer.Storage\CodebaseExplorer.Storage.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Same GC setting as the application (Desktop csproj), so the STORE-004 memory benchmark measures the app configuration. -->
+    <RuntimeHostConfigurationOption Include="System.GC.ConserveMemory" Value="9" />
+  </ItemGroup>
+
 </Project>

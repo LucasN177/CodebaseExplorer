@@ -306,7 +306,7 @@ Status overview (keep in sync):
 - **Note:** Port `IDatabaseInitializer` (Application) with `DatabaseInitializer` (Storage); backup via SQLite online backup API (WAL-safe), keep 3. The app shows `StartupErrorWindow` instead of the main window on failure; the log path follows with CORE-007 (no file log yet). Pre-creating an empty DB file breaks EF's SQLite migrator, so the 0700 data directory plus 0600 after opening provide the user-only permissions; the Unix test runs only in CI (Linux/macOS). Manually verified on Windows: first start creates the DB, second start reuses it, an unreadable DB shows the error window and stays unchanged.
 
 ### STORE-004 — Architecture model store (save run, read slices)
-- **Priority:** P0 · **Milestone:** M2 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M2 · **Status:** done
 - **Prerequisites:** STORE-003, CORE-006
 - **Projects:** Application (port `IArchitectureModelStore`), Storage, Storage.Tests, IntegrationTests
 - **Description:** Transactional replace of a repository's model per successful run (batched); read slices for graph projection (projects, aggregated relationships by project/module) and inspector queries. Replace the M1 session cache.
@@ -314,6 +314,7 @@ Status overview (keep in sync):
   - Failed/cancelled runs never modify the stored model.
   - Saving the `dotnet-layered` model and reading the L1 slice yields the same graph as M1.
   - Saving 1,000,000 synthetic relationships completes without exceeding 1.5 GB process memory (benchmark, documented result).
+- **Note (2026-11-18):** Port `IArchitectureModelStore` replaces `IArchitectureModelCache`; `ArchitectureModelStore` (Storage) saves every finished run and replaces the model of a run that produced one in one transaction (delete by repository, then batched inserts of 5,000 rows with a cleared change tracker). **Decided with the user:** the Application layer reads the whole current model (cached per run id) instead of SQL slices; slice queries move to M4 (GRAPH-008, QA-002), see SYSTEM_ARCHITECTURE.md §6 and ADR-010 (Proposed). The `dotnet-layered` L1 graph is unchanged (end-to-end test now runs through SQLite). Benchmark: 1,331 MB peak with `System.GC.ConserveMemory=9`, which the app now sets — with default GC it was 1,951 MB (TEST_STRATEGY.md §8). Integration tests run the real composition root against a temporary data directory (`TestApplication`, `CompositionRoot.BuildServiceProvider(overrides)`).
 
 ### STORE-005 — User settings store and theme persistence
 - **Priority:** P0 · **Milestone:** M2 · **Status:** todo
