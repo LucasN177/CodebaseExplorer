@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "Inventory-Service"
+version = "0.3.0"
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.31",
+    "PyYAML~=6.0",
+    "attrs",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]

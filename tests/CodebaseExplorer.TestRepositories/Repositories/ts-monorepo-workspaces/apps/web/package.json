@@ -1,0 +1,11 @@
+{
+  "name": "web",
+  "private": true,
+  "dependencies": {
+    "@acme/core": "^1.0.0",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0"
+  }
+}

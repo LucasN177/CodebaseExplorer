@@ -1,0 +1,14 @@
+{
+  "name": "legacy-tool",
+  "version": "2.0.0",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "dependencies": {
+    "express": "^4.19.0"
+  },
+  "devDependencies": {
+    "mocha": "^10.0.0"
+  }
+}

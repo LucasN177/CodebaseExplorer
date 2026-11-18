@@ -24,7 +24,7 @@ Status overview (keep in sync):
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 9 |
-| M4 Polyglot & scale | 11 | 1 |
+| M4 Polyglot & scale | 11 | 2 |
 | M5 Git | 7 | 0 |
 | M6 Export | 2 | 0 |
 | M7 Local AI | 7 | 0 |
@@ -491,11 +491,12 @@ Status overview (keep in sync):
 - **Acceptance criteria:** All fixtures analyzed twice produce byte-identical serialized models.
 
 ### REPO-007 — Polyglot fixtures
-- **Priority:** P0 · **Milestone:** M4 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M4 · **Status:** done
 - **Prerequisites:** —
 - **Projects:** TestRepositories
 - **Description:** `ts-monorepo-workspaces`, `js-commonjs`, `python-src-layout`, `mixed-polyglot` (dotnet + ts + python) with `EXPECTED.md`.
 - **Acceptance criteria:** Each fixture's expectations reviewed and complete.
+- **Note:** Done 2026-11-18. Four fixtures (LF, byte-exact) with `EXPECTED.md`: `ts-monorepo-workspaces` (19 files), `js-commonjs` (7), `python-src-layout` (9), `mixed-polyglot` (10). Their EXPECTED.md files fix the conventions the analyzers implement: one Node project per `package.json` (root with `workspaces` = `NodeWorkspaceRoot`), dependencies on repository packages = `ProjectReference`, solution-style `tsconfig` references are no dependency; one Python project per folder with manifests; TS/JS modules = directory modules + one `FileModule` per source file, Python modules = packages + file modules (dotted, relative to `src/` or the project root); `Imports` connect file modules (rules `ts.{syntax}.{resolution}`, `py.import.*`). `PolyglotFixtureTests` asserts section 1 (files, markers, classifications, LF) of all four; the analyzer sections are asserted by ANALYSIS-009 … 012. Hostile npm/`setup.py` fixtures are added with ANALYSIS-009/011.
 
 ### GRAPH-007 — Filters, search and neighborhood view
 - **Priority:** P0 · **Milestone:** M4 · **Status:** todo

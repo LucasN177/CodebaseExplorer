@@ -1,0 +1,5 @@
+# Development tools
+pytest>=8.0
+black==24.8.0 ; python_version >= "3.11"
+--index-url https://example.invalid/simple
+-r ../outside.txt

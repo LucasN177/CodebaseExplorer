@@ -1,0 +1,10 @@
+{
+  // Shared compiler options (JSONC: comments and trailing commas are allowed).
+  "compilerOptions": {
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["packages/shared/src/*"],
+    },
+  },
+}

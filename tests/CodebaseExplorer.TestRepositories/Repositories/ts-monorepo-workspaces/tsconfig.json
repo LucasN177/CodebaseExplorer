@@ -1,0 +1,9 @@
+{
+  /* Solution-style tsconfig: groups the projects, compiles nothing itself. */
+  "files": [],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/shared" },
+    { "path": "apps/web" }
+  ]
+}
