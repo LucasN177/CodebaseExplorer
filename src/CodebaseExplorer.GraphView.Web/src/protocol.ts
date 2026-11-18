@@ -61,6 +61,11 @@ export interface GraphView {
 
 export type ThemeMode = 'light' | 'dark';
 
+/** Layouts of `view/layout` (GRAPH_ENGINE.md §8). */
+export const LAYOUT_NAMES = ['hierarchical', 'force', 'concentric'] as const;
+
+export type LayoutName = (typeof LAYOUT_NAMES)[number];
+
 export interface Envelope {
   type: string;
   version: number;
@@ -131,6 +136,14 @@ export function parseGraphView(payload: Record<string, unknown>): Parsed<GraphVi
 /** Validates a `view/theme` payload. */
 export function parseTheme(payload: Record<string, unknown>): Parsed<ThemeMode> {
   return payload.mode === 'light' || payload.mode === 'dark' ? { ok: true, value: payload.mode } : fail('mode must be light or dark');
+}
+
+/** Validates a `view/layout` payload. */
+export function parseLayout(payload: Record<string, unknown>): Parsed<LayoutName> {
+  const name = payload.name;
+  return isString(name) && (LAYOUT_NAMES as readonly string[]).includes(name)
+    ? { ok: true, value: name as LayoutName }
+    : fail(`name must be one of ${LAYOUT_NAMES.join(', ')}`);
 }
 
 /** Validates a payload `{ elementId }` (e.g. `graph/focus`). */

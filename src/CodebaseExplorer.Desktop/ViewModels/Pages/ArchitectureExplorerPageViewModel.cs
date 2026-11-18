@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using CodebaseExplorer.Application.Graph;
+using CodebaseExplorer.Application.Settings;
 using CodebaseExplorer.Contracts.Graph;
 using CodebaseExplorer.Desktop.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -21,17 +22,20 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
     private readonly GetGraphView _getGraphView;
     private readonly GetGraphEdgeDetails _getEdgeDetails;
     private readonly RepositorySession _session;
+    private readonly IUserSettingsStore _settings;
     private readonly ShellStatus _shell;
     private readonly ILogger<ArchitectureExplorerPageViewModel> _logger;
     private int _loadNumber;
     private int _evidenceNumber;
     private GraphQuery? _query;
+    private bool _restoringLayout;
 
     public ArchitectureExplorerPageViewModel(
         IGraphViewHost graph,
         GetGraphView getGraphView,
         GetGraphEdgeDetails getEdgeDetails,
         RepositorySession session,
+        IUserSettingsStore settings,
         ShellStatus shell,
         ILogger<ArchitectureExplorerPageViewModel> logger)
     {
@@ -39,8 +43,13 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         _getGraphView = getGraphView;
         _getEdgeDetails = getEdgeDetails;
         _session = session;
+        _settings = settings;
         _shell = shell;
         _logger = logger;
+        Layouts = [.. Enum.GetValues<GraphLayout>().Select(layout => new GraphLayoutOption(layout, layout.DisplayName()))];
+        _restoringLayout = true; // the initial value is neither sent nor stored; RestoreLayoutAsync applies the stored one
+        SelectedLayout = OptionFor(GraphLayouts.Default);
+        _restoringLayout = false;
 
         _session.CurrentChanged += (_, _) => _ = LoadCurrentRepositoryAsync();
         Graph.PropertyChanged += OnGraphPropertyChanged;
@@ -53,6 +62,13 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
 
     /// <summary>The graph web view; bound to the graph host control.</summary>
     public IGraphViewHost Graph { get; }
+
+    /// <summary>The layouts offered by the layout switcher (GRAPH-005).</summary>
+    public IReadOnlyList<GraphLayoutOption> Layouts { get; }
+
+    /// <summary>The chosen layout; a user change re-arranges the graph and stores the choice (<see cref="UserSettingKeys.GraphLayout"/>).</summary>
+    [ObservableProperty]
+    public partial GraphLayoutOption SelectedLayout { get; set; }
 
     /// <summary>Name of the repository whose graph is shown.</summary>
     [ObservableProperty]
@@ -98,6 +114,36 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
     /// <summary>State of the evidence list, e.g. <c>Loading evidence…</c>, an error, or how many records were omitted.</summary>
     [ObservableProperty]
     public partial string? EvidenceMessage { get; private set; }
+
+    /// <summary>
+    /// Applies the stored layout choice to the graph view without storing it again. Called once at startup;
+    /// a missing, unknown or unreadable setting means <see cref="GraphLayouts.Default"/> (read errors are logged).
+    /// </summary>
+    public async Task RestoreLayoutAsync(CancellationToken cancellationToken = default)
+    {
+        string? stored;
+        try
+        {
+            stored = await _settings.GetAsync(UserSettingKeys.GraphLayout, cancellationToken);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.LogError(exception, "The stored graph layout could not be read; the default layout is used");
+            stored = null;
+        }
+
+        _restoringLayout = true;
+        try
+        {
+            SelectedLayout = OptionFor(GraphLayouts.Parse(stored));
+        }
+        finally
+        {
+            _restoringLayout = false;
+        }
+
+        await Graph.SetLayoutAsync(SelectedLayout.Layout, cancellationToken);
+    }
 
     /// <summary>Loads the project-level graph of <see cref="RepositorySession.Current"/> into the graph view.</summary>
     public async Task LoadCurrentRepositoryAsync(CancellationToken cancellationToken = default)
@@ -161,6 +207,31 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             }
         }
     }
+
+    partial void OnSelectedLayoutChanged(GraphLayoutOption value)
+    {
+        if (!_restoringLayout)
+        {
+            _ = ChangeLayoutAsync(value.Layout);
+        }
+    }
+
+    private async Task ChangeLayoutAsync(GraphLayout layout)
+    {
+        try
+        {
+            await Graph.SetLayoutAsync(layout);
+            await _settings.SetAsync(UserSettingKeys.GraphLayout, layout.ToToken(), CancellationToken.None);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            // The bridge logs delivery problems itself; this is the storage failing.
+            _logger.LogError(exception, "Saving the graph layout failed");
+            _shell.Notify(NotificationSeverity.Error, "The graph layout could not be saved and will be reset at the next start.");
+        }
+    }
+
+    private GraphLayoutOption OptionFor(GraphLayout layout) => Layouts.First(option => option.Layout == layout);
 
     private void OnGraphPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

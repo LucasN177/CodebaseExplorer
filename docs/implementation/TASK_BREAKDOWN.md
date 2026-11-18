@@ -23,7 +23,7 @@ Status overview (keep in sync):
 | M0 Foundation | (initialization) | ✅ |
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
-| M3 Deep C# & Inspector | 9 | 0 |
+| M3 Deep C# & Inspector | 9 | 1 |
 | M4 Polyglot & scale | 11 | 0 |
 | M5 Git | 7 | 0 |
 | M6 Export | 2 | 0 |
@@ -407,11 +407,12 @@ Status overview (keep in sync):
 - **Acceptance criteria:** Tests run in CI on all OSes; SECURITY.md §6 references them; harness documented in TEST_STRATEGY.md.
 
 ### GRAPH-005 — Layouts and visual encoding
-- **Priority:** P0 · **Milestone:** M3 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M3 · **Status:** done
 - **Prerequisites:** GRAPH-004
 - **Projects:** GraphView.Web, Desktop
 - **Description:** Hierarchical and force layouts, layout switcher, visual encoding from GRAPH_ENGINE.md §9; license review for layout extensions (elkjs EPL-2.0). Spike GRAPH-001 measured Cytoscape's built-in `cose` at 12.5–13.9 s for 500 nodes / 2,000 edges, so the default layout must be faster (measure dagre/fcose/web-worker options).
 - **Acceptance criteria:** Layout choice persisted; license review documented in SOLUTION_STRUCTURE.md §6.2.
+- **Note:** Done 2026-11-18. Layouts: force (fcose, default), hierarchical (dagre), concentric (built-in); switcher in the Architecture Explorer, choice stored as `graph.layout`. Measurements in GRAPH_ENGINE.md §8.1: the default force layout needs ≤ 0.43 s for 500 nodes / 2,000 edges (headless Edge); hierarchical exceeds the 2 s target on graphs that large (2.2–2.8 s headless, more in WebView2). elkjs and web-worker layouts not adopted. Module/type node shapes follow with the kinds in GRAPH-006. Verified with an end-to-end harness in headless Edge; not yet checked in the running app.
 
 ### GRAPH-006 — Module and entity levels with expand/collapse
 - **Priority:** P0 · **Milestone:** M3 · **Status:** todo

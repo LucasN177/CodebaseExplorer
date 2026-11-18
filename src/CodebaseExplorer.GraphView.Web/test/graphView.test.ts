@@ -1,16 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { Bridge } from '../src/bridge';
-import { toElements } from '../src/elements';
+import { edgeWidth, nodeScale, toElements } from '../src/elements';
 import { GraphViewController } from '../src/graphView';
 import type { Renderer } from '../src/graphView';
 import { parseGraphView } from '../src/protocol';
-import type { GraphView, ThemeMode } from '../src/protocol';
+import type { GraphView, LayoutName, ThemeMode } from '../src/protocol';
 import { envelope, node, view } from './fixtures';
 
 class FakeRenderer implements Renderer {
   loaded: GraphView[] = [];
   themes: ThemeMode[] = [];
+  layouts: LayoutName[] = [];
   focused: string[] = [];
+
+  setLayout(name: LayoutName): void {
+    this.layouts.push(name);
+  }
 
   load(graph: GraphView): void {
     this.loaded.push(graph);
@@ -68,6 +73,17 @@ describe('GraphViewController', () => {
     expect(renderer.themes).toEqual(['dark']);
   });
 
+  it('applies layouts and rejects unknown ones without changing the layout', () => {
+    const { sent, renderer, controller } = setup();
+
+    expect(controller.receive(envelope('view/layout', { name: 'hierarchical' }))).toBe('ok');
+    expect(controller.receive(envelope('view/layout', { name: 'concentric' }))).toBe('ok');
+    expect(controller.receive(envelope('view/layout', { name: 'cose' }))).toBe('error: view/layout: name must be one of hierarchical, force, concentric');
+    expect(controller.receive(envelope('view/layout', {}))).toMatch(/^error: view\/layout:/);
+    expect(renderer.layouts).toEqual(['hierarchical', 'concentric']);
+    expect(sent).toHaveLength(2);
+  });
+
   it('focuses known elements and reports unknown ones', () => {
     const { controller } = setup();
 
@@ -117,6 +133,31 @@ describe('toElements', () => {
     const [, b, ab] = toElements(parsed.value);
 
     expect(b?.data.missing).toBe(1);
-    expect(ab?.data).toMatchObject({ source: 'a', target: 'b', level: 'syntactic', declared: 0, count: 2 });
+    expect(ab?.data).toMatchObject({ source: 'a', target: 'b', level: 'syntactic', declared: 0, count: 2, width: 2.5 });
+  });
+
+  it('maps project and package ecosystems to one color family', () => {
+    const parsed = parseGraphView(view({
+      nodes: [node('a'), node('b', { ecosystem: 'npm', kind: 'external-dependency' }), node('c', { ecosystem: 'pypi' }), node('d', { ecosystem: undefined })],
+      edges: [],
+    }));
+    if (!parsed.ok) throw new Error(parsed.error);
+
+    expect(toElements(parsed.value).map((e) => e.data.ecosystem)).toEqual(['dotnet', 'node', 'python', 'other']);
+  });
+});
+
+describe('visual scales', () => {
+  it('widens edges logarithmically with the relationship count and caps the width', () => {
+    expect(edgeWidth(1)).toBe(1.5);
+    expect(edgeWidth(4)).toBe(3.5);
+    expect(edgeWidth(1024)).toBe(7);
+    expect(edgeWidth(0)).toBe(1.5);
+  });
+
+  it('grows nodes logarithmically with their size and caps the factor', () => {
+    expect(nodeScale(0)).toBe(1);
+    expect(nodeScale(99)).toBeCloseTo(1 + 2 / 3);
+    expect(nodeScale(1_000_000)).toBe(2);
   });
 });

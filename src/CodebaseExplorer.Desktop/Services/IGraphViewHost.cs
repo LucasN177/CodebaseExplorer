@@ -33,4 +33,7 @@ public interface IGraphViewHost : INotifyPropertyChanged
 
     /// <summary>Applies a theme; remembered and re-applied after a page reload.</summary>
     Task<bool> SetThemeAsync(GraphThemeMode mode, CancellationToken cancellationToken = default);
+
+    /// <summary>Applies a layout (re-arranging the current graph); remembered and re-applied after a page reload.</summary>
+    Task<bool> SetLayoutAsync(GraphLayout layout, CancellationToken cancellationToken = default);
 }

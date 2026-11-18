@@ -1,11 +1,15 @@
 // Entry point of graph.js (classic script, loaded from file:// by the Avalonia NativeWebView).
 import cytoscape from 'cytoscape';
 import type { Core } from 'cytoscape';
+import dagre from 'cytoscape-dagre';
+import fcose from 'cytoscape-fcose';
 import { Bridge, hostTransport } from './bridge';
 import { toElements } from './elements';
 import { GraphViewController } from './graphView';
 import type { Renderer } from './graphView';
-import type { ThemeMode } from './protocol';
+import { applyFocusDimming } from './highlight';
+import { DEFAULT_LAYOUT, layoutOptions } from './layouts';
+import type { LayoutName, ThemeMode } from './protocol';
 import { backgroundOf, stylesheet } from './styles';
 
 declare global {
@@ -14,7 +18,12 @@ declare global {
   var ceReceive: ((json: string) => string) | undefined;
 }
 
+cytoscape.use(dagre);
+cytoscape.use(fcose);
+
 class CytoscapeRenderer implements Renderer {
+  private layout: LayoutName = DEFAULT_LAYOUT;
+
   constructor(
     private readonly cy: Core,
     private readonly container: HTMLElement,
@@ -25,14 +34,18 @@ class CytoscapeRenderer implements Renderer {
       this.cy.elements().remove();
       this.cy.add(toElements(view));
     });
-    // Layout choice and performance targets are decided in GRAPH-005 (cose is too slow for large graphs).
-    this.cy.layout({ name: 'breadthfirst', directed: true, spacingFactor: 1.2, animate: false }).run();
-    this.cy.fit(undefined, 30);
+    this.arrange();
   }
 
   setTheme(mode: ThemeMode): void {
     this.container.style.backgroundColor = backgroundOf(mode);
     this.cy.style(stylesheet(mode));
+  }
+
+  setLayout(name: LayoutName): void {
+    const changed = name !== this.layout;
+    this.layout = name;
+    if (changed && this.cy.elements().nonempty()) this.arrange();
   }
 
   focus(elementId: string): boolean {
@@ -42,6 +55,11 @@ class CytoscapeRenderer implements Renderer {
     element.select();
     this.cy.animate({ center: { eles: element }, duration: 200 });
     return true;
+  }
+
+  private arrange(): void {
+    if (this.cy.elements().empty()) return;
+    this.cy.layout(layoutOptions(this.layout, this.cy.elements().length)).run();
   }
 }
 
@@ -55,7 +73,10 @@ function start(): void {
 
   const reportSelection = (): void =>
     controller.selectionChanged(cy.nodes(':selected').map((n) => n.id()), cy.edges(':selected').map((e) => e.id()));
-  cy.on('select unselect', reportSelection);
+  cy.on('select unselect', () => {
+    applyFocusDimming(cy);
+    reportSelection();
+  });
   cy.on('dbltap', 'node', (event) => controller.openInspector(event.target.id()));
 
   globalThis.ceReceive = (json: string) => controller.receive(json);
