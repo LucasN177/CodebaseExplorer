@@ -31,6 +31,12 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
     private readonly SearchElements _search;
     private int _searchNumber;
     private bool _suppressFilterChanges;
+
+    /// <summary>Earlier view states for <see cref="BackCommand"/> (GRAPH-009), newest last.</summary>
+    private readonly List<GraphQuery> _history = [];
+
+    /// <summary>At most this many view states are remembered for <c>Back</c>.</summary>
+    public const int MaxHistory = 50;
     private int _detailsNumber;
     private readonly IClipboardService _clipboard;
     private int _snippetNumber;
@@ -66,7 +72,9 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         RelationshipKindFilters = [.. RelationshipKindNames.Select(k => new FilterOption(k.Token, k.Display, OnFilterOptionChanged))];
         MinLevelOptions = [new(null, "All evidence"), new(GraphEvidenceLevels.Syntactic, "Syntactic or confirmed"), new(GraphEvidenceLevels.Confirmed, "Confirmed only")];
         DirectionOptions = [new(GraphDirections.Both, "Both directions"), new(GraphDirections.Outgoing, "Outgoing"), new(GraphDirections.Incoming, "Incoming")];
+        ViewModes = [new(GraphLevels.Project, "Projects"), new(GraphLevels.Repository, "Grouped")];
         _suppressFilterChanges = true;
+        SelectedViewMode = ViewModes[0];
         SelectedMinLevel = MinLevelOptions[0];
         SelectedDirection = DirectionOptions[0];
         _suppressFilterChanges = false;
@@ -296,6 +304,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
                 return;
             }
 
+            Remember(query);
             _query = next;
             ShowTruncation(view);
             if (!await Graph.PatchGraphAsync(view, cancellationToken))
@@ -356,9 +365,10 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             SelectionDetail = node.Kind == GraphNodeKinds.Entity ? null : node.Sublabel; // an entity's sublabel is its kind, shown above
             SelectionName = node.Label;
             ClearEvidence();
-            if (node.Kind == GraphNodeKinds.Aggregate)
+            if (node.Kind is GraphNodeKinds.Aggregate or GraphNodeKinds.Group or GraphNodeKinds.Folder)
             {
                 ClearDetails(); // not a model element: there is nothing to inspect
+                SelectionDetail = node.Sublabel;
             }
             else
             {
@@ -567,6 +577,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
                 return;
             }
 
+            Remember(query);
             _query = next;
             ShowTruncation(view);
             await Graph.PatchGraphAsync(view, CancellationToken.None);
@@ -819,6 +830,10 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         _suppressFilterChanges = false;
         Breadcrumbs.Clear();
         IsNeighborhood = false;
+        FolderHint = null;
+        SelectedViewMode = ViewModes[0];
+        _history.Clear();
+        CanGoBack = false;
         SearchText = null;
         SearchResults.Clear();
         SearchMessage = null;
@@ -880,7 +895,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             return Task.CompletedTask;
         }
 
-        return crumb.Level == GraphLevels.Repository
+        return string.Equals(crumb.Id, query.RepositoryId, StringComparison.OrdinalIgnoreCase)
             ? NavigateAsync(query with { Focus = null })
             : NavigateAsync(query with { Focus = crumb.Id, Depth = NeighborhoodDepth, Direction = SelectedDirection.Token ?? GraphDirections.Both });
     }
@@ -969,7 +984,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
     }
 
     /// <summary>Loads the view for <paramref name="next"/> and replaces the shown graph (filters, neighborhood, search).</summary>
-    private async Task<bool> NavigateAsync(GraphQuery next)
+    private async Task<bool> NavigateAsync(GraphQuery next, bool remember = true)
     {
         var loadNumber = _loadNumber;
         try
@@ -988,6 +1003,11 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             }
 
             ErrorMessage = null;
+            if (remember && _query is { } previous)
+            {
+                Remember(previous);
+            }
+
             _query = next;
             ShowTruncation(view);
             ShowNavigation(view, next);
@@ -1016,6 +1036,99 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         }
 
         IsNeighborhood = query.Focus is not null;
+        FolderHint = view.Level == GraphLevels.Folder
+            ? "No projects were recognized in this repository, so the graph shows its folders. Double-click a folder to see its subfolders."
+            : null;
+    }
+
+    // ---- Repository level, folder graph and Back (GRAPH-009) ----
+
+    /// <summary>Project level or grouped by workspace/solution/ecosystem (L0).</summary>
+    public IReadOnlyList<ChoiceOption> ViewModes { get; }
+
+    [ObservableProperty]
+    public partial ChoiceOption SelectedViewMode { get; set; }
+
+    /// <summary>Shown when the repository has no projects and the graph shows folders (WF-01).</summary>
+    [ObservableProperty]
+    public partial string? FolderHint { get; private set; }
+
+    /// <summary>True if <see cref="BackCommand"/> can restore an earlier view state.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(BackCommand))]
+    public partial bool CanGoBack { get; private set; }
+
+    partial void OnSelectedViewModeChanged(ChoiceOption value)
+    {
+        if (!_suppressFilterChanges && _query is { } query && value.Token is { } level && level != query.Level)
+        {
+            _ = NavigateAsync(query with { Level = level });
+        }
+    }
+
+    /// <summary>Restores the previous view state: level, expansions, filters and neighborhood (WF-03 step 5).</summary>
+    [RelayCommand(CanExecute = nameof(CanGoBack))]
+    private async Task BackAsync()
+    {
+        if (_history.Count == 0)
+        {
+            return;
+        }
+
+        var previous = _history[^1];
+        _history.RemoveAt(_history.Count - 1);
+        CanGoBack = _history.Count > 0;
+        ShowControlsOf(previous);
+        if (!await NavigateAsync(previous, remember: false))
+        {
+            Remember(previous); // keep it for another try
+        }
+    }
+
+    private void Remember(GraphQuery previous)
+    {
+        if (_history.Count > 0 && _history[^1] == previous)
+        {
+            return;
+        }
+
+        _history.Add(previous);
+        if (_history.Count > MaxHistory)
+        {
+            _history.RemoveAt(0);
+        }
+
+        CanGoBack = true;
+    }
+
+    /// <summary>Sets filter, neighborhood and view-mode controls to a restored query without triggering reloads.</summary>
+    private void ShowControlsOf(GraphQuery query)
+    {
+        _suppressFilterChanges = true;
+        foreach (var option in LanguageFilters)
+        {
+            option.IsChecked = query.Filters.Languages.Contains(option.Token);
+        }
+
+        foreach (var option in EcosystemFilters)
+        {
+            option.IsChecked = query.Filters.Ecosystems.Contains(option.Token);
+        }
+
+        foreach (var option in RelationshipKindFilters)
+        {
+            option.IsChecked = query.Filters.RelationshipKinds.Contains(option.Token);
+        }
+
+        SelectedMinLevel = MinLevelOptions.FirstOrDefault(o => o.Token == query.Filters.MinLevel) ?? MinLevelOptions[0];
+        IncludeTests = query.Filters.IncludeTests;
+        IncludeGenerated = query.Filters.IncludeGenerated;
+        IncludeExternalDependencies = query.IncludeExternalDependencies;
+        NeighborhoodDepth = query.Depth;
+        SelectedDirection = DirectionOptions.FirstOrDefault(o => o.Token == query.Direction) ?? DirectionOptions[0];
+        SelectedViewMode = ViewModes.FirstOrDefault(o => o.Token == query.Level) ?? ViewModes[0];
+        _ = CurrentFilters(); // updates the summary
+        _suppressFilterChanges = false;
     }
 
     private static string KindText(GraphNodeDto node)
@@ -1025,7 +1138,9 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             GraphNodeKinds.Project => "Project",
             GraphNodeKinds.ExternalDependency => "External dependency",
             GraphNodeKinds.Aggregate => "Elements hidden by the node limit",
-            GraphNodeKinds.Module => "Namespace",
+            GraphNodeKinds.Group => "Group of projects",
+            GraphNodeKinds.Folder => "Folder",
+            GraphNodeKinds.Module => "Module",
             GraphNodeKinds.Entity => node.Sublabel is { Length: > 0 } entityKind ? char.ToUpperInvariant(entityKind[0]) + entityKind[1..] : "Code element",
             _ => node.Kind,
         };

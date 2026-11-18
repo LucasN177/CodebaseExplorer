@@ -24,7 +24,7 @@
 
 | Level | Nodes | Edges (aggregated from stored relationships) |
 |---|---|---|
-| L0 Repository | Ecosystem groups / solution groups / workspace roots | Group-to-group dependency counts |
+| L0 Repository | Ecosystem groups / solution groups / workspace roots (GRAPH-009) | Group-to-group dependency counts |
 | L1 Project | `CodeProject`s (+ optional external dependency nodes) | Project→project (`ProjectReference` + aggregated code relationships), project→package |
 | L2 Module | `CodeModule`s of one or more expanded projects | Module→module aggregated from entity relationships and imports |
 | L3 Entity | `CodeEntity`s of one or more expanded modules | Entity relationships as stored |
@@ -115,6 +115,19 @@ The whole model is still read per run (ADR-010; ADR-012 proposes to keep it afte
   (`truncation.reason = node-budget`).
 - **Breadcrumbs:** always start with the repository (`level = repository`); in neighborhood mode they continue with the
   compound parents of the focus and the focus itself.
+
+**Implemented (GRAPH-009):** `GraphQuery.Level = repository` (L0): projects are grouped — npm/yarn/pnpm workspace
+(root and members), else the first .NET solution that lists the project (ordinal path), else the ecosystem (".NET
+projects", "Node packages", "Python projects", "Other projects"). Groups are nodes of kind `group` (stable id from the
+repository and the group key, `sublabel` = project count, expandable into their projects, which expand further as at
+the project level); relationships attach to the deepest visible node, so collapsed groups carry group-to-group edges.
+Groups count as roots for the node budget; a group expansion that does not fit is refused. A neighborhood focus on a
+project inside a collapsed group focuses the group. **Folder fallback:** a model without projects is shown as folders
+(`view.level = folder`, kind `folder`): top-level folders plus a `(repository root)` node for the root's own files,
+`size` = files below, expandable into subfolders; there are no edges because no language analysis runs without
+projects. **Back** is a view-model feature: the explorer remembers up to 50 earlier queries (expansions, filters, level,
+neighborhood) and restores them including the filter controls. Known limitation: in the grouped view, *Show in graph*
+from the inspector cannot reveal an element inside a collapsed group (the group must be expanded first).
 
 **Search** is an Application use case (`SearchElements`, Contracts `Search/SearchResultsDto`): case-insensitive over
 project, module, entity and package names (exact › prefix › contained › qualified name contains; shorter names

@@ -49,7 +49,7 @@ repository already cloned (offer *update* = fetch + checkout of the selected bra
 
 ## WF-03 Explore the architecture graph
 
-**Persona:** all · **Capabilities:** MVP-09, MVP-10 · **Status:** project-level graph with a selection panel (UI-003, M1), layout switching (GRAPH-005), drill-down (GRAPH-006), node budget (GRAPH-008), filters, neighborhood and breadcrumbs (GRAPH-007) implemented; grouping, *Back* and the folder graph follow in GRAPH-009
+**Persona:** all · **Capabilities:** MVP-09, MVP-10 · **Status:** project-level graph with a selection panel (UI-003, M1), layout switching (GRAPH-005), drill-down (GRAPH-006), node budget (GRAPH-008), filters, neighborhood and breadcrumbs (GRAPH-007), grouped view (repository level), *Back* and the folder graph of repositories without projects (GRAPH-009) implemented; the M4 features are verified by tests, not yet manually
 
 1. The explorer opens at the **project level**: one node per project/package, grouped by
    ecosystem or solution folder; edges are aggregated project dependencies with counts.

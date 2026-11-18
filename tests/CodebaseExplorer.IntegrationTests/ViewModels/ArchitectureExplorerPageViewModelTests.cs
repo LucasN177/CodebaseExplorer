@@ -390,6 +390,65 @@ public sealed class ArchitectureExplorerPageViewModelTests : IAsyncLifetime
         Assert.Equal(5, LastShown().Nodes.Count);
     }
 
+    // ---- GRAPH-009: Back and the grouped view ----
+
+    [Fact]
+    public async Task Back_RestoresExpansionFiltersAndNeighborhoodStepByStep()
+    {
+        var view = await ImportFixtureAsync();
+        _host.PatchGraphAsync(default!, Arg.Any<CancellationToken>()).ReturnsForAnyArgs(true);
+        Assert.False(_viewModel.CanGoBack);
+        var domain = view.Nodes.Single(n => n.Label == "Shop.Domain");
+
+        await _viewModel.SetExpandedAsync(domain.Id, expanded: true, TestContext.Current.CancellationToken);
+        _viewModel.IncludeTests = true;
+        await WaitUntilAsync(() => LastShown().Nodes.Any(n => n.Label == "Shop.Tests"));
+        Select(LastShown(), [domain.Id], []);
+        await _viewModel.ShowNeighborhoodCommand.ExecuteAsync(null);
+        Assert.True(_viewModel.IsNeighborhood);
+        Assert.True(_viewModel.CanGoBack);
+
+        // 1: leaves the neighborhood, tests still shown, Shop.Domain still expanded.
+        await _viewModel.BackCommand.ExecuteAsync(null);
+        Assert.False(_viewModel.IsNeighborhood);
+        Assert.True(_viewModel.IncludeTests);
+        Assert.Contains(LastShown().Nodes, n => n.Label == "Shop.Tests");
+        Assert.True(LastShown().Nodes.Single(n => n.Id == domain.Id).IsExpanded);
+
+        // 2: the test filter is restored to hidden, the expansion stays.
+        await _viewModel.BackCommand.ExecuteAsync(null);
+        Assert.False(_viewModel.IncludeTests);
+        Assert.DoesNotContain(LastShown().Nodes, n => n.Label == "Shop.Tests");
+        Assert.True(LastShown().Nodes.Single(n => n.Id == domain.Id).IsExpanded);
+
+        // 3: the initial view, collapsed; nothing earlier.
+        await _viewModel.BackCommand.ExecuteAsync(null);
+        Assert.False(LastShown().Nodes.Single(n => n.Id == domain.Id).IsExpanded);
+        Assert.False(_viewModel.CanGoBack);
+    }
+
+    [Fact]
+    public async Task GroupedView_ShowsTheSolutionGroup_AndGroupsAreNotInspected()
+    {
+        await ImportFixtureAsync();
+
+        _viewModel.SelectedViewMode = _viewModel.ViewModes.Single(m => m.Token == GraphLevels.Repository);
+        await WaitUntilAsync(() => LastShown().Level == GraphLevels.Repository);
+
+        // The solution's projects (Shop.sln comes before Shop.slnx) and the placeholder Shop.Legacy, which no solution lists.
+        Assert.Equal([".NET projects", "Shop.sln"], LastShown().Nodes.Select(n => n.Label));
+        var group = LastShown().Nodes.Single(n => n.Label == "Shop.sln");
+        Assert.Equal((GraphNodeKinds.Group, "4 projects"), (group.Kind, group.Sublabel)); // Shop.Tests is hidden by default
+        Select(LastShown(), [group.Id], []);
+        Assert.Equal("Group of projects", _viewModel.SelectionKind);
+        Assert.False(_viewModel.HasDetails);
+        Assert.Null(_viewModel.InspectorMessage);
+
+        await _viewModel.BackCommand.ExecuteAsync(null);
+        Assert.Equal(GraphLevels.Project, LastShown().Level);
+        Assert.Equal(GraphLevels.Project, _viewModel.SelectedViewMode.Token);
+    }
+
     private void Select(GraphViewDto view, IReadOnlyList<string> nodeIds, IReadOnlyList<string> edgeIds)
     {
         _host.CurrentGraph.Returns(view);

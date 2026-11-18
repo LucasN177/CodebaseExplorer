@@ -86,10 +86,10 @@ internal sealed class GraphProjector : IGraphProjector
             return ApplicationError.Validation(GraphErrorCodes.RepositoryMismatch, "The query is for another repository than the model.");
         }
 
-        if (query.Level != GraphLevels.Project)
+        if (query.Level is not (GraphLevels.Project or GraphLevels.Repository))
         {
             return ApplicationError.Validation(GraphErrorCodes.LevelNotSupported,
-                $"The graph level '{query.Level}' is not supported yet; supported: '{GraphLevels.Project}'.");
+                $"The graph level '{query.Level}' is not supported; supported: '{GraphLevels.Project}', '{GraphLevels.Repository}'.");
         }
 
         if (query.NodeBudget < 2 || query.NodeBudget > GraphQuery.MaxNodeBudget)
@@ -141,7 +141,7 @@ internal sealed class GraphProjector : IGraphProjector
         return new GraphViewDto
         {
             RepositoryId = model.RepositoryId.ToString(),
-            Level = GraphLevels.Project,
+            Level = tree.IsFolderView ? GraphLevels.Folder : query.Level,
             // Parents before children (the web view adds nodes in order); roots sorted as before GRAPH-006.
             Nodes = [.. order.Select(id => tree.Nodes[id] with
             {
@@ -245,6 +245,8 @@ internal sealed class GraphProjector : IGraphProjector
         {
             GraphNodeKinds.Module => GraphLevels.Module,
             GraphNodeKinds.Entity => GraphLevels.Entity,
+            GraphNodeKinds.Group => GraphLevels.Repository,
+            GraphNodeKinds.Folder => GraphLevels.Folder,
             _ => GraphLevels.Project,
         }));
 

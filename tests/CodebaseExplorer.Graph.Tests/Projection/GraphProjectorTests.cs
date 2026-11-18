@@ -215,7 +215,6 @@ public sealed class GraphProjectorTests
     }
 
     [Theory]
-    [InlineData(GraphLevels.Repository)]
     [InlineData(GraphLevels.Module)]
     [InlineData(GraphLevels.Entity)]
     [InlineData("unknown")]

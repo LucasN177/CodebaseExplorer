@@ -10,4 +10,10 @@ public static class GraphNodeKinds
 
     /// <summary>"N more": roots left out by the node budget (GRAPH-008); not expandable, carries their edges.</summary>
     public const string Aggregate = "aggregate";
+
+    /// <summary>A group of projects at the repository level (workspace, solution or ecosystem; GRAPH-009).</summary>
+    public const string Group = "group";
+
+    /// <summary>A folder of a repository without recognized projects (folder fallback, GRAPH-009).</summary>
+    public const string Folder = "folder";
 }

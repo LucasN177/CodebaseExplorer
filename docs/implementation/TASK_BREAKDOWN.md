@@ -24,7 +24,7 @@ Status overview (keep in sync):
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 9 |
-| M4 Polyglot & scale | 11 | 10 |
+| M4 Polyglot & scale | 11 | 11 |
 | M5 Git | 7 | 0 |
 | M6 Export | 2 | 0 |
 | M7 Local AI | 7 | 0 |
@@ -528,11 +528,12 @@ Status overview (keep in sync):
 - **Note:** Done 2026-11-18. Generator `SyntheticRepository` (TestRepositories: .NET solutions with project references, packages and cross-project type usage; npm workspaces with relative, workspace and package imports), explicit benchmarks `PerformanceBenchmarks` (IntegrationTests, real composition root incl. SQLite) and `tools/development/Run-Benchmarks.ps1` (parser-checked only; measured with the equivalent `dotnet test` commands). Results (TEST_STRATEGY.md §8): 100 .NET projects 5.6 s to the first graph (target < 30 s ✅), 2,000 projects 81.5 s (target < 3 min ✅, peak 783 MB), 50,502 TS files 148.1 s (peak 1.19 GB). Slice queries (ADR-010 follow-up): not needed for the targets — **ADR-012 (Proposed)** keeps whole-model reads; awaiting the user's decision.
 
 ### GRAPH-009 — Repository level, folder fallback and navigation history
-- **Priority:** P0 · **Milestone:** M4 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M4 · **Status:** done
 - **Prerequisites:** GRAPH-006
 - **Projects:** Graph, Graph.Tests, Desktop, GraphView.Web
 - **Description:** L0 repository level (ecosystem/solution/workspace groups), folder-level graph for repositories without recognized projects (USER_WORKFLOWS.md WF-01), breadcrumbs and *Back* navigation restoring the previous view state (WF-03).
 - **Acceptance criteria:** L0 projection tests; a fixture without projects shows a folder graph; Back restores expansion state and filters.
+- **Note:** Done 2026-11-18 (GRAPH_ENGINE.md §3 "Implemented (GRAPH-009)"). `GraphLevels.Repository`: groups by workspace › solution › ecosystem (`group` nodes, expandable into projects, budget-aware, group edges); folder fallback for models without projects (`GraphLevels.Folder`, `folder` nodes); breadcrumbs include groups. Explorer: view mode *Projects/Grouped*, *Back* (50 states: expansions, filters, level, neighborhood; restores the filter controls), folder hint, group/folder/aggregate nodes are not inspected, module nodes are called "Module". Web view: group and folder styles (bundle rebuilt). Fixture `plain-folders` (EXPECTED.md). Tests: `GraphRepositoryLevelTests` (grouping, expansion edges, reversible collapse, budget, neighborhood into a collapsed group, folders), `FolderGraphTests` (fixture), ViewModel tests (Back step by step, grouped view). Known limitation: *Show in graph* cannot reveal elements inside a collapsed group. **Not verified manually** in the running app.
 
 ---
 

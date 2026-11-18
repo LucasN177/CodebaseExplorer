@@ -24,7 +24,7 @@ fixed; progress is tracked by task status in [TASK_BREAKDOWN.md](../implementati
 | **M1** | Vertical slice: .NET project graph | Import a local folder → detect .NET solutions/projects → project and NuGet package references → interactive graph in the explorer. In-memory only. | 🚧 in progress |
 | **M2** | Persistence & analysis runs | Results stored in SQLite; recent repositories; reopen without re-analysis; analysis run history; repository overview page. | ⏳ planned |
 | **M3** | Deep C# analysis & Component Inspector | Namespaces/types/relationships via Roslyn (no build); evidence levels; inspector with evidence and source snippets; .NET hostile fixtures. | ⏳ planned |
-| **M4** | Polyglot & large repositories | TS/JS/Python via Tree-sitter and manifests; hierarchical aggregation; filters; search; node budget; performance fixtures. | ⏳ planned |
+| **M4** | Polyglot & large repositories | TS/JS/Python via Tree-sitter and manifests; hierarchical aggregation; filters; search; node budget; performance fixtures. | 🚧 implemented (2026-11-18), manual checks open |
 | **M5** | Git integration | Git metadata; HTTPS clone of GitHub/GitLab remotes; change-activity overlays. | ⏳ planned |
 | **M6** | Documentation export | Markdown + Mermaid architecture report. | ⏳ planned |
 | **M7** | Optional local AI | Ollama-based Q&A and explanations with validated citations. | ⏳ planned |

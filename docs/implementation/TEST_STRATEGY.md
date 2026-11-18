@@ -81,6 +81,7 @@ Planned fixtures:
 | `ts-monorepo-workspaces` | REPO-007 | npm workspaces (root + 3 packages), `workspace:*` and version-spec project references, JSONC `tsconfig` with `extends`, `paths` and project references, solution-style root `tsconfig`, `exports`/`main` entry points, lifecycle script, unresolved and undeclared imports, dynamic `import()`. pnpm workspaces are covered by analyzer tests with temporary repositories. |
 | `js-commonjs` | REPO-007 | CommonJS package: `require` (relative, directory `index.js`, explicit extension, JSON, built-ins, computed argument), `module.exports`/`exports.x`. |
 | `python-src-layout` | REPO-007 | PEP 621 `pyproject.toml` with optional dependencies, `requirements-dev.txt` (options, marker, include outside the repository), `src/` layout, relative/absolute/package imports, import-name mapping (`yaml` → `PyYAML`), undeclared and standard-library imports. |
+| `plain-folders` | GRAPH-009 (**exists**) | No project manifest at all; folder graph fallback. |
 | `mixed-polyglot` | REPO-007 | .NET + TS + Poetry-based Python in one repository, no root project. |
 | `hostile-*` | QA-003 | MSBuild `Exec`, analyzer packages, npm lifecycle scripts, `setup.py`, Git hooks/fsmonitor. |
 | `edge-files` | REPO-001/002 | Symlinks, huge files, binary files, deep nesting, unusual encodings. |

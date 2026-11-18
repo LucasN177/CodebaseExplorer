@@ -83,6 +83,9 @@ export function stylesheet(mode: ThemeMode): StylesheetJson {
     // an expanded node is a translucent compound box labeled at the top.
     { selector: 'node[kind = "module"]', style: { shape: 'rectangle' } },
     { selector: 'node[kind = "entity"]', style: { shape: 'ellipse', width: scaled(16), height: scaled(16) } },
+    // GRAPH-009: groups of projects (repository level) and folders of repositories without projects.
+    { selector: 'node[kind = "group"]', style: { shape: 'round-rectangle', width: scaled(40), height: scaled(26), 'border-width': 2, 'border-color': p.text } },
+    { selector: 'node[kind = "folder"]', style: { shape: 'tag', 'background-color': p.ecosystems.other } },
     // GRAPH-008: "N more" collects the roots left out by the node budget.
     { selector: 'node[kind = "aggregate"]', style: { shape: 'round-rectangle', 'background-opacity': 0.25, 'border-width': 2, 'border-style': 'dashed', 'border-color': p.text } },
     { selector: 'node[expandable = 1][expanded = 0]', style: { 'border-width': 3, 'border-style': 'double', 'border-color': p.text } },

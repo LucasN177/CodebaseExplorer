@@ -91,6 +91,32 @@ internal sealed class ModelBuilder
         return dependency;
     }
 
+    /// <summary>A project with kind, properties and solution memberships (GRAPH-009 grouping tests).</summary>
+    public CodeProject GroupedProject(string name, ProjectKind kind, Ecosystem ecosystem, IReadOnlyDictionary<string, string>? properties = null, params string[] solutions)
+    {
+        var memberships = new List<SolutionMembership>();
+        foreach (var solution in solutions)
+        {
+            var file = _files.FirstOrDefault(f => f.Path.Value == solution) ?? File(solution, FileClassification.SolutionFile);
+            if (!_files.Contains(file))
+            {
+                _files.Add(file);
+            }
+
+            memberships.Add(new SolutionMembership(file.Id));
+        }
+
+        var manifest = RelativePath.Create($"src/{name}/manifest");
+        var project = CodeProject.Create(Repository, name, kind, ecosystem, LanguageId.CSharp, manifest, RelativePath.Create($"src/{name}"), properties, memberships);
+        _projects.Add(project);
+        _files.Add(File(manifest.Value, FileClassification.ProjectManifest, project.Id));
+        _files.Add(File($"src/{name}/code.cs", FileClassification.Source, project.Id));
+        return project;
+    }
+
+    /// <summary>A file that belongs to no project (folder fallback tests).</summary>
+    public void LooseFile(string path) => _files.Add(File(path, FileClassification.Documentation));
+
     public CodeProject Placeholder(string name)
     {
         var project = CodeProject.Create(Repository, name, ProjectKind.Unknown, Ecosystem.DotNet, LanguageId.CSharp, null,
