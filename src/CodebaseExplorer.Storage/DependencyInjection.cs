@@ -13,14 +13,15 @@ public static class DependencyInjection
 {
     /// <summary>
     /// Registers the services of the Storage module: the <see cref="IDbContextFactory{TContext}"/> for
-    /// the database at <see cref="IApplicationPaths.DatabaseFilePath"/> (STORE-001). Nothing is opened at
-    /// registration; creating and migrating the database file follows with STORE-003, the stores (ports)
-    /// with STORE-004/005.
+    /// the database at <see cref="IApplicationPaths.DatabaseFilePath"/> (STORE-001) and the
+    /// <see cref="IDatabaseInitializer"/> that creates, backs up and migrates it at startup (STORE-003).
+    /// Nothing is opened at registration; the stores (ports) follow with STORE-004/005.
     /// </summary>
     public static IServiceCollection AddStorageModule(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        services.AddSingleton<IDatabaseInitializer, DatabaseInitializer>();
         services.AddDbContextFactory<CodebaseExplorerDbContext>((provider, options) =>
             Configure(options, ConnectionString(provider.GetRequiredService<IApplicationPaths>().DatabaseFilePath)));
 

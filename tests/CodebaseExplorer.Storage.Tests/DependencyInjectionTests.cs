@@ -19,6 +19,8 @@ public sealed class DependencyInjectionTests
 
         await using var provider = new ServiceCollection()
             .AddSingleton(paths)
+            .AddSingleton(TimeProvider.System)
+            .AddSingleton(typeof(Microsoft.Extensions.Logging.ILogger<>), typeof(Microsoft.Extensions.Logging.Abstractions.NullLogger<>))
             .AddStorageModule()
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
 

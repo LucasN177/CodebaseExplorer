@@ -4,7 +4,7 @@
 > Implementation status: **model tables implemented** (STORE-001: `Repositories`, `AnalysisRuns`,
 > `AnalysisDiagnostics`, `Files`, `Projects`, `Modules`; STORE-002: `CodeEntities`, `CodeEntityDeclarations`,
 > `CodeRelationships`, `AnalysisEvidence`, `ExternalDependencies` — DbContext, records, mapping; schema created
-> by migrations from STORE-003, nothing is read or written by the app yet). Implemented by STORE-001 … STORE-005 (core and
+> by the startup migration (STORE-003); the app does not read or write model data yet (STORE-004)). Implemented by STORE-001 … STORE-005 (core and
 > settings tables), GIT-005 (Git tables), AI-003 and AI-006 (search index and AI tables) in
 > `src/CodebaseExplorer.Storage` using EF Core with the SQLite provider
 > ([ADR-005](../decisions/ADR-005-sqlite-storage.md)).
@@ -368,9 +368,17 @@ that the SQLite library bundled with the EF Core SQLite provider includes FTS5 (
 - EF Core migrations live in `src/CodebaseExplorer.Storage/Migrations`; a design-time
   `IDesignTimeDbContextFactory` provides a context for `dotnet ef` without the Desktop project.
 - The app applies pending migrations at startup (`Database.MigrateAsync`) **before** any UI that
-  reads data; a failed migration shows an error page with the log path and does not delete data.
-- Before migrating an existing database file, the app copies it to
-  `<data>/backups/codebase-explorer-<timestamp>.db` (keep last 3).
+  reads data; a failed migration shows an error page (message, database file, backup folder) and does not
+  delete or change data. *Implemented in STORE-003* (`IDatabaseInitializer`, `DatabaseInitializer`,
+  `StartupErrorWindow`); the log path is added to the page with file logging (CORE-007).
+- Before migrating an existing database file, the app backs it up with SQLite's online backup API (a
+  plain file copy would miss changes still in the `-wal` file) to
+  `<data>/backups/codebase-explorer-<yyyyMMdd-HHmmss-fff>.db` (UTC; keep last 3). The data and backup
+  directories are created with mode 0700 on Unix and the database files are set to 0600 after opening; on
+  Windows the per-user profile ACL applies. (Pre-creating an empty database file to set its mode makes the
+  EF Core SQLite migrator fail, found in STORE-003.)
+- Tests run every schema check against a database created by the migrations, and `HasPendingModelChanges`
+  fails a Storage test when the model changed without a migration.
 - Migrations are forward-only in production; down-migrations are not supported.
 - Every migration is covered by a Storage test that migrates an empty database to the latest
   version and, for data migrations, a test with a seeded database of the previous version.

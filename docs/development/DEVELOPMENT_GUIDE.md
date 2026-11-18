@@ -82,8 +82,8 @@ Every feature follows these ten steps. AI agent sessions follow the same workflo
 ## 6. Database migrations (from STORE-003)
 
 ```bash
-dotnet tool restore            # once a tool manifest exists (added in STORE-003)
-dotnet ef migrations add <Name> --project src/CodebaseExplorer.Storage
+dotnet tool restore            # restores dotnet-ef from .config/dotnet-tools.json
+dotnet ef migrations add <Name> --project src/CodebaseExplorer.Storage --startup-project src/CodebaseExplorer.Storage --output-dir Migrations
 ```
 
 Rules: one migration per schema change; never edit applied migrations; update

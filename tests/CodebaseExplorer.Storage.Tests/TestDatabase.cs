@@ -7,7 +7,7 @@ namespace CodebaseExplorer.Storage.Tests;
 /// <summary>
 /// A real SQLite database file in a temporary folder, configured exactly like the application
 /// (<see cref="DependencyInjection"/>: provider, connection string, pragma interceptor). The schema is
-/// created with <c>EnsureCreated</c> until migrations exist (STORE-003).
+/// created by the real migrations (STORE-003), so every schema test also checks the migration.
 /// </summary>
 internal sealed class TestDatabase : IDisposable
 {
@@ -19,7 +19,7 @@ internal sealed class TestDatabase : IDisposable
         FilePath = Path.Combine(_directory, "test.db");
 
         using var context = CreateContext();
-        context.Database.EnsureCreated();
+        context.Database.Migrate();
     }
 
     public string FilePath { get; }

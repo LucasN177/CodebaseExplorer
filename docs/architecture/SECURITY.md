@@ -55,7 +55,9 @@
 - No submodule recursion; reject `file://`, `ssh://`, `git://` URLs in the MVP.
 
 ### Storage
-- Database file in the user data directory with user-only permissions where the OS supports it.
+- Database file in the user data directory with user-only permissions where the OS supports it
+  (implemented in STORE-003: data and backup directories 0700, database files 0600 on Unix; Windows relies on
+  the per-user profile ACL; verified by a Storage test on Linux/macOS in CI).
 - No secrets in tables. Remote URLs sanitized.
 
 ### AI

@@ -1,5 +1,7 @@
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using CodebaseExplorer.Application.Abstractions;
 using CodebaseExplorer.Desktop.Composition;
 using CodebaseExplorer.Desktop.ViewModels;
 using CodebaseExplorer.Desktop.Views;
@@ -19,13 +21,39 @@ public sealed partial class App : Avalonia.Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow
-            {
-                DataContext = _services.GetRequiredService<MainWindowViewModel>(),
-            };
+            // No window exists while the database is prepared; the app ends when the first shown window closes.
+            desktop.ShutdownMode = ShutdownMode.OnLastWindowClose;
             desktop.Exit += (_, _) => _services.Dispose();
+            _ = StartAsync(desktop, _services);
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>
+    /// Prepares the database before any window that reads data (DATABASE_SCHEMA.md §5), then shows the main
+    /// window — or, if that failed, the startup error window.
+    /// </summary>
+    private static async Task StartAsync(IClassicDesktopStyleApplicationLifetime desktop, ServiceProvider services)
+    {
+        var initializer = services.GetRequiredService<IDatabaseInitializer>();
+        var result = await Task.Run(() => initializer.InitializeAsync(CancellationToken.None));
+
+        Window window;
+        if (result.TryGetValue(out _, out var error))
+        {
+            window = new MainWindow { DataContext = services.GetRequiredService<MainWindowViewModel>() };
+        }
+        else
+        {
+            var paths = services.GetRequiredService<IApplicationPaths>();
+            window = new StartupErrorWindow
+            {
+                DataContext = new StartupErrorViewModel(error.Message, paths.DatabaseFilePath, Path.Combine(paths.DataDirectory, "backups")),
+            };
+        }
+
+        desktop.MainWindow = window;
+        window.Show();
     }
 }

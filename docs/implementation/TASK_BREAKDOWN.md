@@ -298,11 +298,12 @@ Status overview (keep in sync):
 - **Note:** Evidence sampling decided: none for now (ADR-007, DATABASE_SCHEMA.md §4.10). `CodeEntities` got a `SymbolKey` column (the id derives from it). Relationship rows carry the denormalized project/module ids computed from the model. Indexes are verified against `sqlite_master` of the created schema; the same check runs on the migration once it exists (STORE-003). Read-back verifies ids, natural keys, level and occurrence count.
 
 ### STORE-003 — Migrations, startup migration and backup
-- **Priority:** P0 · **Milestone:** M2 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M2 · **Status:** done
 - **Prerequisites:** STORE-002
 - **Projects:** Storage, Desktop, Storage.Tests
 - **Description:** Initial migration, design-time factory, startup `MigrateAsync` with backup of existing DB (keep 3), error page on failure.
 - **Acceptance criteria:** Test migrates an empty DB to latest; test verifies backup creation; app starts with an existing DB; database file and data directory are created with user-only permissions where the OS supports it (Unix modes 0700/0600; on Windows the per-user profile ACL applies).
+- **Note:** Port `IDatabaseInitializer` (Application) with `DatabaseInitializer` (Storage); backup via SQLite online backup API (WAL-safe), keep 3. The app shows `StartupErrorWindow` instead of the main window on failure; the log path follows with CORE-007 (no file log yet). Pre-creating an empty DB file breaks EF's SQLite migrator, so the 0700 data directory plus 0600 after opening provide the user-only permissions; the Unix test runs only in CI (Linux/macOS). Manually verified on Windows: first start creates the DB, second start reuses it, an unreadable DB shows the error window and stays unchanged.
 
 ### STORE-004 — Architecture model store (save run, read slices)
 - **Priority:** P0 · **Milestone:** M2 · **Status:** todo
