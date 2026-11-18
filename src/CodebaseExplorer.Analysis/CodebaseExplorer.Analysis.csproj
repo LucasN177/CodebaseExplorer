@@ -9,6 +9,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
     <PackageReference Include="Basic.Reference.Assemblies.Net100" />
+    <PackageReference Include="TreeSitter.DotNet" />
   </ItemGroup>
 
   <ItemGroup>

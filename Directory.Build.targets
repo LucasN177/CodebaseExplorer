@@ -1,0 +1,26 @@
+<Project>
+  <!--
+    TreeSitter.DotNet (ANALYSIS-008, ADR-004) ships the native Tree-sitter runtime plus ~30 grammars for nine
+    runtime identifiers (~600 MB). Codebase Explorer needs only the runtime and the TypeScript, TSX, JavaScript and
+    Python grammars on 64-bit Windows, macOS and Linux, so everything else is removed from the copy-local items of
+    every project that consumes the package (Analysis, its tests, Desktop). Grammar list: TreeSitterGrammar.cs.
+  -->
+  <PropertyGroup>
+    <_TreeSitterKeptNativeFiles>;tree-sitter;tree-sitter-typescript;tree-sitter-tsx;tree-sitter-javascript;tree-sitter-python;</_TreeSitterKeptNativeFiles>
+    <_TreeSitterKeptRuntimes>;win-x64;win-arm64;osx-x64;osx-arm64;linux-x64;linux-arm64;</_TreeSitterKeptRuntimes>
+  </PropertyGroup>
+
+  <Target Name="TrimTreeSitterNativeAssets" AfterTargets="ResolvePackageAssets">
+    <ItemGroup>
+      <_TreeSitterNativeItem Include="@(RuntimeTargetsCopyLocalItems);@(NativeCopyLocalItems)"
+                             Condition="'%(NuGetPackageId)' == 'TreeSitter.DotNet'" />
+      <!-- Native file name without platform prefix/extension: libtree-sitter-python.so → tree-sitter-python. -->
+      <_TreeSitterNativeItem Update="@(_TreeSitterNativeItem)"
+                             BaseName="$([System.Text.RegularExpressions.Regex]::Replace('%(Filename)', '^lib', ''))" />
+      <_TreeSitterUnusedItem Include="@(_TreeSitterNativeItem)"
+                             Condition="!$(_TreeSitterKeptNativeFiles.Contains(';%(BaseName);')) Or ('%(_TreeSitterNativeItem.RuntimeIdentifier)' != '' And !$(_TreeSitterKeptRuntimes.Contains(';%(_TreeSitterNativeItem.RuntimeIdentifier);')))" />
+      <RuntimeTargetsCopyLocalItems Remove="@(_TreeSitterUnusedItem)" />
+      <NativeCopyLocalItems Remove="@(_TreeSitterUnusedItem)" />
+    </ItemGroup>
+  </Target>
+</Project>

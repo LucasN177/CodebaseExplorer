@@ -24,7 +24,7 @@ Status overview (keep in sync):
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 9 |
-| M4 Polyglot & scale | 11 | 0 |
+| M4 Polyglot & scale | 11 | 1 |
 | M5 Git | 7 | 0 |
 | M6 Export | 2 | 0 |
 | M7 Local AI | 7 | 0 |
@@ -448,11 +448,12 @@ Status overview (keep in sync):
 ## M4 — Polyglot analysis and large repositories
 
 ### ANALYSIS-008 — Spike: Tree-sitter binding and grammars
-- **Priority:** P0 · **Milestone:** M4 · **Status:** todo · **Spike (time-box 3 days)**
+- **Priority:** P0 · **Milestone:** M4 · **Status:** done · **Spike (time-box 3 days)**
 - **Prerequisites:** —
 - **Projects:** Analysis (spike branch), docs
 - **Description:** Evaluate `TreeSitter.DotNet` 1.3.0 and alternatives: bundled grammars (TS, TSX, JS, Python), native binaries for win-x64/osx-arm64/linux-x64, parse speed, cancellation/timeouts, behavior on malformed/huge input, maintenance and license.
 - **Acceptance criteria:** ADR-004 updated with the decision; crash-containment approach documented (in-process with limits vs. parser host process).
+- **Note:** Done 2026-11-18 (ADR-004 "Spike result"). `TreeSitter.DotNet` 1.3.0 confirmed: TS, TSX, JS (JSX) and Python grammars and native binaries for all target RIDs; 1.9 MB parses in 0.4–0.65 s, hostile input ≤ 3.3 s, never crashed. **No** per-parse timeout/cancellation in the binding → parse time bounded by the 2 MB limit, cancellation between files and during walks. Tree-sitter queries are not used (super-linear on hostile input). **Crash containment: in-process with limits** (native crash = accepted residual risk, SECURITY.md §2). Proof code kept: `Languages/TreeSitter` (`TreeSitterParser`, `SyntaxWalk`) with `TreeSitterParserTests` (run on all CI OSes → verifies native assets); `Directory.Build.targets` trims the package to the runtime + 4 grammars for 64-bit win/osx/linux (~26 MB instead of ~600 MB).
 
 ### ANALYSIS-009 — Node project-system analyzer
 - **Priority:** P0 · **Milestone:** M4 · **Status:** todo

@@ -242,8 +242,12 @@ warning (`csharp.project.reference-cycle`).
   dependencies (with import-name ↔ distribution-name mapping table for common mismatches, e.g.
   `yaml` ↔ `PyYAML` — heuristic).
 
-**Tree-sitter integration** is subject to spike **ANALYSIS-008** (binding package, bundled
-grammars, native binaries for all RIDs, robustness against hostile input, timeouts).
+**Tree-sitter integration** (decided in spike **ANALYSIS-008**, ADR-004 "Spike result"): `TreeSitter.DotNet`
+1.3.0 in-process, wrapped by `Languages/TreeSitter` (`TreeSitterParser`: grammars TypeScript, TSX, JavaScript,
+Python loaded once and shared, one parser per parse; `SyntaxWalk`: iterative, cancellable cursor walk). No
+per-parse timeout exists in the binding: parse time is bounded by the 2 MB parse limit (≤ ~3.3 s measured on
+hostile input); cancellation is checked between files and during walks. Tree-sitter queries are not used
+(super-linear on hostile input). Positions are 0-based rows and UTF-16 columns.
 
 ### Stage 4 — Link
 
