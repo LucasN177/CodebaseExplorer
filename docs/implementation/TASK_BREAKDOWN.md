@@ -24,7 +24,7 @@ Status overview (keep in sync):
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 9 |
-| M4 Polyglot & scale | 11 | 8 |
+| M4 Polyglot & scale | 11 | 9 |
 | M5 Git | 7 | 0 |
 | M6 Export | 2 | 0 |
 | M7 Local AI | 7 | 0 |
@@ -519,11 +519,12 @@ Status overview (keep in sync):
 - **Note:** Done 2026-11-18. `GraphQuery.NodeBudget` (500, 2 … 5,000); surplus roots → top-N by degree + one `aggregate` "N more" node carrying their edges; expansions that do not fit are refused; `TruncationDto` with reason (`node-budget`, `expansion-refused`) and suggestions (GRAPH_ENGINE.md §4 "Implemented"). Desktop: truncation banner in the explorer, the aggregate is not inspected; web view: dashed aggregate style (bundle rebuilt). Tests: `GraphNodeBudgetTests` (18 random models × budgets/expansions/packages, degree ranking and edge re-attribution, refused expansion, invalid budgets, stable aggregate id with edge details). **Not done here:** Storage slice queries — the whole model is still read and cached per run (ADR-010); QA-002 decides whether slices are needed.
 
 ### QA-002 — Performance fixture generator and benchmarks
-- **Priority:** P0 · **Milestone:** M4 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M4 · **Status:** done
 - **Prerequisites:** ANALYSIS-006, STORE-004
 - **Projects:** tools/development, TestRepositories, docs
 - **Description:** Generator for synthetic repositories (e.g. 2,000 .NET projects, 50k TS files) into a temp folder (not committed); benchmark script measuring analysis time, memory, projection time.
 - **Acceptance criteria:** Results recorded in TEST_STRATEGY.md; MVP targets (PRODUCT_CONCEPT.md §8) evaluated.
+- **Note:** Done 2026-11-18. Generator `SyntheticRepository` (TestRepositories: .NET solutions with project references, packages and cross-project type usage; npm workspaces with relative, workspace and package imports), explicit benchmarks `PerformanceBenchmarks` (IntegrationTests, real composition root incl. SQLite) and `tools/development/Run-Benchmarks.ps1` (parser-checked only; measured with the equivalent `dotnet test` commands). Results (TEST_STRATEGY.md §8): 100 .NET projects 5.6 s to the first graph (target < 30 s ✅), 2,000 projects 81.5 s (target < 3 min ✅, peak 783 MB), 50,502 TS files 148.1 s (peak 1.19 GB). Slice queries (ADR-010 follow-up): not needed for the targets — **ADR-012 (Proposed)** keeps whole-model reads; awaiting the user's decision.
 
 ### GRAPH-009 — Repository level, folder fallback and navigation history
 - **Priority:** P0 · **Milestone:** M4 · **Status:** todo

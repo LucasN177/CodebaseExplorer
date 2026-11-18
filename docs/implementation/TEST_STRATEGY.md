@@ -172,6 +172,15 @@ dotnet test --solution CodebaseExplorer.slnx --coverlet --coverlet-output-format
 | 2026-11-17 | Scanner, 10,000 small files in 100 directories (`RepositoryScannerTests.Scan_TenThousandFiles_CompletesWithinFiveSeconds`, explicit test) | 2.7 s | Debug build, Windows 11, local SSD; target < 5 s (REPO-002). Run: `dotnet test --project tests/CodebaseExplorer.Analysis.Tests --filter-method "*Scan_TenThousandFiles*" --explicit only --output Detailed` |
 | 2026-11-18 | Save 1,000,000 synthetic relationships (+ 1,000,000 evidence) with `ArchitectureModelStore` (`ArchitectureModelStoreBenchmarks.SaveOneMillionRelationships_StaysBelowOnePointFiveGigabytes`, explicit test) | peak working set **1,331 MB** with `System.GC.ConserveMemory=9`; save 147 s; DB 1.4 GB | Release, Windows 11; target < 1.5 GB (STORE-004). The model alone is 914 MB live; the store adds ~18 MB live, but with default GC settings uncollected batch garbage raised the peak to 1,951 MB (level 5: 1,762 MB, 7: 1,505 MB, 9: 1,331 MB at ~20 % more save time). The app sets level 9 (Desktop csproj). Run: `dotnet test --project tests/CodebaseExplorer.Storage.Tests -c Release --filter-method "*SaveOneMillionRelationships*" --explicit only --output Detailed` |
 
+| 2026-11-18 | QA-002: 100 generated .NET projects (602 files) imported through the composition root (`PerformanceBenchmarks.DotNet_100Projects_FirstGraphWithin30Seconds`) | import **5.2 s**, first graph 0.37 s → **5.6 s** to the first graph; peak 265 MB | Release, Windows 11, local SSD; target < 30 s (PRODUCT_CONCEPT.md §8) **met**. 2,281 relationships. |
+| 2026-11-18 | QA-002: 2,000 generated .NET projects (12,002 files, 45,969 relationships) (`…DotNet_2000Projects_FirstGraphWithin3Minutes`) | import **74.2 s**, first graph 7.3 s (cold model load + projection; cached projection 120 ms) → **81.5 s**; peak 783 MB | Target < 3 min **met**; the graph is capped at 500 nodes (`node-budget`, GRAPH-008). Memory budget 4 GB (ANALYSIS_ENGINE.md §7) met. |
+| 2026-11-18 | QA-002: npm workspace with 250 packages and 50,502 generated TypeScript files (106,979 relationships) (`…TypeScript_50000Files`) | import **132.0 s**, first graph 16.0 s (cached projection 227 ms) → **148.1 s**; peak 1,186 MB | No MVP target for TS; the cold model load is the slowest step (ADR-012, proposed: keep whole-model reads). |
+
+Run the QA-002 benchmarks with `pwsh tools/development/Run-Benchmarks.ps1 [-Scenario All|DotNet100|DotNet2000|TypeScript50k|ModelStore]`
+(Release build, explicit tests; the generator is `tests/CodebaseExplorer.TestRepositories/SyntheticRepository.cs`,
+output goes to a temporary folder and is deleted). The figures above were measured with the equivalent `dotnet test`
+commands; the script itself was checked with the PowerShell parser only (no PowerShell 7 on the measuring machine).
+
 ## 9. Accessibility checklist (QA-005)
 
 - All shell actions reachable by keyboard; visible focus.
