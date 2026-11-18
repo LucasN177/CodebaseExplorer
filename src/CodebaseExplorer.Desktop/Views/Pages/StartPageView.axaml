@@ -52,8 +52,8 @@
                  IsVisible="{Binding StatusMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
       <Border IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
               BorderThickness="1" CornerRadius="6" Padding="12"
-              BorderBrush="{DynamicResource SystemFillColorCriticalBrush}"
-              Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}">
+              BorderBrush="{DynamicResource ErrorBorderBrush}"
+              Background="{DynamicResource ErrorBackgroundBrush}">
         <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
       </Border>
     </StackPanel>

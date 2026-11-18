@@ -11,8 +11,8 @@
     <TextBlock TextWrapping="Wrap"
                Text="The local database could not be prepared. Your data has not been deleted or changed." />
     <Border BorderThickness="1" CornerRadius="6" Padding="12"
-            BorderBrush="{DynamicResource SystemFillColorCriticalBrush}"
-            Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}">
+            BorderBrush="{DynamicResource ErrorBorderBrush}"
+            Background="{DynamicResource ErrorBackgroundBrush}">
       <SelectableTextBlock Text="{Binding Message}" TextWrapping="Wrap" />
     </Border>
     <TextBlock Text="Database file" FontWeight="SemiBold" />
