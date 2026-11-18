@@ -379,7 +379,7 @@ that the SQLite library bundled with the EF Core SQLite provider includes FTS5 (
 - The app applies pending migrations at startup (`Database.MigrateAsync`) **before** any UI that
   reads data; a failed migration shows an error page (message, database file, backup folder) and does not
   delete or change data. *Implemented in STORE-003* (`IDatabaseInitializer`, `DatabaseInitializer`,
-  `StartupErrorWindow`); the log path is added to the page with file logging (CORE-007).
+  `StartupErrorWindow`, which also shows the log directory since CORE-007).
 - Before migrating an existing database file, the app backs it up with SQLite's online backup API (a
   plain file copy would miss changes still in the `-wal` file) to
   `<data>/backups/codebase-explorer-<yyyyMMdd-HHmmss-fff>.db` (UTC; keep last 3). The data and backup

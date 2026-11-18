@@ -35,7 +35,7 @@ analysis. Full vision: [docs/product/VISION.md](docs/product/VISION.md).
 
 | Feature | Status |
 |---|---|
-| App shell: navigation, Start page, Settings (theme System/Light/Dark, remembered across restarts; local data directory), status bar with busy indicator, error notifications | ✅ available |
+| App shell: navigation, Start page, Settings (theme System/Light/Dark, remembered across restarts; local data directory), status bar with busy indicator, error notifications, redacted log files in the data directory | ✅ available |
 | Architecture Explorer: project-level graph of the imported repository, selection panel with the evidence (file + line) of a selected edge, light/dark theme | ✅ available (verified on Windows; macOS/Linux not yet tested) |
 | Import a local folder (folder picker, progress with stages, cancel) | ✅ available (results are saved locally in SQLite) |
 | Clone GitHub/GitLab remotes | ⏳ planned (M5) |

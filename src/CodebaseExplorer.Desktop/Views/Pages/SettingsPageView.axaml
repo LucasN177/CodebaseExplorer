@@ -17,5 +17,12 @@
       <TextBlock TextWrapping="Wrap" Opacity="0.7"
                  Text="Repository contents and analysis results are stored only on this machine." />
     </StackPanel>
+
+    <StackPanel Spacing="6">
+      <TextBlock Text="Log files" FontWeight="SemiBold" />
+      <SelectableTextBlock Text="{Binding LogsDirectory}" TextWrapping="Wrap" Opacity="0.8" />
+      <TextBlock TextWrapping="Wrap" Opacity="0.7"
+                 Text="Logs contain file paths and error details, never file contents or secrets." />
+    </StackPanel>
   </StackPanel>
 </UserControl>

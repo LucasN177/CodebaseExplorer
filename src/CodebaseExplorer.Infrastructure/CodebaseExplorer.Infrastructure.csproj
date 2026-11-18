@@ -7,6 +7,13 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <!-- ILoggerProvider of the file logger (CORE-007). -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Infrastructure tests live in the integration test project (TEST_STRATEGY.md §3). -->
+    <InternalsVisibleTo Include="CodebaseExplorer.IntegrationTests" />
   </ItemGroup>
 
 </Project>

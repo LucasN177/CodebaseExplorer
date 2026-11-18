@@ -28,6 +28,8 @@ public static class CompositionRoot
         services.AddLogging(logging =>
         {
             logging.SetMinimumLevel(LogLevel.Information);
+            // EF Core logs every SQL command at information level; only its warnings and errors are of interest.
+            logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
             logging.AddDebug();
         });
 
@@ -56,6 +58,7 @@ public static class CompositionRoot
         services.AddSingleton<IFolderPicker, FolderPicker>();
         services.AddSingleton<RepositorySession>();
         services.AddSingleton<ShellStatus>();
+        services.AddSingleton<GlobalExceptionHandler>();
 
         // One graph web view in the application; the bridge is bound to GraphHostControl.Host and
         // ViewModels use it through IGraphViewHost (GRAPH-004).

@@ -3,14 +3,14 @@
         xmlns:vm="using:CodebaseExplorer.Desktop.ViewModels"
         x:Class="CodebaseExplorer.Desktop.Views.StartupErrorWindow"
         x:DataType="vm:StartupErrorViewModel"
-        Title="Codebase Explorer — database error"
+        Title="Codebase Explorer — startup error"
         Width="640" SizeToContent="Height" CanResize="False"
         WindowStartupLocation="CenterScreen">
   <StackPanel Margin="24" Spacing="12">
     <TextBlock Text="Codebase Explorer cannot start" FontSize="20" FontWeight="SemiBold" />
-    <TextBlock TextWrapping="Wrap"
-               Text="The local database could not be prepared. Your data has not been deleted or changed." />
+    <TextBlock TextWrapping="Wrap" Text="{Binding Summary}" />
     <Border BorderThickness="1" CornerRadius="6" Padding="12"
+            IsVisible="{Binding Message, Converter={x:Static ObjectConverters.IsNotNull}}"
             BorderBrush="{DynamicResource ErrorBorderBrush}"
             Background="{DynamicResource ErrorBackgroundBrush}">
       <SelectableTextBlock Text="{Binding Message}" TextWrapping="Wrap" />
@@ -19,5 +19,7 @@
     <SelectableTextBlock Text="{Binding DatabaseFile}" TextWrapping="Wrap" Opacity="0.8" />
     <TextBlock Text="Backups taken before database updates" FontWeight="SemiBold" />
     <SelectableTextBlock Text="{Binding BackupDirectory}" TextWrapping="Wrap" Opacity="0.8" />
+    <TextBlock Text="Log files" FontWeight="SemiBold" />
+    <SelectableTextBlock Text="{Binding LogsDirectory}" TextWrapping="Wrap" Opacity="0.8" />
   </StackPanel>
 </Window>

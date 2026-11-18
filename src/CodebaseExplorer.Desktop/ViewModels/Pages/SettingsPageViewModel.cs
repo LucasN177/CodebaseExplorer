@@ -20,6 +20,7 @@ public sealed partial class SettingsPageViewModel : PageViewModel
         _logger = logger;
         SelectedTheme = themeService.CurrentTheme;
         DataDirectory = paths.DataDirectory;
+        LogsDirectory = paths.LogsDirectory;
         _initialized = true;
     }
 
@@ -34,6 +35,9 @@ public sealed partial class SettingsPageViewModel : PageViewModel
 
     /// <summary>Where analysis results are stored locally (local-first).</summary>
     public string DataDirectory { get; }
+
+    /// <summary>Where the application log files are written (CORE-007).</summary>
+    public string LogsDirectory { get; }
 
     // The initial value comes from the theme service; only user changes are applied and stored.
     partial void OnSelectedThemeChanged(AppTheme value)

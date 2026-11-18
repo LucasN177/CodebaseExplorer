@@ -6,8 +6,18 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace CodebaseExplorer.IntegrationTests.Composition;
 
-public sealed class CompositionRootTests
+/// <summary>
+/// Wiring of the composition root. Tests that resolve services use <see cref="TestApplication"/>, so nothing is
+/// read from or written to the user's data directory (database, log files).
+/// </summary>
+public sealed class CompositionRootTests : IAsyncLifetime
 {
+    private readonly TestApplication _app = new();
+
+    public ValueTask InitializeAsync() => _app.InitializeAsync();
+
+    public ValueTask DisposeAsync() => _app.DisposeAsync();
+
     [Fact]
     public void BuildServiceProvider_ValidatesAllRegistrations()
     {
@@ -20,7 +30,7 @@ public sealed class CompositionRootTests
     [Fact]
     public void BuildServiceProvider_ResolvesShellViewModelWithAllPages()
     {
-        using var provider = CompositionRoot.BuildServiceProvider();
+        var provider = _app.Services;
 
         var shell = provider.GetRequiredService<MainWindowViewModel>();
 
@@ -31,7 +41,7 @@ public sealed class CompositionRootTests
     [Fact]
     public void BuildServiceProvider_RegistersOneGraphViewBridgeAsGraphViewHost()
     {
-        using var provider = CompositionRoot.BuildServiceProvider();
+        var provider = _app.Services;
 
         var host = provider.GetRequiredService<IGraphViewHost>();
 
@@ -41,7 +51,7 @@ public sealed class CompositionRootTests
     [Fact]
     public void SuccessfulImport_NavigatesTheShellToTheExplorer()
     {
-        using var provider = CompositionRoot.BuildServiceProvider();
+        var provider = _app.Services;
         var shell = provider.GetRequiredService<MainWindowViewModel>();
 
         provider.GetRequiredService<RepositorySession>().SetCurrent(new Contracts.Repositories.RepositoryImportSummaryDto

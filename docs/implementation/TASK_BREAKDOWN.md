@@ -22,7 +22,7 @@ Status overview (keep in sync):
 |---|---|---|
 | M0 Foundation | (initialization) | ✅ |
 | M1 Vertical slice | 22 | 16 |
-| M2 Persistence | 10 | 6 |
+| M2 Persistence | 10 | 7 |
 | M3 Deep C# & Inspector | 9 | 0 |
 | M4 Polyglot & scale | 11 | 0 |
 | M5 Git | 7 | 0 |
@@ -346,11 +346,12 @@ Status overview (keep in sync):
 - **Acceptance criteria:** Partially succeeded runs show their errors with analyzer and location.
 
 ### CORE-007 — File logging and global exception handling
-- **Priority:** P1 · **Milestone:** M2 · **Status:** todo
+- **Priority:** P1 · **Milestone:** M2 · **Status:** done
 - **Prerequisites:** —
 - **Projects:** Infrastructure, Desktop
 - **Description:** Rolling file logs in `<data>/logs` (implementation choice documented; prefer a minimal in-house provider over new dependencies), unhandled exception handlers (AppDomain, TaskScheduler, Avalonia dispatcher), redaction rules.
 - **Acceptance criteria:** Crash produces a log entry and a user-facing message; logs never contain file contents.
+- **Note:** In-house `FileLoggerProvider` (Infrastructure, registered as `ILoggerProvider`; no new package — Infrastructure now references `Microsoft.Extensions.Logging.Abstractions`): daily files plus 10 MB rollover, 10 files kept, flushed per entry, disabled on write errors; `LogRedactor` masks credentials and tokens and cuts entries at 8,000 characters (SECURITY.md §4). EF Core SQL command logs are filtered below Warning (they would flood the file). `GlobalExceptionHandler` (Desktop): UI-thread exceptions → log + notification, app keeps running; fatal → log + marker, notification at the next start; unobserved tasks → log. `StartupErrorWindow` and the Settings page show the log directory; startup failures show the startup error window. Composition tests now use `TestApplication`, so tests never write into the user's log directory. Tests: redaction, rollover, retention, write failure, handler behavior and an import of `dotnet-layered` whose log contains no fixture file content.
 
 ### CORE-010 — Remove the zero-test exit-code exception
 - **Priority:** P1 · **Milestone:** M2 · **Status:** done

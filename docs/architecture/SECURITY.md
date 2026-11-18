@@ -81,8 +81,13 @@
 - Git personal access tokens and cloud AI API keys: **open decision OPD-03** (OS credential store
   vs. library vs. no persistence). Until decided: tokens are held in memory for the duration of
   the operation only.
-- Secrets are never logged; logging uses redaction for known patterns (tokens in URLs,
-  `Authorization` headers).
+- Secrets are never logged; logging uses redaction for known patterns. **Implemented (CORE-007):**
+  `LogRedactor` masks every file-log entry (message and exception text) with `***` for credentials in
+  URLs (`https://user:token@host`), `Authorization`/`Proxy-Authorization` values, secret parameters
+  (`access_token`, `refresh_token`, `token`, `api_key`/`apikey`, `client_secret`, `secret`, `password`,
+  `passwd`, `pwd`) and GitHub (`ghp_…`, `github_pat_…`), GitLab (`glpat-…`) and `sk-…` keys; entries are
+  cut at 8,000 characters so that no large text such as file content can end up in a log. Redaction is a
+  safety net — code still must not log secrets or file contents. The log directory is user-only (0700 on Unix).
 
 ## 5. Privacy
 
