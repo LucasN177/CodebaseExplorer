@@ -16,15 +16,24 @@
 ## 2. Ports (Application)
 
 ```csharp
-// Application/Git — illustrative, finalized in GIT-001
+// Application/Git — implemented (GIT-001): IGitRepositoryReader, GitRepositoryInfo, GitSnapshotInfo,
+// GitRemoteInfo, GitRemoteUrls, GitErrorCodes; adapter Git/LibGit2/LibGit2RepositoryReader.
 public interface IGitRepositoryReader
 {
-    Task<GitRepositoryInfo?> TryOpenAsync(string path, CancellationToken ct);           // null if not a repo
-    Task<GitSnapshotInfo> ReadSnapshotAsync(string path, CancellationToken ct);         // HEAD, branch, remotes, dirty
+    // Discovers the working tree containing the folder (the folder or a parent; linked worktrees and .git files).
+    // git.not-a-repository (NotFound) for plain folders and bare repositories, git.read-failed (Failure) otherwise.
+    Task<Result<GitRepositoryInfo>> OpenAsync(string path, CancellationToken ct);
+    // HEAD (null if unborn), branch (null if detached), uncommitted changes (incl. untracked, not ignored), remotes.
+    Task<Result<GitSnapshotInfo>> ReadSnapshotAsync(GitRepositoryInfo repository, CancellationToken ct);
+    // Illustrative, finalized in GIT-004:
     Task<IReadOnlyList<GitFileActivity>> ReadFileActivityAsync(
-        string path, GitHistoryWindow window, IProgress<GitProgress>? progress, CancellationToken ct);
+        GitRepositoryInfo repository, GitHistoryWindow window, IProgress<GitProgress>? progress, CancellationToken ct);
 }
 
+// GitRepositoryInfo(RootPath, WorkingDirectory, RootPrefix, IsLinkedWorktree, IsShallow): RootPrefix is the analyzed
+// folder relative to the working tree ("" if equal) — Git paths are mapped to the model's files through it.
+
+// Illustrative, finalized in GIT-003:
 public interface IGitRemoteCloner
 {
     Task<CloneResult> CloneAsync(CloneRequest request, IProgress<GitProgress>? progress, CancellationToken ct);

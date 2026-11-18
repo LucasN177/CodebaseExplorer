@@ -1,19 +1,21 @@
+using CodebaseExplorer.Application.Git;
+using CodebaseExplorer.Git.LibGit2;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CodebaseExplorer.Git;
 
 /// <summary>
-/// Registration entry point of the Git module. Reads local repositories and clones remotes.
+/// Registration entry point of the Git module. Reads local repositories and clones remotes (GIT_INTEGRATION.md).
 /// </summary>
 public static class DependencyInjection
 {
-    /// <summary>
-    /// Registers the services of the Git module. The module has no implementations yet;
-    /// they are added by the tasks referenced in docs/architecture/GIT_INTEGRATION.md.
-    /// </summary>
+    /// <summary>Registers the services of the Git module (LibGit2Sharp adapter).</summary>
     public static IServiceCollection AddGitModule(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        services.AddSingleton<IGitRepositoryReader, LibGit2RepositoryReader>();
+
         return services;
     }
 }

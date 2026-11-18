@@ -101,8 +101,9 @@ Planned fixtures:
 ### 5.1 Hostile fixtures and the zero-execution harness (QA-003)
 
 Every ecosystem that can carry executable build or install logic gets a hostile fixture whose payloads only
-write `MARKER-*.txt` files when executed (`dotnet-hostile` for .NET, `node-hostile` for npm since ANALYSIS-009; Python and Git follow in
-ANALYSIS-011, GIT-001). Tests use `ZeroExecutionHarness`
+write `MARKER-*.txt` files when executed (`dotnet-hostile` for .NET, `node-hostile` for npm since ANALYSIS-009, builder-created Git repositories with hostile
+`.git/config` and hooks since GIT-001 — Git histories are never committed as fixtures; Python follows in
+ANALYSIS-011). Tests use `ZeroExecutionHarness`
 (`tests/CodebaseExplorer.IntegrationTests/Security`):
 
 1. `CopyFixture(name)` copies the fixture to a temporary folder (fixtures stay read-only);

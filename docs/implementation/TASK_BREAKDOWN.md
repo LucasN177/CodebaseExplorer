@@ -25,7 +25,7 @@ Status overview (keep in sync):
 | M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 9 |
 | M4 Polyglot & scale | 11 | 3 |
-| M5 Git | 7 | 2 |
+| M5 Git | 7 | 3 |
 | M6 Export | 2 | 0 |
 | M7 Local AI | 7 | 0 |
 | M8 Hardening & release | 4 | 0 |
@@ -540,11 +540,12 @@ Status overview (keep in sync):
 - **Note:** Done 2026-11-18 (GIT_INTEGRATION.md §3.1). LibGit2Sharp 0.32.0 + NativeBinaries 2.0.324 confirmed: native binaries for all target RIDs (glibc and musl); hooks, fsmonitor, filter/diff drivers, credential helpers and `core.sshCommand` are not executed. **Finding:** the native build supports SSH by starting the system `ssh` executable, so SSH URLs must be rejected by the app (OPD-02 stays open, options updated in FEATURE_ROADMAP.md). Shallow clones work over HTTPS only (not the local transport); the product clones full history because activity statistics need it. HTTPS clone verified for GitHub and GitLab; token clone only through the opt-in test (no private test repository available). History walk on 2,837 commits: 1.4 s without, 26.5 s with line counts — GIT-004 counts lines without rename detection and in parallel. Proof code: `LibGit2SharpVerificationTests` (two opt-in `Category=Network` tests). Package referenced by the Git module.
 
 ### GIT-001 — Git ports and LibGit2Sharp adapter (detect, snapshot)
-- **Priority:** P0 · **Milestone:** M5 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M5 · **Status:** done
 - **Prerequisites:** GIT-006
 - **Projects:** Application (ports), Git, IntegrationTests, Directory.Packages.props
 - **Description:** `IGitRepositoryReader.TryOpenAsync/ReadSnapshotAsync`; worktrees and `.git` files supported; sanitized remotes.
 - **Acceptance criteria:** Tests with `GitRepositoryBuilder`; hostile `.git/config` executes nothing.
+- **Note:** Done 2026-11-18. Port `IGitRepositoryReader` (Application/Git): `OpenAsync(path)` discovers the working tree containing the folder (also a parent, linked worktrees, `.git` files) and returns `GitRepositoryInfo` with `RootPrefix` (analyzed folder relative to the working tree) — `git.not-a-repository` (NotFound, also for bare repositories) or `git.read-failed`; `ReadSnapshotAsync` returns HEAD (null when unborn), branch (null when detached), uncommitted changes (untracked count, ignored files do not) and remotes sanitized by `GitRemoteUrls.Sanitize` (user info, query, fragment and the scp user part removed). Adapter `LibGit2RepositoryReader` (registered by `AddGitModule`) runs LibGit2Sharp on the thread pool and never writes. Tests: `GitRepositoryReaderTests` (builder repositories incl. worktree, subfolder, bare, corrupt config, detached, unborn, dirty variants, remotes; hostile config + hooks: no marker, no file changed; process-API guard over the Git module), `GitRemoteUrlsTests`. The reader is not used by the import yet (GIT-005).
 
 ### GIT-002 — GitRepositoryBuilder test helper
 - **Priority:** P0 · **Milestone:** M5 · **Status:** done

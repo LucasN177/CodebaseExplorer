@@ -40,8 +40,10 @@ evidence a read-only source snippet (`GetSourceSnippet`, UI-007).
 M4: the Tree-sitter binding is decided and wrapped (`Languages/TreeSitter`, ANALYSIS-008, ADR-004 spike result);
 polyglot fixtures exist (REPO-007); the Node project-system analyzer reads `package.json`, workspaces and `tsconfig.json`
 (ANALYSIS-009, hostile npm fixture).
-No Tree-sitter analyzer, Git or AI
-functionality exists yet. Next: the open M1 checks (macOS/Linux) and the remaining M4
+M5 (started in parallel to M4): LibGit2Sharp is verified (GIT-006, GIT_INTEGRATION.md §3.1), Git histories for tests come
+from `GitRepositoryBuilder` (GIT-002), and the Git module reads local repositories (`IGitRepositoryReader`: detect,
+snapshot with sanitized remotes; GIT-001).
+No Tree-sitter analyzer or AI functionality exists yet. Next: the open M1 checks (macOS/Linux) and the remaining M4
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 
 ## Commands
