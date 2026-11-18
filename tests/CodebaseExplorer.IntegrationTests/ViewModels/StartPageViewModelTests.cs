@@ -302,6 +302,7 @@ public sealed class StartPageViewModelTests : IAsyncLifetime
             _app.Services.GetRequiredService<CodebaseExplorer.Application.Git.IGitRepositoryReader>(),
             _app.Services.GetRequiredService<CodebaseExplorer.Application.Git.IGitActivityStore>(),
             TimeProvider.System),
+        _app.Services.GetRequiredService<CodebaseExplorer.Application.Git.ImportRemoteRepository>(),
         _app.Services.GetRequiredService<ListRecentRepositories>(),
         _app.Services.GetRequiredService<OpenRepository>(),
         _app.Services.GetRequiredService<RemoveRepository>(),

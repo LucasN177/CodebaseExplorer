@@ -1,6 +1,6 @@
 # Task Breakdown — Codebase Explorer
 
-> Status: **living document** · Last reviewed: 2026-11-17
+> Status: **living document** · Last reviewed: 2026-11-18
 
 Tasks are small enough to be handed to a single Claude Code session. Work through them using the
 workflow in [DEVELOPMENT_GUIDE.md](../development/DEVELOPMENT_GUIDE.md#3-feature-workflow) and finish
@@ -25,7 +25,7 @@ Status overview (keep in sync):
 | M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 9 |
 | M4 Polyglot & scale | 11 | 3 |
-| M5 Git | 7 | 6 |
+| M5 Git | 7 | 7 |
 | M6 Export | 2 | 0 |
 | M7 Local AI | 7 | 0 |
 | M8 Hardening & release | 4 | 0 |
@@ -580,11 +580,12 @@ Status overview (keep in sync):
 - **Note:** Done 2026-11-18. Tables `GitSnapshots`/`GitChanges` (migration `AddGitActivity`, `GitActivityStore` behind the new port `IGitActivityStore`; statistics keyed by file id, so a model replacement cascades them away). `ImportLocalRepository` reads the snapshot before the analysis (run `CommitSha`/`Branch` — the run history now shows them) and the activity after it (stage `ReadingGitHistory`), stores both after the model; unreadable repositories add a `git.read-failed` warning, folders without Git nothing. The walker restricts diffs to the analyzed subfolder (pathspec). Aggregation `GitActivityIndex` (Application): **file changes** = sum of the files' commit counts per project / module (entity declarations of the subtree) / entity; shared by `GetGraphView` (`GraphQuery.IncludeActivity` → `GraphNodeMetricsDto.ChangeCount`) and `GetElementDetails` (`ElementDetailsDto.Activity`). Overlay: *Git activity* toggle in the explorer (not persisted), halo via Cytoscape `underlay-*` growing with `log10(1 + changes)`; inspector line "N file changes in M files · +a −d lines · last change … · window …". Tests: `GitActivityEndToEndTests` (persisted snapshot and numbers, overlay and inspector equal an independent recomputation from the stored rows incl. module and type nodes, no-Git folder unchanged, unreadable repository = warning, re-import replaces, remove deletes), explorer view-model tests (toggle patches in/out, hint without Git data, inspector text), Vitest `activityHeat` and palette contrast. **Not verified:** the overlay's look in the running app (no manual UI check in this session).
 
 ### UI-008 — Clone dialog
-- **Priority:** P0 · **Milestone:** M5 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M5 · **Status:** done
 - **Prerequisites:** GIT-003
 - **Projects:** Desktop
 - **Description:** URL, optional branch and token (masked), progress, cancel, existing-clone handling.
 - **Acceptance criteria:** Token never displayed after entry and never logged (log test).
+- **Note:** Done 2026-11-18. Implemented as an inline form on the start page (*Clone remote repository…*), like the inline remove confirmation of REPO-005 — there is no dialog service; a modal window can follow if wanted. `StartPageViewModel` (partial `StartPageViewModel.Clone.cs`) calls `ImportRemoteRepository`: address, optional branch, token in a masked `TextBox` (`PasswordChar`) that is emptied as soon as the clone starts (the token stays in a private field only for the update/re-clone choice and is dropped afterwards); credentials typed into the address are removed from the field as well; progress *Receiving objects / Checking out files* then the analysis stages in the shared panel; cancel; existing clone → *Update existing clone* / *Clone again*; status mentions removed URL credentials and uncloned submodules. Recent repositories show *Clone of <url>* and the remove confirmation says that the clone is deleted (`RecentRepositoryDto.RemoteUrl`). Logging: error codes and exception types only. Tests: `CloneFormViewModelTests` (success, token emptied at start, failures and an exception containing the token — token in no log entry, message, notification or field —, existing clone + update with the entered token, cancel registers nothing, invalid address, command state). **Not verified:** the form in the running app (no manual UI check in this session).
 
 ---
 

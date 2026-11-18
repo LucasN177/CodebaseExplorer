@@ -24,6 +24,7 @@ public sealed class ListRecentRepositories(IArchitectureModelStore store)
                 LastRunStatus = e.LastRunStatus is { } status ? RepositoryContractMapping.ToContract(status) : null,
                 LastRunAt = e.LastRunAt,
                 LastOpenedAt = e.LastOpenedAt,
+                RemoteUrl = e.Repository.Location.RemoteUrl?.AbsoluteUri,
             })];
     }
 

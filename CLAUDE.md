@@ -45,7 +45,7 @@ from `GitRepositoryBuilder` (GIT-002), and the Git module reads local repositori
 snapshot with sanitized remotes; GIT-001) and computes per-file activity from the history (GIT-004); HTTPS remotes are
 cloned into the app's clones directory and analyzed (`ImportRemoteRepository`, `IGitRemoteCloner`; GIT-003); imports store a Git
 snapshot and per-file statistics (`GitSnapshots`/`GitChanges`, `IGitActivityStore`) shown as the *Git activity* overlay and in
-the inspector (`GitActivityIndex`, GIT-005).
+the inspector (`GitActivityIndex`, GIT-005); the start page clones HTTPS remotes through an inline form with a masked token (UI-008).
 No Tree-sitter analyzer or AI functionality exists yet. Next: the open M1 checks (macOS/Linux) and the remaining M4
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 

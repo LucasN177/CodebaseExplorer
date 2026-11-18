@@ -13,7 +13,7 @@ quickly — without uploading code and without executing it.
 > Its project-level dependency graph is shown in the Architecture Explorer (verified on Windows), and the analysis is
 > saved in a local SQLite database.
 > Git repositories are recognized: runs record the commit, and a Git-activity overlay shows how often the files of
-> projects, namespaces and types changed (M5, in progress). **There are no AI features yet and no code-level
+> projects, namespaces and types changed; HTTPS remotes can be cloned and analyzed (M5). **There are no AI features yet and no code-level
 > TypeScript/JavaScript/Python analysis yet.** See [Project status](#project-status).
 
 ---
@@ -43,7 +43,7 @@ analysis. Full vision: [docs/product/VISION.md](docs/product/VISION.md).
 | Recent repositories on the start page: open the stored result without re-analysis, re-analyze, remove all stored data | ✅ available |
 | Repository overview: files and lines per language, projects per ecosystem, external dependencies, last run, warnings and errors | ✅ available |
 | Run history: every analysis run with status, duration and statistics; its diagnostics (analyzer, file and line) filterable by severity | ✅ available (commit and branch for Git repositories since M5) |
-| Clone GitHub/GitLab remotes | ⏳ planned (M5) |
+| Clone GitHub/GitLab remotes | ✅ available (M5: HTTPS with optional access token held in memory only; update or re-clone of an existing clone; removing a clone deletes it) |
 | Repository scanner, language and project detection | 🟡 partial (scanner, .NET and Node projects — `package.json`, npm/yarn/pnpm workspaces, `tsconfig.json` references — available; Python manifests M4) |
 | C# analysis with Roslyn (no build required) | 🟡 partial (namespaces, types and members; inheritance, implementation, type usage, instantiation and calls between them, also across projects, each with evidence; heuristic DI registrations) |
 | TypeScript, JavaScript and Python analysis (Tree-sitter, manifests) | 🚧 in progress (M4: Node manifests available; imports and declarations planned) |
@@ -122,7 +122,7 @@ enforced by architecture tests. Details: [docs/architecture/SYSTEM_ARCHITECTURE.
 | M2 Persistence and analysis runs | ✅ done |
 | M3 Deep C# & Inspector | ✅ done |
 | M4 Polyglot & scale | 🚧 in progress (see [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md)) |
-| M5 Git | 🚧 in progress (started in parallel to M4, see [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md)) |
+| M5 Git | ✅ implemented on a branch started in parallel to M4 (manual UI checks pending, see [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md)) |
 | M6 Export · M7 Local AI · M8 Release | ⏳ planned |
 
 What exists today: 10 source projects and 6 test projects, central package management, module

@@ -1,8 +1,8 @@
 # Git Integration — Codebase Explorer
 
 > Status: **accepted (specification)** · Last reviewed: 2026-11-18
-> Implementation status: **implemented except the clone dialog** — adapter verified (GIT-006, §3.1); reader, history
-> statistics, HTTPS clone, persistence and activity overlay (GIT-001 … GIT-005); clone dialog UI-008.
+> Implementation status: **implemented** (M5) — adapter verified (GIT-006, §3.1); reader, history
+> statistics, HTTPS clone, persistence and activity overlay (GIT-001 … GIT-005); clone form on the start page (UI-008).
 
 ## 1. Scope
 

@@ -9,7 +9,7 @@
 | M2 | Persistence & analysis runs | 🚧 all tasks implemented (2026-11-18); new pages manually verified on Windows; macOS/Linux open | SQLite persistence, reopen, run history, migrations. |
 | M3 | Deep C# & Component Inspector | 🚧 all tasks implemented (2026-11-18); verified on Windows, macOS/Linux open | Namespaces/types with evidence levels, inspector, hostile fixtures. |
 | M4 | Polyglot & large repositories | ⏳ planned | TS/JS/Python, filters/search/budget, performance targets. |
-| M5 | Git integration | ⏳ planned | Metadata, HTTPS clone, activity overlay. |
+| M5 | Git integration | 🟡 implemented, manual UI checks pending | Metadata, HTTPS clone, activity overlay (all 7 tasks done on the M5 branch; overlay and clone form not yet checked in the running app). |
 | M6 | Documentation export | ⏳ planned | Markdown + Mermaid report. |
 | M7 | Optional local AI | ⏳ planned | Ollama Q&A with validated citations; off by default. |
 | M8 | Hardening & release | ⏳ planned | Packaging, CI on 3 OSes, release gate. |
