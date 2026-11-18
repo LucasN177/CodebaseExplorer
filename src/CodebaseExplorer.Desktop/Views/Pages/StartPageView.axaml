@@ -3,17 +3,59 @@
              xmlns:pages="using:CodebaseExplorer.Desktop.ViewModels.Pages"
              x:Class="CodebaseExplorer.Desktop.Views.Pages.StartPageView"
              x:DataType="pages:StartPageViewModel">
-  <StackPanel Spacing="12" MaxWidth="720" HorizontalAlignment="Left">
-    <TextBlock Text="Welcome to Codebase Explorer" FontSize="28" FontWeight="SemiBold" />
-    <TextBlock TextWrapping="Wrap" Opacity="0.8"
-               Text="Codebase Explorer analyzes software repositories locally and turns their structure, dependencies and history into an interactive architecture model." />
-    <Border BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,16,0,0"
-            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
-      <StackPanel Spacing="6">
-        <TextBlock Text="Project status: foundation" FontWeight="SemiBold" />
-        <TextBlock TextWrapping="Wrap"
-                   Text="Repository import and analysis are not implemented yet. See docs/implementation/IMPLEMENTATION_PLAN.md for the roadmap." />
-      </StackPanel>
-    </Border>
-  </StackPanel>
+  <UserControl.Styles>
+    <Style Selector="TextBlock.active">
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+  </UserControl.Styles>
+  <ScrollViewer>
+    <StackPanel Spacing="12" MaxWidth="720" HorizontalAlignment="Left">
+      <TextBlock Text="Welcome to Codebase Explorer" FontSize="28" FontWeight="SemiBold" />
+      <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                 Text="Codebase Explorer analyzes software repositories locally and turns their structure and dependencies into an interactive architecture model. Repository code is only read, never executed." />
+
+      <Button Content="Open local folder…" Margin="0,16,0,0"
+              Command="{Binding OpenLocalFolderCommand}"
+              Classes="accent" />
+      <TextBlock TextWrapping="Wrap" Opacity="0.7" FontSize="12"
+                 Text="Currently .NET solutions and projects are recognized; other languages follow in later milestones." />
+
+      <!-- Progress panel (WF-01 step 4) -->
+      <Border IsVisible="{Binding IsImporting}"
+              BorderThickness="1" CornerRadius="6" Padding="16"
+              BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+        <StackPanel Spacing="10">
+          <TextBlock Text="Analyzing" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding ImportPath}" TextWrapping="Wrap" Opacity="0.8" />
+          <ItemsControl ItemsSource="{Binding Stages}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="pages:ImportStageViewModel">
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2">
+                  <TextBlock Text="{Binding Glyph}" Width="16" TextAlignment="Center" />
+                  <TextBlock Text="{Binding Name}" Classes.active="{Binding IsActive}" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <ProgressBar Minimum="0" Maximum="100"
+                       Value="{Binding ProgressPercent}"
+                       IsIndeterminate="{Binding IsProgressIndeterminate}" />
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <TextBlock Text="{Binding ProgressText}" Opacity="0.8" />
+            <TextBlock Text="{Binding CurrentItem}" Opacity="0.6" TextTrimming="CharacterEllipsis" MaxWidth="520" />
+          </StackPanel>
+          <Button Content="Cancel" Command="{Binding OpenLocalFolderCancelCommand}" />
+        </StackPanel>
+      </Border>
+
+      <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap"
+                 IsVisible="{Binding StatusMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+      <Border IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
+              BorderThickness="1" CornerRadius="6" Padding="12"
+              BorderBrush="{DynamicResource SystemFillColorCriticalBrush}"
+              Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}">
+        <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
 </UserControl>

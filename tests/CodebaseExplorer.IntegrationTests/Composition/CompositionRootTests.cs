@@ -39,6 +39,24 @@ public sealed class CompositionRootTests
     }
 
     [Fact]
+    public void SuccessfulImport_NavigatesTheShellToTheExplorer()
+    {
+        using var provider = CompositionRoot.BuildServiceProvider();
+        var shell = provider.GetRequiredService<MainWindowViewModel>();
+
+        provider.GetRequiredService<RepositorySession>().SetCurrent(new Contracts.Repositories.RepositoryImportSummaryDto
+        {
+            RepositoryId = new string('a', 32),
+            Name = "repo",
+            RootPath = Path.GetTempPath(),
+            AnalysisRunId = new string('b', 32),
+            Status = "succeeded",
+        });
+
+        Assert.Equal("Architecture Explorer", shell.CurrentPage.Title);
+    }
+
+    [Fact]
     public void BuildServiceProvider_RegistersApplicationPaths()
     {
         using var provider = CompositionRoot.BuildServiceProvider();

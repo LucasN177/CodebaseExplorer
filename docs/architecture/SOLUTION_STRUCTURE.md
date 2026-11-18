@@ -92,7 +92,7 @@ Test project references:
 | AI | `Providers/`, `Retrieval/`, `Prompting/`, `Citations/`, `Conversations/`. |
 | Storage | `Persistence/` (`DbContext`, entities, configurations), `Migrations/`, `Stores/` (port implementations), `Search/` (FTS). |
 | Infrastructure | `FileSystem/` (**exists**: `ApplicationPaths`), `Secrets/`, `Logging/`. |
-| Desktop | `Composition/` (**exists**), `Services/` (**exists**: theme, `IGraphViewHost` + `GraphViewBridge`), `ViewModels/` (**exists**), `Views/` (**exists**), `GraphView/` (**exists**: built web assets, generated and committed, §4), `Controls/` (**exists**: `GraphHostControl`, `GraphViewNavigationPolicy`), `app.manifest` (**exists**: Windows supportedOS, required for native control hosting), `Assets/`. |
+| Desktop | `Composition/` (**exists**), `Services/` (**exists**: theme, `IGraphViewHost` + `GraphViewBridge`, `IFolderPicker`, `RepositorySession`), `ViewModels/` (**exists**), `Views/` (**exists**), `GraphView/` (**exists**: built web assets, generated and committed, §4), `Controls/` (**exists**: `GraphHostControl`, `GraphViewNavigationPolicy`), `app.manifest` (**exists**: Windows supportedOS, required for native control hosting), `Assets/`. |
 
 Every module has exactly one public `DependencyInjection` class (**exists** for all modules).
 

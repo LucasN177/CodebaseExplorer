@@ -49,6 +49,8 @@ public static class CompositionRoot
     private static IServiceCollection AddDesktop(this IServiceCollection services)
     {
         services.AddSingleton<IThemeService, ThemeService>();
+        services.AddSingleton<IFolderPicker, FolderPicker>();
+        services.AddSingleton<RepositorySession>();
 
         // One graph web view in the application; the bridge is bound to GraphHostControl.Host and
         // ViewModels use it through IGraphViewHost (GRAPH-004).

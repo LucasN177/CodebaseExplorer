@@ -11,7 +11,7 @@ capabilities ([MVP_SCOPE.md](MVP_SCOPE.md)) it depends on.
 
 ## WF-01 Import a local repository
 
-**Persona:** Nina (onboarding) · **Capabilities:** MVP-01, MVP-02, MVP-03 · **Status:** planned; core flow (folder picker → progress → explorer) in M1, *Recent repositories* and overview page in M2, *Clone from URL* and Git detection in M5
+**Persona:** Nina (onboarding) · **Capabilities:** MVP-01, MVP-02, MVP-03 · **Status:** core flow (folder picker → progress with stages and cancel → explorer) implemented (UI-002; no Git detection yet), *Recent repositories* and overview page in M2, *Clone from URL* and Git detection in M5
 
 1. Nina starts Codebase Explorer. The start page shows *Open local folder*, *Clone from URL* and
    *Recent repositories*.

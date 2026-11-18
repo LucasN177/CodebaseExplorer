@@ -12,7 +12,7 @@
       <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
         <TextBlock Text="Architecture graph" FontSize="18" HorizontalAlignment="Center" />
         <TextBlock Opacity="0.7" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="420"
-                   Text="No repository has been analyzed. The interactive graph will appear here once repository import and analysis are implemented." />
+                   Text="Open a local folder on the Start page to analyze it. Showing the analyzed project graph here is not implemented yet." />
       </StackPanel>
     </Border>
   </DockPanel>

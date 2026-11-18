@@ -1,3 +1,4 @@
+using CodebaseExplorer.Desktop.Services;
 using CodebaseExplorer.Desktop.ViewModels.Pages;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -9,10 +10,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel(
         StartPageViewModel start,
         ArchitectureExplorerPageViewModel architectureExplorer,
-        SettingsPageViewModel settings)
+        SettingsPageViewModel settings,
+        RepositorySession session)
     {
         Pages = [start, architectureExplorer, settings];
         CurrentPage = start;
+
+        // A successful import opens the explorer (UI-002, WF-01 step 5).
+        session.CurrentChanged += (_, _) => CurrentPage = architectureExplorer;
     }
 
     public IReadOnlyList<PageViewModel> Pages { get; }

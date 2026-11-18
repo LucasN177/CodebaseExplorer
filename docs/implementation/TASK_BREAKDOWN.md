@@ -237,13 +237,14 @@ Status overview (keep in sync):
 - **Acceptance criteria:** Shell shows background-operation state; no business logic in views.
 
 ### UI-002 — Import local repository flow
-- **Priority:** P0 · **Milestone:** M1 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M1 · **Status:** done
 - **Prerequisites:** CORE-006
 - **Projects:** Desktop, IntegrationTests
 - **Description:** Start page action "Open local folder" using Avalonia's storage provider folder picker; progress panel with stages and cancel; navigate to the explorer on success; errors shown inline.
 - **Acceptance criteria:**
   - ViewModel tests (no UI) cover success, cancellation and error paths with substituted use cases.
   - UI thread is never blocked by analysis work.
+- **Note:** The tests use the real `ImportLocalRepository` with a substituted `IRepositoryAnalyzer` port (the use case is a sealed class; no extra interface). The use case runs via `Task.Run`; a test asserts the command returns while the analyzer blocks. The current repository is held by `RepositorySession` (Desktop/Services); the shell navigates to the explorer when it changes. Git detection (WF-01 step 3) is not part of M1.
 
 ### UI-003 — Architecture Explorer page with project graph
 - **Priority:** P0 · **Milestone:** M1 · **Status:** todo
