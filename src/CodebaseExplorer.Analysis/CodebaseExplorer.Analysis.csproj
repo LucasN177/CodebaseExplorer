@@ -10,6 +10,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
     <PackageReference Include="Basic.Reference.Assemblies.Net100" />
     <PackageReference Include="TreeSitter.DotNet" />
+    <PackageReference Include="Tomlyn" />
   </ItemGroup>
 
   <ItemGroup>

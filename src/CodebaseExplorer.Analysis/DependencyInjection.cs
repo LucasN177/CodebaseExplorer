@@ -3,6 +3,7 @@ using CodebaseExplorer.Analysis.Languages.CSharp;
 using CodebaseExplorer.Analysis.Pipeline;
 using CodebaseExplorer.Analysis.ProjectSystems.DotNet;
 using CodebaseExplorer.Analysis.ProjectSystems.Node;
+using CodebaseExplorer.Analysis.ProjectSystems.Python;
 using CodebaseExplorer.Analysis.Scanning;
 using CodebaseExplorer.Application.Analysis;
 using CodebaseExplorer.Application.Repositories;
@@ -30,6 +31,7 @@ public static class DependencyInjection
         // Project-system analyzers (stage 2) and language analyzers (stage 3).
         services.AddSingleton<IProjectSystemAnalyzer, DotNetProjectSystemAnalyzer>();
         services.AddSingleton<IProjectSystemAnalyzer, NodeProjectSystemAnalyzer>();
+        services.AddSingleton<IProjectSystemAnalyzer, PythonProjectSystemAnalyzer>();
         services.AddSingleton<IRepositoryLanguageAnalyzer, CSharpAnalyzer>();
 
         return services;

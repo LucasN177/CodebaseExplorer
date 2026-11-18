@@ -198,6 +198,22 @@ Run in parallel, one per ecosystem, each over the scanned file list.
   `setup.cfg` (INI). `setup.py` is detected and reported, **never executed**; static extraction
   from `setup.py` is not attempted in the MVP.
 - Package roots: directories with `__init__.py`, `src/` layout detection.
+- **Implemented (ANALYSIS-011, `ProjectSystems/Python`):** one `PythonProject` per folder with Python manifests;
+  all manifests of the folder contribute, the first of `pyproject.toml`, `setup.cfg`, `setup.py`, `requirements.txt`,
+  other `requirements*.txt` is the manifest file and names the project (`[project] name`, `[tool.poetry] name`,
+  `[metadata] name`, else the folder). Properties `version`, `requiresPython` (incl. Poetry's `python`),
+  `buildBackend`, `layout` (`src` if Python files lie below `src/`, else `flat`), `manifests`, `setupPy`. Dependencies
+  (PEP 508 parsed by `Pep508`, specifier and marker kept as written, never evaluated): PEP 621 `dependencies` and
+  `optional-dependencies` (`extra`), PEP 735 `dependency-groups` (`group`), Poetry `dependencies`,
+  `dev-dependencies` and `group.<g>.dependencies` (`group`, `devOnly=true` except `main`; inline tables use
+  `version`), `setup.cfg` `install_requires`/`extras_require`, requirement files (`-r` includes followed inside the
+  repository, at most 5 levels, cycles and missing/outside files reported; every other option, URL and VCS line
+  reported and ignored). Names of other Python projects of the repository (PEP 503) → `ProjectReference`, others PyPI
+  `PackageReference`, all `Confirmed`, rules `pyproject.*`, `setup.cfg.*`, `requirements.txt`. `[build-system]
+  requires` and `setup_requires` are not dependencies. TOML: **Tomlyn 2.11.1** (BSD-2-Clause) syntax parser —
+  positions, depth limit 32 (`TomlException` → `Warning`), invalid TOML → `Warning`, project still created; INI
+  (`setup.cfg`) by a minimal in-house reader. `setup.py` → `Info` `python.setup-py.not-executed`. Oracle: fixtures
+  `python-src-layout`, `mixed-polyglot`; zero execution: fixture `python-hostile` (`HostilePythonFixtureTests`).
 
 ### Stage 3 — Language analyzers
 

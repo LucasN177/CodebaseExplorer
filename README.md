@@ -42,9 +42,9 @@ analysis. Full vision: [docs/product/VISION.md](docs/product/VISION.md).
 | Repository overview: files and lines per language, projects per ecosystem, external dependencies, last run, warnings and errors | ✅ available |
 | Run history: every analysis run with status, duration and statistics; its diagnostics (analyzer, file and line) filterable by severity | ✅ available (commit hashes from M5) |
 | Clone GitHub/GitLab remotes | ⏳ planned (M5) |
-| Repository scanner, language and project detection | 🟡 partial (scanner, .NET and Node projects — `package.json`, npm/yarn/pnpm workspaces, `tsconfig.json` references — available; Python manifests M4) |
+| Repository scanner, language and project detection | 🟡 partial (scanner, .NET and Node projects — `package.json`, npm/yarn/pnpm workspaces, `tsconfig.json` references — available; Python projects — `pyproject.toml` (PEP 621, Poetry), `setup.cfg`, requirement files — available) |
 | C# analysis with Roslyn (no build required) | 🟡 partial (namespaces, types and members; inheritance, implementation, type usage, instantiation and calls between them, also across projects, each with evidence; heuristic DI registrations) |
-| TypeScript, JavaScript and Python analysis (Tree-sitter, manifests) | 🚧 in progress (M4: Node manifests available; imports and declarations planned) |
+| TypeScript, JavaScript and Python analysis (Tree-sitter, manifests) | 🚧 in progress (M4: Node and Python manifests available; imports and declarations planned) |
 | Graph layouts (force-directed, hierarchical, concentric; choice remembered) and visual encoding (ecosystem colors, kind shapes, evidence line styles, edge weight, focus dimming) | ✅ available |
 | Hierarchical drill-down in the graph: double-click a project or namespace to show its namespaces and types (edges attach to the deepest visible element) | ✅ available (verified on Windows) |
 | Filters, search and neighborhood view in the graph | ⏳ planned (M3–M4) |
