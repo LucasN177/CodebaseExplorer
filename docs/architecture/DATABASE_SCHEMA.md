@@ -365,6 +365,7 @@ Each value is a JSON string; a row whose `ValueJson` is not a JSON string reads 
 | Key | Values | Missing / unknown value | Used by |
 |---|---|---|---|
 | `appearance.theme` | `"system"`, `"light"`, `"dark"` | `system` | `ThemeService` (Desktop): restored before the main window is shown, written when the user changes the theme. |
+| `graph.layout` | `"force"`, `"hierarchical"`, `"concentric"` | `force` | `ArchitectureExplorerPageViewModel` (Desktop, GRAPH-005): restored at startup and sent to the graph view before any graph, written when the user switches the layout. |
 
 ### 4.18 Search index (AI retrieval, M7)
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createMessage, parseElementId, parseEnvelope, parseGraphView, parseTheme } from '../src/protocol';
+import { createMessage, parseElementId, parseEnvelope, parseGraphView, parseLayout, parseTheme } from '../src/protocol';
 import { edge, envelope, node, view } from './fixtures';
 
 describe('parseEnvelope', () => {
@@ -72,6 +72,10 @@ describe('small payloads', () => {
   it('parses theme modes', () => {
     expect(parseTheme({ mode: 'dark' })).toEqual({ ok: true, value: 'dark' });
     expect(parseTheme({ mode: 'blue' }).ok).toBe(false);
+    expect(parseLayout({ name: 'force' })).toEqual({ ok: true, value: 'force' });
+    expect(parseLayout({ name: 'hierarchical' })).toEqual({ ok: true, value: 'hierarchical' });
+    expect(parseLayout({ name: 'cose' }).ok).toBe(false);
+    expect(parseLayout({ name: 7 }).ok).toBe(false);
   });
 
   it('parses element ids', () => {

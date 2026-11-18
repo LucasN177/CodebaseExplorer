@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using CodebaseExplorer.Application.Graph;
 using CodebaseExplorer.Application.Repositories;
+using CodebaseExplorer.Application.Settings;
 using CodebaseExplorer.Contracts.Graph;
 using CodebaseExplorer.Contracts.Repositories;
 using CodebaseExplorer.Desktop.Services;
@@ -30,7 +31,7 @@ public sealed class ArchitectureExplorerPageViewModelTests : IAsyncLifetime
         _host.Selection.Returns(GraphSelection.Empty);
         _viewModel = new ArchitectureExplorerPageViewModel(
             _host, _app.Services.GetRequiredService<GetGraphView>(), _app.Services.GetRequiredService<GetGraphEdgeDetails>(),
-            _session, _shell, NullLogger<ArchitectureExplorerPageViewModel>.Instance);
+            _session, Substitute.For<IUserSettingsStore>(), _shell, NullLogger<ArchitectureExplorerPageViewModel>.Instance);
     }
 
     public ValueTask InitializeAsync() => _app.InitializeAsync();

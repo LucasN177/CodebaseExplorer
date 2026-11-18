@@ -99,7 +99,9 @@ license-key check found in the assembly) with Avalonia 12.1.6, Cytoscape.js 3.35
   (GRAPH-004).
 - The `cose` layout is not acceptable as default for large graphs; GRAPH-005 must choose and measure
   a faster layout (e.g. `cytoscape-dagre`, `fcose`, layout in a web worker, or a node budget that
-  keeps force layouts small).
+  keeps force layouts small). **Resolved in GRAPH-005:** default `force` = fcose (spectral-only above
+  800 elements, ≤ 0.4 s at 500 / 2,000 in headless Edge), `hierarchical` = dagre, `concentric` built in;
+  no web worker (file:// origin and CSP); elkjs not adopted (license). Measurements: GRAPH_ENGINE.md §8.1.
 
 **Still open (GRAPH-001 remains in progress):**
 

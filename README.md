@@ -45,7 +45,8 @@ analysis. Full vision: [docs/product/VISION.md](docs/product/VISION.md).
 | Repository scanner, language and project detection | 🟡 partial (scanner and .NET project analysis available; other ecosystems M4) |
 | C# analysis with Roslyn (no build required) | 🟡 partial (namespaces, types and members; inheritance, implementation, type usage, instantiation and calls between them, also across projects, each with evidence; heuristic DI registrations) |
 | TypeScript, JavaScript and Python analysis (Tree-sitter, manifests) | ⏳ planned (M4) |
-| Hierarchical drill-down, layouts, filters and search in the graph (Cytoscape.js) | ⏳ planned (M2–M4) |
+| Graph layouts (force-directed, hierarchical, concentric; choice remembered) and visual encoding (ecosystem colors, kind shapes, evidence line styles, edge weight, focus dimming) | ✅ available |
+| Hierarchical drill-down, filters and search in the graph (Cytoscape.js) | ⏳ planned (M3–M4) |
 | Component Inspector with evidence and source snippets | ⏳ planned (M3) |
 | Local persistence (SQLite) and analysis history | 🚧 in progress (M2: database created and migrated at startup; analysis runs and models are saved — reopening a saved repository from the UI follows with REPO-005) |
 | Git metadata and change-activity overlays | ⏳ planned (M5) |

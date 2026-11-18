@@ -65,6 +65,35 @@ public sealed class GraphViewBridgeTests
     }
 
     [Fact]
+    public async Task Ready_SendsThemeThenLayoutThenGraph()
+    {
+        await _bridge.ShowGraphAsync(Graph(), Token);
+        await _bridge.SetLayoutAsync(GraphLayout.Hierarchical, Token);
+        await _bridge.SetThemeAsync(GraphThemeMode.Light, Token);
+        Assert.Empty(_scripts);
+
+        await _bridge.Receive(Ready());
+
+        Assert.Equal([GraphMessageTypes.ViewTheme, GraphMessageTypes.ViewLayout, GraphMessageTypes.GraphLoad], _scripts.Select(MessageType));
+        Assert.Equal("hierarchical", Envelope(_scripts[1]).GetProperty("payload").GetProperty("name").GetString());
+    }
+
+    [Theory]
+    [InlineData(GraphLayout.Force, "force")]
+    [InlineData(GraphLayout.Hierarchical, "hierarchical")]
+    [InlineData(GraphLayout.Concentric, "concentric")]
+    public async Task SetLayout_WhenReady_SendsViewLayout(GraphLayout layout, string token)
+    {
+        await _bridge.Receive(Ready());
+
+        Assert.True(await _bridge.SetLayoutAsync(layout, Token));
+
+        var envelope = Envelope(Assert.Single(_scripts));
+        Assert.Equal(GraphMessageTypes.ViewLayout, envelope.GetProperty("type").GetString());
+        Assert.Equal(token, envelope.GetProperty("payload").GetProperty("name").GetString());
+    }
+
+    [Fact]
     public async Task ShowGraph_WhenReady_SendsGraphLoadWithTheDto()
     {
         await _bridge.Receive(Ready());

@@ -62,7 +62,7 @@ The status column is authoritative for what exists. Features marked *planned* do
 | F4 | C# analysis | Roslyn-based analysis of namespaces, types and their relationships without building the code. | planned (MVP) |
 | F5 | TS/JS/Python analysis | Tree-sitter-based module/import analysis and package-manifest analysis. | planned (MVP, basic depth) |
 | F6 | Architecture model | Language-independent model of projects, modules, entities, relationships, external dependencies and evidence. | planned (MVP) |
-| F7 | Architecture Explorer | Interactive, hierarchical graph (Cytoscape.js) with drill-down, filters, layouts and search. | project-level graph implemented (M1); drill-down, filters, layouts and search planned (MVP) |
+| F7 | Architecture Explorer | Interactive, hierarchical graph (Cytoscape.js) with drill-down, filters, layouts and search. | project-level graph (M1) and layouts with layout switcher (GRAPH-005) implemented; drill-down, filters and search planned (MVP) |
 | F8 | Component Inspector | Details panel for the selected node/edge: metrics, relationships, evidence with source locations. | planned (MVP) |
 | F9 | External dependencies | NuGet, npm and PyPI dependencies per project, declared versions. | planned (MVP) |
 | F10 | Git metadata | Branch, HEAD commit, remotes, per-file/per-project change activity. | planned (MVP) |

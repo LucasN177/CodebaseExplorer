@@ -144,16 +144,16 @@ GRAPH-006 and the theme tokens with GRAPH-003.
 The page must not use implicit globals for element ids (an element `id="cy"` is `window.cy`).
 The page entry point is `window.ceReceive(json)` (returns `"ok"` or `"error: …"`); invalid messages
 are rejected as a whole and reported with an `error` message (`src/CodebaseExplorer.GraphView.Web`).
-`view/layout` and `graph/patch` are not handled yet (GRAPH-005/006); the page currently lays out with
-Cytoscape's `breadthfirst` until GRAPH-005 decides the layouts.
+`view/layout` is handled since GRAPH-005 (§8): the page remembers the layout for later loads and
+re-arranges the current graph when it changes; unknown names are rejected. `graph/patch` follows with GRAPH-006.
 macOS and Linux behavior is not verified yet (GRAPH-001 remainder).
 
 ### 6.1 Graph host (GRAPH-004)
 
 | Type | Responsibility |
 |---|---|
-| `IGraphViewHost` (`Desktop/Services`) | What ViewModels use: `IsReady`, `CurrentGraph`, `Selection` (bindable, `INotifyPropertyChanged`), event `InspectorRequested`, `ShowGraphAsync(GraphViewDto)`, `FocusAsync(elementId)`, `SetThemeAsync(mode)`. ViewModels never touch the WebView. |
-| `GraphViewBridge` (`Desktop/Services`) | Implements `IGraphViewHost` without Avalonia types (testable). Serializes outbound messages with `GraphMessageSerializer` and runs `window.ceReceive("<ASCII-only JSON string literal>")`; a `null` result, an exception or anything other than `"ok"` counts as failure and is logged. Keeps the current graph and theme and re-sends them (theme first) on every `ready`, so calls before the page is loaded or after a reload are not lost. Validates every inbound message: length ≤ 1,000,000 characters, envelope, payload type, `ready.protocolVersion`, and element ids that must belong to the current graph (selection, inspector). Invalid messages are logged as warnings (type and reason only, never content) and ignored. `node/expandRequested`/`collapseRequested` are ignored until GRAPH-006. Registered once as singleton (as itself and as `IGraphViewHost`). |
+| `IGraphViewHost` (`Desktop/Services`) | What ViewModels use: `IsReady`, `CurrentGraph`, `Selection` (bindable, `INotifyPropertyChanged`), event `InspectorRequested`, `ShowGraphAsync(GraphViewDto)`, `FocusAsync(elementId)`, `SetThemeAsync(mode)`, `SetLayoutAsync(GraphLayout)` (GRAPH-005). ViewModels never touch the WebView. |
+| `GraphViewBridge` (`Desktop/Services`) | Implements `IGraphViewHost` without Avalonia types (testable). Serializes outbound messages with `GraphMessageSerializer` and runs `window.ceReceive("<ASCII-only JSON string literal>")`; a `null` result, an exception or anything other than `"ok"` counts as failure and is logged. Keeps the current graph, theme and layout and re-sends them (theme, then layout, then graph — so the graph is laid out once) on every `ready`, so calls before the page is loaded or after a reload are not lost. Validates every inbound message: length ≤ 1,000,000 characters, envelope, payload type, `ready.protocolVersion`, and element ids that must belong to the current graph (selection, inspector). Invalid messages are logged as warnings (type and reason only, never content) and ignored. `node/expandRequested`/`collapseRequested` are ignored until GRAPH-006. Registered once as singleton (as itself and as `IGraphViewHost`). |
 | `GraphHostControl` (`Desktop/Controls`) | `ContentControl` bound to the bridge (`Host="{Binding …}"`; must be the `GraphViewBridge`). Creates the `NativeWebView`: `AdapterPreference = [WebView2]` on Windows and rejects any other adapter, `UserDataFolder` = `<data directory>/webview`, DevTools only in debug builds. Navigates to `GraphView/index.html` after `AdapterCreated`; cancels every other navigation and every new window; relays `WebMessageReceived` to the bridge; marks the page unloaded on navigation, adapter destruction and process termination (reloads up to 3 times after a crash). Shows an error text instead of the graph when the engine is unavailable (no adapter within 20 s, unsupported adapter). Sends the theme from `ActualThemeVariant`. |
 | `GraphViewNavigationPolicy` (`Desktop/Controls`) | Allows only the local bundled page file (no query; case-insensitive path on Windows). |
 
@@ -191,14 +191,36 @@ records of a selected edge (`kind · level`, `path:line`, `analyzer · rule`).
 
 ## 8. Layouts
 
-| Layout | Use | Candidate implementation |
-|---|---|---|
-| Hierarchical (layered) | Project/module dependency graphs | cytoscape-dagre (MIT) — or ELK via cytoscape-elk **after license review of elkjs (EPL-2.0 OR GPL-3.0)** |
-| Force-directed | Exploration, neighborhood views | Cytoscape built-in `cose` measured **12.5–13.9 s** for 500 nodes / 2,000 edges (GRAPH-001) — too slow as default; fcose (MIT, last release 2023) or a web-worker layout to be measured in GRAPH-005 |
-| Concentric | Neighborhood around a focus node | Cytoscape built-in |
-| Grid | Fallback for huge flat sets | Cytoscape built-in |
+Implemented in GRAPH-005 (`src/CodebaseExplorer.GraphView.Web/src/layouts.ts`):
 
-Layout choice per view is persisted in user settings. Node positions are not persisted in the MVP.
+| Layout (`view/layout` name) | Use | Implementation |
+|---|---|---|
+| Force-directed (`force`) — **default** | Exploration, any graph size | cytoscape-fcose 2.2.0 (MIT). Up to 800 elements (nodes + edges, `FORCE_REFINEMENT_LIMIT`) quality `default` (spectral start + force refinement); above that only the spectral `draft` step, which keeps 500 nodes / 2,000 edges well below 2 s but lets nodes overlap. Random start, so positions differ between loads. |
+| Hierarchical (`hierarchical`) | Project/module dependency graphs | cytoscape-dagre 4.1.0 (MIT, bundles @dagrejs/dagre), top-down, `tight-tree` ranker. Above the 2 s target on very large graphs (see §8.1); the user's explicit choice is still honored. |
+| Concentric (`concentric`) | Hubs: most connected nodes in the center | Cytoscape built-in, rings by degree. |
+
+Not adopted: Cytoscape's built-in `cose` (too slow), ELK via cytoscape-elk (license: elkjs is EPL-2.0 OR GPL-3.0-or-later, see SOLUTION_STRUCTURE.md §6.2; it was not faster than dagre either), euler (fast, but no component packing; isolated nodes drift far away), a **grid** layout (no use case at the project level yet), and **web-worker layouts**: the page is loaded from `file://` (opaque origin), where Chromium refuses `new Worker(file://…)`, and a `blob:` worker would need a `worker-src blob:` exception in the strict CSP (§7); the layouts also need the element positions inside Cytoscape on the main thread. Revisit if the default layout no longer meets the targets.
+
+The layout choice is one global user setting (`graph.layout`, DATABASE_SCHEMA.md §4.17), restored at startup and changed through the switcher above the graph in the Architecture Explorer; per-view choices can follow when there are several graph views. Node positions are not persisted in the MVP.
+
+### 8.1 Layout measurements (GRAPH-005, 2026-11-18)
+
+Random graphs with seeded edges (`dag`: edges only from lower to higher node index, like a dependency graph), node size 28 × 18 px, three runs each, time = layout + fit + one render tick, in **headless Microsoft Edge 157** (Chromium, the engine behind WebView2) on the Windows 11 development machine. Calibration: `cose` took **5.0 s** there for 500 / 2,000, against 12.5–13.9 s in the visible WebView2 of spike GRAPH-001 (and 11.3–12.7 s in another Chromium window) — so numbers in the app can be up to ~2.8× higher than below.
+
+| Graph (nodes / edges) | cose | fcose `default` | fcose `draft` | dagre network-simplex | dagre tight-tree | ELK layered | euler | concentric |
+|---|---|---|---|---|---|---|---|---|
+| 500 / 2,000 (random) | 4,959–4,965 ms | 3,237–5,645 ms | 358–397 ms | — | — | — | 1,528–1,639 ms | 246–297 ms |
+| 500 / 2,000 dag | — | 3,423–5,881 ms | 364–383 ms | 3,728–5,921 ms | 2,248–2,779 ms | 2,455–3,195 ms | 1,482–1,613 ms | — |
+| 500 / 1,000 dag | — | — | — | — | 453–553 ms | — | — | — |
+| 300 / 1,200 dag | — | — | — | — | 941–1,057 ms | — | — | — |
+| 300 / 900 dag | — | 1,181–1,692 ms | — | — | 465–554 ms | — | 772–783 ms | — |
+| 250 / 750 dag | — | 605–1,335 ms | — | — | — | — | — | — |
+| 200 / 800 dag | — | 627–1,259 ms | — | — | — | — | — | — |
+| 200 / 600 dag | — | 355–598 ms | 71–76 ms | 475–599 ms | 279–376 ms | — | — | — |
+| 150 / 450 dag | — | 246–415 ms | — | — | — | — | — | — |
+| 100 / 300 dag | — | 138–157 ms | 49–56 ms | — | 141–155 ms | — | 99–112 ms | — |
+
+Conclusions: the default `force` layout meets the < 2 s target (§10) at 500 / 2,000 even with the 2.8× calibration factor (`draft`: ≤ 0.4 s → ~1.1 s), and up to the 800-element limit the refined layout stays at ≤ 0.6 s (≤ ~1.7 s calibrated). Hierarchical is fine for typical repositories (≤ 300 projects / 900 edges: ≤ 0.6 s) but not for the largest budget-sized graphs. fcose's `numIter` did not change its run time noticeably (measured in Node.js), and dagre's `disableOptimalOrderHeuristic` did not help at 500 / 2,000. The benchmark harness was a temporary page outside the repository (not committed); visual quality was compared on screenshots of the same graphs.
 
 ## 9. Visual encoding
 
@@ -211,6 +233,14 @@ Layout choice per view is persisted in user settings. Node positions are not per
 | Edge weight | Width ∝ log(count) |
 | Declared dependency | Arrow head style |
 | Selection / focus | Highlight + dimming of non-neighbors |
+
+Implemented in GRAPH-005 (`styles.ts`, `elements.ts`, `highlight.ts` in the web view):
+
+- **Kind:** project = rounded rectangle, external package = diamond. Module (rectangle) and type (ellipse) shapes are added with those node kinds in GRAPH-006.
+- **Ecosystem color** (Okabe–Ito based, each color ≥ 3:1 against its theme background, checked by `test/styles.test.ts`): .NET (`dotnet`, `nuget`, `dotnet-framework`) blue, Node (`node`, `npm`) green, Python (`python`, `pypi`) purple, everything else gray. A missing project keeps its own color (vermillion, dashed outline, translucent).
+- **Size:** node width/height × `min(2, 1 + log10(1 + size) / 3)` (size = owned files for projects). The Git-activity overlay follows in M5.
+- **Edges:** line style by `maxLevel`; width `min(7, 1.5 + log2(count))` px; triangle arrow for declared, `vee` for undeclared dependencies.
+- **Selection:** selected node gets a thick border, selected edge the selection color; everything that is neither selected nor directly connected to the selection is dimmed to 15 % opacity (pure view state, not reported to .NET).
 
 ## 10. Performance targets
 

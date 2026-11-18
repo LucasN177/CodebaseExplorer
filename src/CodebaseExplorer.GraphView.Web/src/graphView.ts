@@ -2,13 +2,15 @@
 // with a fake renderer. All data, expansion and filtering decisions stay in .NET; this side only
 // renders and reports user interaction.
 import { Bridge } from './bridge';
-import { MessageTypes, parseElementId, parseEnvelope, parseGraphView, parseTheme, PROTOCOL_VERSION } from './protocol';
-import type { GraphView, ThemeMode } from './protocol';
+import { MessageTypes, parseElementId, parseEnvelope, parseGraphView, parseLayout, parseTheme, PROTOCOL_VERSION } from './protocol';
+import type { GraphView, LayoutName, ThemeMode } from './protocol';
 
 /** What the message handler needs from the renderer (Cytoscape in production). */
 export interface Renderer {
   load(view: GraphView): void;
   setTheme(mode: ThemeMode): void;
+  /** Remembers the layout for later loads and re-arranges the current graph, if any. */
+  setLayout(name: LayoutName): void;
   focus(elementId: string): boolean;
 }
 
@@ -43,6 +45,12 @@ export class GraphViewController {
         const mode = parseTheme(payload);
         if (!mode.ok) return this.reject(`view/theme: ${mode.error}`);
         this.renderer.setTheme(mode.value);
+        return 'ok';
+      }
+      case MessageTypes.viewLayout: {
+        const name = parseLayout(payload);
+        if (!name.ok) return this.reject(`view/layout: ${name.error}`);
+        this.renderer.setLayout(name.value);
         return 'ok';
       }
       case MessageTypes.graphFocus: {

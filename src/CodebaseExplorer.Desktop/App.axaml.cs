@@ -6,6 +6,7 @@ using CodebaseExplorer.Application.Abstractions;
 using CodebaseExplorer.Desktop.Composition;
 using CodebaseExplorer.Desktop.Services;
 using CodebaseExplorer.Desktop.ViewModels;
+using CodebaseExplorer.Desktop.ViewModels.Pages;
 using CodebaseExplorer.Desktop.Views;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -66,6 +67,8 @@ public sealed partial class App : Avalonia.Application
             {
                 // Before the first window, so it opens in the stored theme (STORE-005).
                 await services.GetRequiredService<IThemeService>().RestoreAsync(CancellationToken.None);
+                // The graph view receives the stored layout before any graph (GRAPH-005).
+                await services.GetRequiredService<ArchitectureExplorerPageViewModel>().RestoreLayoutAsync(CancellationToken.None);
                 window = new MainWindow { DataContext = services.GetRequiredService<MainWindowViewModel>() };
                 services.GetRequiredService<GlobalExceptionHandler>().ReportPreviousUnexpectedExit();
             }

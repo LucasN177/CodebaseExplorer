@@ -17,7 +17,7 @@ namespace CodebaseExplorer.Desktop.Services;
 /// <remarks>
 /// Messages from the page are untrusted: every one is validated (size, envelope, payload, element ids
 /// of the current graph); anything invalid is logged without its content and ignored. The bridge keeps
-/// the current graph and theme and re-sends them whenever the page reports <c>ready</c>, so nothing is
+/// the current graph, theme and layout and re-sends them whenever the page reports <c>ready</c>, so nothing is
 /// lost before the page has loaded or after it reloads. All members are used from the UI thread.
 /// </remarks>
 public sealed partial class GraphViewBridge(ILogger<GraphViewBridge> logger, IApplicationPaths paths) : ObservableObject, IGraphViewHost
@@ -29,6 +29,7 @@ public sealed partial class GraphViewBridge(ILogger<GraphViewBridge> logger, IAp
 
     private Func<string, Task<string?>>? _invokeScript;
     private GraphThemeMode? _theme;
+    private GraphLayout? _layout;
     private HashSet<string> _nodeIds = [];
     private HashSet<string> _edgeIds = [];
 
@@ -123,6 +124,15 @@ public sealed partial class GraphViewBridge(ILogger<GraphViewBridge> logger, IAp
         return !IsReady || await SendAsync(GraphMessageTypes.ViewTheme, ThemeMessage(mode), cancellationToken);
     }
 
+    /// <inheritdoc />
+    public async Task<bool> SetLayoutAsync(GraphLayout layout, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        _layout = layout;
+        return !IsReady || await SendAsync(GraphMessageTypes.ViewLayout, LayoutMessage(layout), cancellationToken);
+    }
+
     /// <summary>
     /// Handles a message posted by the page (<c>invokeCSharpAction</c> → <c>WebMessageReceived</c>).
     /// Invalid messages are logged and ignored. The returned task completes once any resulting
@@ -204,6 +214,12 @@ public sealed partial class GraphViewBridge(ILogger<GraphViewBridge> logger, IAp
         if (_theme is { } theme)
         {
             await SendAsync(GraphMessageTypes.ViewTheme, ThemeMessage(theme), CancellationToken.None);
+        }
+
+        // Before the graph, so the graph is laid out only once, with the chosen layout.
+        if (_layout is { } layout)
+        {
+            await SendAsync(GraphMessageTypes.ViewLayout, LayoutMessage(layout), CancellationToken.None);
         }
 
         if (CurrentGraph is { } graph)
@@ -311,6 +327,9 @@ public sealed partial class GraphViewBridge(ILogger<GraphViewBridge> logger, IAp
 
     private static string ThemeMessage(GraphThemeMode mode) =>
         GraphMessageSerializer.Serialize(GraphMessageTypes.ViewTheme, new ViewThemePayload(mode == GraphThemeMode.Dark ? "dark" : "light"));
+
+    private static string LayoutMessage(GraphLayout layout) =>
+        GraphMessageSerializer.Serialize(GraphMessageTypes.ViewLayout, new ViewLayoutPayload(layout.ToToken()));
 
     private void Ignore(string type, string reason) =>
         logger.LogWarning("Ignored invalid graph view message {MessageType}: {Reason}", type, reason);

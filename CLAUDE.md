@@ -32,7 +32,9 @@ the Roslyn C# analyzer extracts namespaces, types and members and their relation
 (ANALYSIS-005/006, ADR-011);
 the start page lists recent repositories to reopen without re-analysis, re-analyze or remove (REPO-005), a run history page
 shows runs and diagnostics (UI-005), and an overview page (languages, projects, dependencies) opens after an import (UI-004);
-hostile .NET fixtures prove that imports execute nothing (QA-003); test projects without tests fail the run (CORE-010). No Tree-sitter analyzer, Git or AI
+hostile .NET fixtures prove that imports execute nothing (QA-003); test projects without tests fail the run (CORE-010).
+M3: graph layouts (force/fcose default, hierarchical/dagre, concentric) with a persisted layout switcher
+(`graph.layout`) and the visual encoding of GRAPH_ENGINE.md §9 (GRAPH-005). No Tree-sitter analyzer, Git or AI
 functionality exists yet. Next: the open M1 tasks and M3
 tasks in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 
