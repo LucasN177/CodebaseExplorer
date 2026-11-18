@@ -49,7 +49,7 @@ the app starts and shows the shell.
 **Goal:** A user selects a local folder and sees an interactive graph of its .NET projects and
 their project references — end to end, in memory, on all three OSes.
 
-**Tasks:** CORE-001…006, REPO-001…004, ANALYSIS-001…004, GRAPH-001…004, UI-001…003, QA-001.
+**Tasks:** CORE-001…006, REPO-001…004, ANALYSIS-001…004, GRAPH-001…004, GRAPH-010 (added for the evidence criterion), UI-001…003, QA-001.
 
 **Suggested order:**
 

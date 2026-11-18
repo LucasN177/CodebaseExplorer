@@ -34,6 +34,26 @@
           <TextBlock Text="{Binding SelectionCountText}" Opacity="0.6" FontSize="12"
                      IsVisible="{Binding SelectionCountText, Converter={x:Static ObjectConverters.IsNotNull}}" />
         </StackPanel>
+
+        <!-- Evidence of the selected edge (GRAPH-010; full evidence list and snippets in UI-007) -->
+        <TextBlock Text="Evidence" FontWeight="SemiBold" Margin="0,8,0,0"
+                   IsVisible="{Binding HasEvidence}" />
+        <ScrollViewer MaxHeight="420" IsVisible="{Binding HasEvidence}">
+          <ItemsControl ItemsSource="{Binding SelectionEvidence}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="pages:EvidenceItem">
+                <StackPanel Spacing="2" Margin="0,0,0,10">
+                  <TextBlock Text="{Binding Title}" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Location}"
+                             Opacity="0.8" TextWrapping="Wrap" FontSize="12" />
+                  <TextBlock Text="{Binding Source}" Opacity="0.6" TextWrapping="Wrap" FontSize="12" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+        <TextBlock Text="{Binding EvidenceMessage}" Opacity="0.7" TextWrapping="Wrap" FontSize="12"
+                   IsVisible="{Binding EvidenceMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
       </StackPanel>
     </Border>
 

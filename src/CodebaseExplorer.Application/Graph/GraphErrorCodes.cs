@@ -8,4 +8,7 @@ public static class GraphErrorCodes
 
     /// <summary>The requested level is not supported (yet).</summary>
     public const string LevelNotSupported = "graph.level-not-supported";
+
+    /// <summary>The edge id does not denote an edge of the projected view.</summary>
+    public const string EdgeNotFound = "graph.edge-not-found";
 }

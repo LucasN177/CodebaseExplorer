@@ -30,7 +30,8 @@ public sealed class ArchitectureExplorerPageViewModelTests : IDisposable
         _host.ShowGraphAsync(default!, Arg.Any<CancellationToken>()).ReturnsForAnyArgs(true);
         _host.Selection.Returns(GraphSelection.Empty);
         _viewModel = new ArchitectureExplorerPageViewModel(
-            _host, _services.GetRequiredService<GetGraphView>(), _session, _shell, NullLogger<ArchitectureExplorerPageViewModel>.Instance);
+            _host, _services.GetRequiredService<GetGraphView>(), _services.GetRequiredService<GetGraphEdgeDetails>(),
+            _session, _shell, NullLogger<ArchitectureExplorerPageViewModel>.Instance);
     }
 
     public void Dispose() => _services.Dispose();
@@ -123,6 +124,52 @@ public sealed class ArchitectureExplorerPageViewModelTests : IDisposable
         Assert.Equal("Shop.Web → Shop.Application", _viewModel.SelectionName);
         Assert.Equal("Dependency", _viewModel.SelectionKind);
         Assert.Equal("1 relationship", _viewModel.SelectionDetail);
+    }
+
+    [Fact]
+    public async Task EdgeSelection_ShowsEvidenceWithFileAndLine()
+    {
+        // M1 acceptance: edges carry evidence (file + line) visible in the side panel (GRAPH-010).
+        var view = await ImportFixtureAsync();
+        var labels = view.Nodes.ToDictionary(n => n.Id, n => n.Label);
+        var edge = view.Edges.Single(e => labels[e.Source] == "Shop.Web" && labels[e.Target] == "Shop.Application");
+
+        Select(view, [], [edge.Id]);
+
+        Assert.True(_viewModel.HasEvidence);
+        Assert.Null(_viewModel.EvidenceMessage);
+        var evidence = Assert.Single(_viewModel.SelectionEvidence);
+        Assert.Equal("project-reference · confirmed", evidence.Title);
+        Assert.Equal("src/Shop.Web/Shop.Web.csproj:13", evidence.Location); // EXPECTED.md §3
+        Assert.Equal("dotnet.msbuild-static · csproj.ProjectReference", evidence.Source);
+    }
+
+    [Fact]
+    public async Task EdgeToMissingProject_ShowsSyntacticEvidence()
+    {
+        var view = await ImportFixtureAsync();
+        var labels = view.Nodes.ToDictionary(n => n.Id, n => n.Label);
+        var edge = view.Edges.Single(e => labels[e.Target] == "Shop.Legacy");
+
+        Select(view, [], [edge.Id]);
+
+        var evidence = Assert.Single(_viewModel.SelectionEvidence);
+        Assert.Equal("project-reference · syntactic", evidence.Title);
+        Assert.StartsWith("src/Shop.Infrastructure/Shop.Infrastructure.csproj:", evidence.Location, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task NodeSelectionAfterEdge_ClearsEvidence()
+    {
+        var view = await ImportFixtureAsync();
+        Select(view, [], [view.Edges[0].Id]);
+        Assert.True(_viewModel.HasEvidence);
+
+        Select(view, [view.Nodes[0].Id], []);
+
+        Assert.False(_viewModel.HasEvidence);
+        Assert.Empty(_viewModel.SelectionEvidence);
+        Assert.Null(_viewModel.EvidenceMessage);
     }
 
     [Fact]

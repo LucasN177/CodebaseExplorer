@@ -7,34 +7,50 @@ using Microsoft.Extensions.Logging;
 
 namespace CodebaseExplorer.Desktop.ViewModels.Pages;
 
+/// <summary>One evidence record in the side panel, e.g. "project-reference · confirmed" at "src/A/A.csproj:12".</summary>
+/// <param name="Title">Relationship kind and evidence level (plus endpoints if they differ from the edge's nodes).</param>
+/// <param name="Location">File and line, or <c>no file location</c>.</param>
+/// <param name="Source">Analyzer and rule that produced the evidence.</param>
+public sealed record EvidenceItem(string Title, string Location, string Source);
+
 /// <summary>
 /// Architecture Explorer (UI-003, USER_WORKFLOWS.md WF-03): shows the project-level graph of the
-/// current repository and, in a simple side panel, name and kind of the selection (the full
-/// Component Inspector follows in UI-006).
+/// current repository and, in a simple side panel, name and kind of the selection and, for a
+/// selected edge, the evidence of its relationships (GRAPH-010). The full Component Inspector
+/// follows in UI-006/UI-007.
 /// </summary>
 public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
 {
+    /// <summary>At most this many evidence records are listed for one edge.</summary>
+    public const int MaxEvidenceItems = 50;
+
     private readonly GetGraphView _getGraphView;
+    private readonly GetGraphEdgeDetails _getEdgeDetails;
     private readonly RepositorySession _session;
     private readonly ShellStatus _shell;
     private readonly ILogger<ArchitectureExplorerPageViewModel> _logger;
     private int _loadNumber;
+    private int _evidenceNumber;
+    private GraphQuery? _query;
 
     public ArchitectureExplorerPageViewModel(
         IGraphViewHost graph,
         GetGraphView getGraphView,
+        GetGraphEdgeDetails getEdgeDetails,
         RepositorySession session,
         ShellStatus shell,
         ILogger<ArchitectureExplorerPageViewModel> logger)
     {
         Graph = graph;
         _getGraphView = getGraphView;
+        _getEdgeDetails = getEdgeDetails;
         _session = session;
         _shell = shell;
         _logger = logger;
 
         _session.CurrentChanged += (_, _) => _ = LoadCurrentRepositoryAsync();
         Graph.PropertyChanged += OnGraphPropertyChanged;
+        SelectionEvidence.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasEvidence));
     }
 
     public override string Title => "Architecture Explorer";
@@ -80,6 +96,15 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
 
     public bool HasSelection => SelectionName is not null;
 
+    /// <summary>Evidence of the selected edge's relationships (empty for nodes).</summary>
+    public System.Collections.ObjectModel.ObservableCollection<EvidenceItem> SelectionEvidence { get; } = [];
+
+    public bool HasEvidence => SelectionEvidence.Count > 0;
+
+    /// <summary>State of the evidence list, e.g. <c>Loading evidence…</c>, an error, or how many records were omitted.</summary>
+    [ObservableProperty]
+    public partial string? EvidenceMessage { get; private set; }
+
     /// <summary>Loads the project-level graph of <see cref="RepositorySession.Current"/> into the graph view.</summary>
     public async Task LoadCurrentRepositoryAsync(CancellationToken cancellationToken = default)
     {
@@ -96,11 +121,14 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
 
         try
         {
-            var result = await _getGraphView.ExecuteAsync(new GraphQuery { RepositoryId = repository.RepositoryId }, cancellationToken);
+            var query = new GraphQuery { RepositoryId = repository.RepositoryId };
+            var result = await _getGraphView.ExecuteAsync(query, cancellationToken);
             if (loadNumber != _loadNumber)
             {
                 return; // a newer import replaced this one
             }
+
+            _query = query;
 
             if (!result.TryGetValue(out var view, out var error))
             {
@@ -152,6 +180,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             SelectionKind = KindText(node);
             SelectionDetail = node.Sublabel;
             SelectionName = node.Label;
+            ClearEvidence();
         }
         else if (graph is not null && selection.EdgeIds.Count > 0 && graph.Edges.FirstOrDefault(e => e.Id == selection.EdgeIds[0]) is { } edge)
         {
@@ -159,13 +188,82 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             SelectionKind = "Dependency";
             SelectionDetail = edge.Count == 1 ? "1 relationship" : $"{edge.Count} relationships";
             SelectionName = $"{labels.GetValueOrDefault(edge.Source, "?")} → {labels.GetValueOrDefault(edge.Target, "?")}";
+            _ = LoadEvidenceAsync(edge.Id);
         }
         else
         {
             SelectionKind = null;
             SelectionDetail = null;
             SelectionName = null;
+            ClearEvidence();
         }
+    }
+
+    private async Task LoadEvidenceAsync(string edgeId)
+    {
+        var evidenceNumber = ++_evidenceNumber;
+        SelectionEvidence.Clear();
+        if (_query is not { } query)
+        {
+            EvidenceMessage = null;
+            return;
+        }
+
+        EvidenceMessage = "Loading evidence…";
+        try
+        {
+            var result = await _getEdgeDetails.ExecuteAsync(query, edgeId, CancellationToken.None);
+            if (evidenceNumber != _evidenceNumber)
+            {
+                return; // the selection changed meanwhile
+            }
+
+            if (!result.TryGetValue(out var details, out var error))
+            {
+                _logger.LogWarning("Evidence for the selected edge failed with {ErrorCode}", error.Code);
+                EvidenceMessage = $"Evidence could not be loaded: {error.Message}";
+                return;
+            }
+
+            var items = details.Relationships
+                .SelectMany(relationship => relationship.Evidence.Select(evidence => ToItem(details, relationship, evidence)))
+                .ToList();
+            foreach (var item in items.Take(MaxEvidenceItems))
+            {
+                SelectionEvidence.Add(item);
+            }
+
+            EvidenceMessage = items.Count > MaxEvidenceItems ? $"{items.Count - MaxEvidenceItems} more evidence records not listed" : null;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.LogError(exception, "Loading evidence failed unexpectedly");
+            if (evidenceNumber == _evidenceNumber)
+            {
+                EvidenceMessage = "Evidence could not be loaded. Details are in the application log.";
+            }
+        }
+    }
+
+    private void ClearEvidence()
+    {
+        ++_evidenceNumber;
+        SelectionEvidence.Clear();
+        EvidenceMessage = null;
+    }
+
+    private static EvidenceItem ToItem(GraphEdgeDetailsDto edge, GraphRelationshipDto relationship, GraphEvidenceDto evidence)
+    {
+        // At the project level the endpoints usually are the edge's nodes; name them only when they differ (files, types …).
+        var endpoints = relationship.SourceLabel == edge.SourceLabel && relationship.TargetLabel == edge.TargetLabel
+            ? string.Empty
+            : $" · {relationship.SourceLabel} → {relationship.TargetLabel}";
+        var location = evidence.Path is null ? "no file location"
+            : evidence.StartLine is not { } start ? evidence.Path
+            : evidence.EndLine is { } end && end > start ? $"{evidence.Path}:{start}–{end}"
+            : $"{evidence.Path}:{start}";
+
+        return new EvidenceItem($"{relationship.Kind} · {evidence.Level}{endpoints}", location, $"{evidence.Analyzer} · {evidence.Rule}");
     }
 
     private static string KindText(GraphNodeDto node)

@@ -5,7 +5,8 @@
 > (GRAPH-002); **graph web view implemented** (GRAPH-003: `graph/load`, `graph/focus`, `view/theme`,
 > `ready`, `selection/changed`, `node/openInspector`, `error`); **host control and message bridge
 > implemented** (GRAPH-004, §6.1; verified on Windows/WebView2). The other levels are not, and the
-> Architecture Explorer page shows the L1 graph of the imported repository (UI-003).
+> Architecture Explorer page shows the L1 graph of the imported repository (UI-003) and the evidence of a
+> selected edge (GRAPH-010, §6.2).
 > Related: [ADR-006](../decisions/ADR-006-cytoscape-visualization.md).
 
 ## 1. Components
@@ -98,10 +99,15 @@ GraphNodeDto     { id, parentId?, kind, label, sublabel?, language?, ecosystem?,
                    badges[] }
 GraphEdgeDto     { id, source, target, count, occurrences, kinds{}, maxLevel, minLevel, isDeclared }
 TruncationDto    { omittedNodeCount, reason, suggestions[] }
+
+GraphEdgeDetailsDto  { edgeId, sourceLabel, targetLabel, relationships[] }             (GRAPH-010)
+GraphRelationshipDto { kind, level, sourceLabel, targetLabel, evidence[] }
+GraphEvidenceDto     { analyzer, rule, level, path?, startLine?, endLine? }
 ```
 
 IDs are `ElementId` hex strings; aggregate edge IDs are deterministic (`source|target`).
-DTOs contain **no source code** — only names, paths and metrics.
+DTOs contain **no source code** — only names, paths and metrics. The edge details are not part of
+the web view protocol; they go from the Application layer to the explorer ViewModel only.
 
 ## 6. .NET ↔ web view message protocol
 
@@ -159,6 +165,18 @@ as the host is shown (found in GRAPH-004).
 before `ready` was delivered on `ready`; `graph/focus` produced a `selection/changed` that updated
 `Selection`; `view/theme` accepted; a scripted `location.href = https://…` and `window.open` were
 blocked and the page stayed loaded.
+
+### 6.2 Edge details (GRAPH-010)
+
+`IGraphProjector.DescribeEdge(model, query, edgeId)` returns the stored relationships behind one
+aggregated edge of the view that `Project(model, query)` returns: the same attribution (endpoint →
+owning visible node) is used, so the details always match the selected edge. Relationships are
+ordered by kind, then endpoint labels; endpoints are named by project name, file path, qualified
+module/entity name or package display name. Evidence carries analyzer, rule, level and the
+repository-relative path with lines — no excerpt (snippets: UI-007). Errors: the projection's
+validation errors, or `graph.edge-not-found` (`NotFound`). The use case `GetGraphEdgeDetails` reads
+the model from the session cache like `GetGraphView`. The explorer side panel lists up to 50 evidence
+records of a selected edge (`kind · level`, `path:line`, `analyzer · rule`).
 
 ## 7. Web view rules
 

@@ -229,6 +229,16 @@ Status overview (keep in sync):
   - Navigation to any non-bundled URL is blocked.
 - **Note:** `IGraphViewHost` and `GraphViewBridge` live in Desktop/Services (CODING_STANDARDS §7), the control and navigation policy in Desktop/Controls. The bridge re-sends graph and theme on every `ready`. Added `app.manifest` (supportedOS), without which native control hosting crashes on Windows. Runtime verified on Windows only (GRAPH_ENGINE.md §6.1); macOS/Linux stay with GRAPH-001. The page is wired in UI-003.
 
+### GRAPH-010 — Edge evidence in the explorer side panel
+- **Priority:** P0 · **Milestone:** M1 · **Status:** done
+- **Prerequisites:** GRAPH-002, UI-003
+- **Projects:** Contracts, Application, Graph, Graph.Tests, Desktop, IntegrationTests
+- **Description:** Closes the M1 acceptance criterion "edges carry evidence (file + line) visible at least in a basic side panel" (IMPLEMENTATION_PLAN.md, M1), which no other M1 task covered. `IGraphProjector.DescribeEdge` returns the relationships behind one aggregated edge (same attribution as the projection) as `GraphEdgeDetailsDto` with evidence (analyzer, rule, level, path, lines); use case `GetGraphEdgeDetails`; the explorer side panel lists the evidence of a selected edge.
+- **Acceptance criteria:**
+  - Every project edge of `dotnet-layered` has evidence whose location matches EXPECTED.md §3.
+  - Unknown edges and unanalyzed repositories yield `NotFound` errors, not exceptions.
+- **Note:** Added on 2026-11-18 to close the gap. No source snippets and no node relationships — those stay with UI-006/UI-007 (M3), which will build on this query. At most 50 evidence records are listed per edge.
+
 ### UI-001 — Shell polish and Avalonia 12 developer tooling
 - **Priority:** P1 · **Milestone:** M1 · **Status:** done
 - **Prerequisites:** —

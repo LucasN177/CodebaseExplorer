@@ -16,4 +16,11 @@ public interface IGraphProjector
     /// unsupported level.
     /// </summary>
     Result<GraphViewDto> Project(ArchitectureModel model, GraphQuery query);
+
+    /// <summary>
+    /// Returns the stored relationships (with evidence) that make up the edge <paramref name="edgeId"/> of
+    /// the view <see cref="Project"/> returns for the same model and query. Same validation errors as
+    /// <see cref="Project"/>, or <see cref="GraphErrorCodes.EdgeNotFound"/> (<see cref="ErrorKind.NotFound"/>).
+    /// </summary>
+    Result<GraphEdgeDetailsDto> DescribeEdge(ArchitectureModel model, GraphQuery query, string edgeId);
 }

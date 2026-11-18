@@ -22,6 +22,62 @@ internal sealed class GraphProjector : IGraphProjector
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(query);
 
+        return Validate(model, query) is { } error ? error : ProjectLevel(model, query);
+    }
+
+    public Result<GraphEdgeDetailsDto> DescribeEdge(ArchitectureModel model, GraphQuery query, string edgeId)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(edgeId);
+
+        if (Validate(model, query) is { } error)
+        {
+            return error;
+        }
+
+        // Same attribution as the view, so the details always match the edge the user selected.
+        var group = GroupRelationships(model, query.IncludeExternalDependencies)
+            .FirstOrDefault(g => string.Equals(EdgeId(g.Key.Source, g.Key.Target), edgeId, StringComparison.OrdinalIgnoreCase));
+        if (group.Value is null)
+        {
+            return ApplicationError.NotFound(GraphErrorCodes.EdgeNotFound, "The edge is not part of the graph.");
+        }
+
+        return new GraphEdgeDetailsDto
+        {
+            EdgeId = EdgeId(group.Key.Source, group.Key.Target),
+            SourceLabel = NodeLabel(model, group.Key.Source),
+            TargetLabel = NodeLabel(model, group.Key.Target),
+            Relationships = [.. group.Value
+                .Select(relationship => new GraphRelationshipDto
+                {
+                    Kind = relationship.Kind.ToKeyToken(),
+                    Level = Token(relationship.Level),
+                    SourceLabel = ElementLabel(model, relationship.Source),
+                    TargetLabel = ElementLabel(model, relationship.Target),
+                    Evidence = [.. relationship.Evidence
+                        .Select(evidence => new GraphEvidenceDto
+                        {
+                            Analyzer = evidence.Analyzer.Value,
+                            Rule = evidence.Rule,
+                            Level = Token(evidence.Level),
+                            Path = evidence.Location is { } location ? model.FindFile(location.FileId)?.Path.Value : null,
+                            StartLine = evidence.Location?.StartLine,
+                            EndLine = evidence.Location?.EndLine,
+                        })
+                        .OrderBy(e => e.Path, StringComparer.Ordinal)
+                        .ThenBy(e => e.StartLine)
+                        .ThenBy(e => e.Rule, StringComparer.Ordinal)],
+                })
+                .OrderBy(r => r.Kind, StringComparer.Ordinal)
+                .ThenBy(r => r.SourceLabel, StringComparer.Ordinal)
+                .ThenBy(r => r.TargetLabel, StringComparer.Ordinal)],
+        };
+    }
+
+    private static ApplicationError? Validate(ArchitectureModel model, GraphQuery query)
+    {
         if (!string.Equals(query.RepositoryId, model.RepositoryId.ToString(), StringComparison.OrdinalIgnoreCase))
         {
             return ApplicationError.Validation(GraphErrorCodes.RepositoryMismatch, "The query is for another repository than the model.");
@@ -33,7 +89,7 @@ internal sealed class GraphProjector : IGraphProjector
                 $"The graph level '{query.Level}' is not supported yet; supported: '{GraphLevels.Project}'.");
         }
 
-        return ProjectLevel(model, query);
+        return null;
     }
 
     private static GraphViewDto ProjectLevel(ArchitectureModel model, GraphQuery query)
@@ -99,7 +155,33 @@ internal sealed class GraphProjector : IGraphProjector
         };
     }
 
-    private static List<GraphEdgeDto> AggregateEdges(ArchitectureModel model, bool includeExternalDependencies)
+    private static List<GraphEdgeDto> AggregateEdges(ArchitectureModel model, bool includeExternalDependencies) =>
+        [.. GroupRelationships(model, includeExternalDependencies)
+            .Select(group =>
+            {
+                var levels = group.Value.SelectMany(r => r.Evidence).Select(e => e.Level).ToArray();
+                return new GraphEdgeDto
+                {
+                    Id = EdgeId(group.Key.Source, group.Key.Target),
+                    Source = group.Key.Source,
+                    Target = group.Key.Target,
+                    Count = group.Value.Count,
+                    Occurrences = group.Value.Sum(r => r.Occurrences),
+                    Kinds = group.Value
+                        .GroupBy(r => r.Kind.ToKeyToken())
+                        .OrderBy(g => g.Key, StringComparer.Ordinal)
+                        .ToDictionary(g => g.Key, g => g.Count()),
+                    MaxLevel = Token(levels.Max()),
+                    MinLevel = Token(levels.Min()),
+                    IsDeclared = group.Value.Any(r => r.Kind is RelationshipKind.ProjectReference
+                        or RelationshipKind.PackageReference or RelationshipKind.FrameworkReference),
+                };
+            })
+            .OrderBy(e => e.Id, StringComparer.Ordinal)];
+
+    /// <summary>Every relationship attributed to the ordered pair of visible nodes owning its endpoints.</summary>
+    private static Dictionary<(string Source, string Target), List<CodeRelationship>> GroupRelationships(
+        ArchitectureModel model, bool includeExternalDependencies)
     {
         var groups = new Dictionary<(string Source, string Target), List<CodeRelationship>>();
 
@@ -121,29 +203,29 @@ internal sealed class GraphProjector : IGraphProjector
             list.Add(relationship);
         }
 
-        return [.. groups
-            .Select(group =>
-            {
-                var levels = group.Value.SelectMany(r => r.Evidence).Select(e => e.Level).ToArray();
-                return new GraphEdgeDto
-                {
-                    Id = $"{group.Key.Source}|{group.Key.Target}",
-                    Source = group.Key.Source,
-                    Target = group.Key.Target,
-                    Count = group.Value.Count,
-                    Occurrences = group.Value.Sum(r => r.Occurrences),
-                    Kinds = group.Value
-                        .GroupBy(r => r.Kind.ToKeyToken())
-                        .OrderBy(g => g.Key, StringComparer.Ordinal)
-                        .ToDictionary(g => g.Key, g => g.Count()),
-                    MaxLevel = Token(levels.Max()),
-                    MinLevel = Token(levels.Min()),
-                    IsDeclared = group.Value.Any(r => r.Kind is RelationshipKind.ProjectReference
-                        or RelationshipKind.PackageReference or RelationshipKind.FrameworkReference),
-                };
-            })
-            .OrderBy(e => e.Id, StringComparer.Ordinal)];
+        return groups;
     }
+
+    /// <summary>Deterministic aggregate edge id (GRAPH_ENGINE.md §5).</summary>
+    private static string EdgeId(string source, string target) => $"{source}|{target}";
+
+    private static string NodeLabel(ArchitectureModel model, string nodeId)
+    {
+        var id = ElementId.Parse(nodeId);
+        return model.FindProject(id)?.Name ?? model.FindExternalDependency(id)?.DisplayName ?? nodeId;
+    }
+
+    /// <summary>A readable name for a relationship endpoint (project, file path, module, entity, package).</summary>
+    private static string ElementLabel(ArchitectureModel model, ElementReference reference) =>
+        reference.Kind switch
+        {
+            ElementKind.Project => model.FindProject(reference.Id)?.Name,
+            ElementKind.File => model.FindFile(reference.Id)?.Path.Value,
+            ElementKind.Module => model.FindModule(reference.Id)?.QualifiedName,
+            ElementKind.Entity => model.FindEntity(reference.Id)?.QualifiedName,
+            ElementKind.ExternalDependency => model.FindExternalDependency(reference.Id)?.DisplayName,
+            _ => null,
+        } ?? reference.Id.ToString();
 
     /// <summary>The id of the visible node an endpoint belongs to, or <see langword="null"/> if it is not shown.</summary>
     private static string? VisibleNode(ArchitectureModel model, ElementReference reference, bool includeExternalDependencies) =>
