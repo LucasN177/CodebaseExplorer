@@ -620,11 +620,12 @@ Status overview (keep in sync):
 ## M7 — Optional local AI
 
 ### AI-001 — AI module foundation, settings and provider gate
-- **Priority:** P0 · **Milestone:** M7 · **Status:** todo
+- **Priority:** P0 · **Milestone:** M7 · **Status:** done
 - **Prerequisites:** STORE-005
 - **Projects:** Application (port `IAiAssistant`), AI, Desktop (settings UI), IntegrationTests, Directory.Packages.props
 - **Description:** Add `Microsoft.Extensions.AI` (10.x, re-verify); AI disabled by default; provider registry; gate enforcing enabled/configured/consent; network guard test proving no outbound calls when disabled.
 - **Acceptance criteria:** With default settings no `IChatClient` is constructed and no network handler is invoked (test).
+- **Note:** Done 2026-11-19. `Microsoft.Extensions.AI` **10.11.0** (re-verified on nuget.org 2026-11-19: 11.0.0 exists but depends on the 11.0 runtime packages; 10.11.0 depends on Microsoft.Extensions.* 10.0.13). Application/AI: `AiSettings` (enabled, provider, endpoint, model, context tokens, temperature, remote consents; `IsRemoteEndpoint` = not loopback), `AiSettingsStore` (keys `ai.*` in `UserSettings`; damaged values fall back to "off"; changing the endpoint withdraws every consent), port `IAiAssistant` (`CheckProviderAsync` here, grown by AI-002…AI-008), `AiErrorCodes`. AI module: `AiProviderGate` (registry of `IAiProvider`s; `ForConnection` = enabled + known provider + valid endpoint; `ForChat` additionally a model and, for remote endpoints/cloud providers, the repository's consent), `AiTransport` (the only place HTTP clients are created; no redirects, no cookies). Settings page: AI section (enable, endpoint with remote warning, model, context size, temperature, save). Tests: `AiProviderGateTests`, `AiSettingsStoreTests`, `AiNetworkGuardTests` (real composition root with a guarded `HttpMessageHandler` and a spy provider: nothing constructed, nothing sent), `SettingsPageViewModelTests` (AI section).
 
 ### AI-002 — Ollama provider
 - **Priority:** P0 · **Milestone:** M7 · **Status:** todo

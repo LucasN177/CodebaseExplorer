@@ -371,6 +371,13 @@ Each value is a JSON string; a row whose `ValueJson` is not a JSON string reads 
 |---|---|---|---|
 | `appearance.theme` | `"system"`, `"light"`, `"dark"` | `system` | `ThemeService` (Desktop): restored before the main window is shown, written when the user changes the theme. |
 | `graph.layout` | `"force"`, `"hierarchical"`, `"concentric"` | `force` | `ArchitectureExplorerPageViewModel` (Desktop, GRAPH-005): restored at startup and sent to the graph view before any graph, written when the user switches the layout. |
+| `ai.enabled` | `"true"`, `"false"` | off (anything but `"true"`) | `AiSettingsStore` (Application, AI-001), Settings page. |
+| `ai.provider` | `"ollama"` | `ollama` | `AiSettingsStore`. |
+| `ai.endpoint` | absolute http(s) URL without credentials | `http://localhost:11434` | `AiSettingsStore`; non-loopback = remote (consent needed). |
+| `ai.model` | model name at the provider, or empty | none selected | `AiSettingsStore`. |
+| `ai.max-context-tokens` | invariant integer 2048–262144 | 8192 | `AiSettingsStore`, prompt budgeting (AI-004). |
+| `ai.temperature` | invariant number 0–2 | 0.2 | `AiSettingsStore`. |
+| `ai.remote-consents` | space-separated repository ids (`N` format) | none | `AiSettingsStore`; cleared when `ai.endpoint` changes. Not secret, only ids. |
 
 ### 4.18 Search index (AI retrieval, M7)
 

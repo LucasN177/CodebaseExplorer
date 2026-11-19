@@ -15,17 +15,29 @@ internal sealed class TestApplication : IAsyncDisposable
     private readonly string _root;
     private readonly bool _ownsRoot;
 
+    private readonly Action<IServiceCollection>? _overrides;
+
     public TestApplication()
-        : this(Path.Combine(Path.GetTempPath(), "codebase-explorer-integration-tests", Guid.NewGuid().ToString("N")), ownsRoot: true)
+        : this(overrides: null)
     {
     }
 
-    private TestApplication(string root, bool ownsRoot)
+    /// <param name="overrides">Further registrations (applied after the data directory), e.g. test doubles for the network.</param>
+    public TestApplication(Action<IServiceCollection>? overrides)
+        : this(Path.Combine(Path.GetTempPath(), "codebase-explorer-integration-tests", Guid.NewGuid().ToString("N")), ownsRoot: true, overrides)
+    {
+    }
+
+    private TestApplication(string root, bool ownsRoot, Action<IServiceCollection>? overrides)
     {
         _root = root;
         _ownsRoot = ownsRoot;
+        _overrides = overrides;
         Services = CompositionRoot.BuildServiceProvider(services =>
-            services.AddSingleton<IApplicationPaths>(new ApplicationPaths(Path.Combine(_root, "data"))));
+        {
+            services.AddSingleton<IApplicationPaths>(new ApplicationPaths(Path.Combine(_root, "data")));
+            overrides?.Invoke(services);
+        });
     }
 
     public ServiceProvider Services { get; }
@@ -34,7 +46,7 @@ internal sealed class TestApplication : IAsyncDisposable
     /// A second application instance on the same data directory, like a restart of the app. Dispose it before
     /// this instance; only this instance deletes the directory.
     /// </summary>
-    public TestApplication Restart() => new(_root, ownsRoot: false);
+    public TestApplication Restart() => new(_root, ownsRoot: false, _overrides);
 
     /// <summary>Creates and migrates the database exactly like the application does at startup.</summary>
     public async ValueTask InitializeAsync()

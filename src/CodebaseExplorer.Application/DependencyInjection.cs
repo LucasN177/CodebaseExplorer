@@ -31,6 +31,7 @@ public static class DependencyInjection
         services.AddSingleton<GetGraphView>();
         services.AddSingleton<GetGraphEdgeDetails>();
         services.AddSingleton<Export.ExportArchitectureReport>();
+        services.AddSingleton<AI.AiSettingsStore>();
 
         return services;
     }

@@ -1,4 +1,5 @@
 using CodebaseExplorer.Application.Abstractions;
+using CodebaseExplorer.Application.AI;
 using CodebaseExplorer.Desktop.Services;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -8,8 +9,8 @@ using Microsoft.Extensions.Logging;
 namespace CodebaseExplorer.Desktop.ViewModels.Pages;
 
 /// <summary>
-/// Settings page: theme (persisted, STORE-005), the local data directory (open it in the file manager, disk usage,
-/// compact the database) and the log folder.
+/// Settings page: theme (persisted, STORE-005), the optional AI assistant (AI-001/AI-002), the local data directory (open
+/// it in the file manager, disk usage, compact the database) and the log folder.
 /// </summary>
 public sealed partial class SettingsPageViewModel : PageViewModel
 {
@@ -20,17 +21,25 @@ public sealed partial class SettingsPageViewModel : PageViewModel
     private readonly IFolderLauncher _folders;
     private readonly bool _initialized;
 
+    private readonly AiSettingsStore _aiSettings;
+    private readonly IAiAssistant _assistant;
+    private AiSettings _storedAi = AiSettings.Default;
+
     public SettingsPageViewModel(
         IThemeService themeService,
         IApplicationPaths paths,
         IStorageMaintenance storage,
         IFolderLauncher folders,
+        AiSettingsStore aiSettings,
+        IAiAssistant assistant,
         ShellStatus shell,
         ILogger<SettingsPageViewModel> logger)
     {
         _themeService = themeService;
         _storage = storage;
         _folders = folders;
+        _aiSettings = aiSettings;
+        _assistant = assistant;
         _shell = shell;
         _logger = logger;
         SelectedTheme = themeService.CurrentTheme;
@@ -62,11 +71,138 @@ public sealed partial class SettingsPageViewModel : PageViewModel
     [ObservableProperty]
     public partial string? CompactionMessage { get; private set; }
 
-    /// <summary>Refreshes the disk usage each time the page is shown (imports and removals change it).</summary>
-    public override Task ActivateAsync()
+    /// <summary>The AI assistant may be used (AI-001); off by default.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AiRemoteWarning))]
+    public partial bool AiEnabled { get; set; }
+
+    /// <summary>Base URL of the Ollama server.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AiRemoteWarning))]
+    public partial string AiEndpoint { get; set; } = AiSettings.DefaultEndpoint;
+
+    /// <summary>Model name at the provider, e.g. <c>qwen2.5-coder:7b</c>.</summary>
+    [ObservableProperty]
+    public partial string? AiModel { get; set; }
+
+    /// <summary>Models reported by the provider (filled by <see cref="TestAiConnectionCommand"/>).</summary>
+    [ObservableProperty]
+    public partial IReadOnlyList<string> AiModels { get; private set; } = [];
+
+    [ObservableProperty]
+    public partial decimal AiMaxContextTokens { get; set; } = AiSettings.DefaultMaxContextTokens;
+
+    [ObservableProperty]
+    public partial decimal AiTemperature { get; set; } = (decimal)AiSettings.DefaultTemperature;
+
+    /// <summary>Result of the last save or connection test.</summary>
+    [ObservableProperty]
+    public partial string? AiStatusMessage { get; private set; }
+
+    public decimal AiMinContextTokens => AiSettings.MinContextTokens;
+
+    public decimal AiMaxContextTokensLimit => AiSettings.MaxContextTokensLimit;
+
+    /// <summary>Shown when the endpoint is not on this machine: repository context then needs consent per repository.</summary>
+    public string? AiRemoteWarning => AiEnabled && Current().IsRemoteEndpoint
+        ? "This endpoint is not on this machine (or not a valid URL). Code and analysis facts of a repository are sent there only after you allow it for that repository."
+        : null;
+
+    /// <summary>Refreshes the disk usage and the AI settings each time the page is shown.</summary>
+    public override async Task ActivateAsync()
     {
         RefreshUsage();
-        return Task.CompletedTask;
+        try
+        {
+            ShowAi(await _aiSettings.LoadAsync(CancellationToken.None));
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.LogError(exception, "Loading the AI settings failed");
+            AiStatusMessage = "The AI settings could not be loaded. Details are in the application log.";
+        }
+    }
+
+    /// <summary>Validates and stores the AI settings.</summary>
+    [RelayCommand]
+    private async Task SaveAiSettingsAsync()
+    {
+        try
+        {
+            var result = await _aiSettings.SaveAsync(Current(), CancellationToken.None);
+            if (result.TryGetValue(out var saved, out var error))
+            {
+                var consentsCleared = _storedAi.RemoteConsents.Count > 0 && saved.RemoteConsents.Count == 0;
+                ShowAi(saved);
+                AiStatusMessage = !saved.Enabled
+                    ? "Saved. The AI assistant is off; nothing is sent anywhere."
+                    : consentsCleared
+                        ? "Saved. The endpoint changed, so all repository consents were withdrawn."
+                        : "Saved.";
+            }
+            else
+            {
+                AiStatusMessage = error.Message;
+            }
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.LogError(exception, "Saving the AI settings failed");
+            AiStatusMessage = "The AI settings could not be saved. Details are in the application log.";
+        }
+    }
+
+    /// <summary>Checks the endpoint and lists its models; sends no repository content.</summary>
+    [RelayCommand]
+    private async Task TestAiConnectionAsync()
+    {
+        AiStatusMessage = "Connecting…";
+        using var operation = _shell.BeginOperation("Checking the AI provider");
+        try
+        {
+            var result = await _assistant.CheckProviderAsync(Current(), CancellationToken.None);
+            if (result.TryGetValue(out var status, out var error))
+            {
+                AiModels = status.Models;
+                AiStatusMessage = status.Models.Count == 0
+                    ? $"Connected to {status.Endpoint}, but it offers no models. Download one first (e.g. `ollama pull qwen2.5-coder:7b`)."
+                    : $"Connected to {status.Endpoint}{(status.Version is null ? string.Empty : $" (version {status.Version})")}: {status.Models.Count} model(s) available.";
+                if (AiModel is null && status.Models.Count > 0)
+                {
+                    AiModel = status.Models[0];
+                }
+            }
+            else
+            {
+                AiStatusMessage = error.Message;
+            }
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.LogError(exception, "Checking the AI provider failed unexpectedly");
+            AiStatusMessage = "The AI provider could not be checked. Details are in the application log.";
+        }
+    }
+
+    /// <summary>The settings as currently entered on the page (not yet saved).</summary>
+    private AiSettings Current() => _storedAi with
+    {
+        Enabled = AiEnabled,
+        ProviderId = AiSettings.OllamaProviderId,
+        Endpoint = AiEndpoint?.Trim() ?? string.Empty,
+        ModelId = string.IsNullOrWhiteSpace(AiModel) ? null : AiModel.Trim(),
+        MaxContextTokens = (int)AiMaxContextTokens,
+        Temperature = (double)AiTemperature,
+    };
+
+    private void ShowAi(AiSettings settings)
+    {
+        _storedAi = settings;
+        AiEnabled = settings.Enabled;
+        AiEndpoint = settings.Endpoint;
+        AiModel = settings.ModelId;
+        AiMaxContextTokens = settings.MaxContextTokens;
+        AiTemperature = (decimal)settings.Temperature;
     }
 
     /// <summary>Opens the data directory in the file manager.</summary>

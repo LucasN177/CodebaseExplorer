@@ -1,7 +1,8 @@
 # AI Architecture — Codebase Explorer
 
 > Status: **accepted (specification)** · Last reviewed: 2026-11-17
-> Implementation status: **not implemented** (module seam `AddAiModule()` exists; AI is disabled by default).
+> Implementation status: **in progress (M7)** — AI-001: settings (`AiSettings`, keys `ai.*`), provider gate, HTTP
+> transport and the network guard test exist; AI is disabled by default.
 > Related: [ADR-008](../decisions/ADR-008-hybrid-ai.md), [SECURITY.md](SECURITY.md).
 
 ## 1. Principles
