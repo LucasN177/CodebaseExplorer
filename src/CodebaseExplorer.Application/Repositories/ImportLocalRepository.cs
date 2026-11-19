@@ -27,7 +27,8 @@ public sealed class ImportLocalRepository(
     IArchitectureModelStore store,
     IGitRepositoryReader gitReader,
     IGitActivityStore gitStore,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    Settings.AnalysisSettingsStore? settingsStore = null)
 {
     private readonly ConcurrentDictionary<string, byte> _running = new(RootPathComparer.Instance);
 
@@ -73,6 +74,7 @@ public sealed class ImportLocalRepository(
         RepositoryRoot root, Func<RepositoryRoot, RepositoryLocation>? location, IProgress<AnalysisProgress>? progress, CancellationToken cancellationToken)
     {
         var started = timeProvider.GetUtcNow();
+        var settings = settingsStore is null ? Settings.AnalysisSettings.Default : await settingsStore.LoadAsync(cancellationToken); // limits, excludes and Git window of the Settings page (UI-009)
         var previous = await store.FindRepositoryByRootAsync(root.FullPath, cancellationToken);
         var repository = previous
             ?? Repository.Register(NameOf(root), location?.Invoke(root) ?? RepositoryLocation.Local(root.FullPath), started);
@@ -86,11 +88,11 @@ public sealed class ImportLocalRepository(
         GitFileActivityReport? activity = null;
         try
         {
-            result = await analyzer.AnalyzeAsync(new AnalysisRequest(repository.Id, root, run.Id), progress, cancellationToken);
+            result = await analyzer.AnalyzeAsync(new AnalysisRequest(repository.Id, root, run.Id, settings.ToLimits()), progress, cancellationToken);
             if (result.IsSuccess && git.Repository is not null && git.Snapshot?.HeadCommitSha is not null)
             {
                 progress?.Report(new AnalysisProgress(AnalysisStage.ReadingGitHistory, 0, 1));
-                var read = await gitReader.ReadFileActivityAsync(git.Repository, GitHistoryWindow.Default(started), null, cancellationToken);
+                var read = await gitReader.ReadFileActivityAsync(git.Repository, settings.ToHistoryWindow(started), null, cancellationToken);
                 if (read.TryGetValue(out var report, out var readError))
                 {
                     activity = report;

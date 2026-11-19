@@ -77,7 +77,11 @@
   to 1,000,000 characters, validated against the current graph and ignored (logged without content)
   when invalid.
 - "Open in editor" uses a user-configured command template with the file path passed as a single
-  argument (no shell interpolation); only paths inside the repository are allowed.
+  argument (no shell interpolation); only paths inside the repository are allowed. *Implemented in UI-009:* the
+  template is split into program and arguments by `EditorCommandTemplate` (no shell syntax), placeholders are replaced
+  inside each argument, the file must belong to the current model and is resolved by the containment-checking reader,
+  and `EditorLauncher` (Desktop — the only place the app starts a process) uses `ProcessStartInfo.ArgumentList` with
+  `UseShellExecute = false`. Tested with paths containing spaces, quotes, `;`, `&`, `|`, `$(…)`, backticks and `%VAR%`.
 
 ## 4. Secrets
 

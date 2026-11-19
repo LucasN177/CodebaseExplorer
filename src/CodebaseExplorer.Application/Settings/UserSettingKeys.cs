@@ -29,4 +29,25 @@ public static class UserSettingKeys
 
     /// <summary>Space-separated repository ids allowed to send context to a remote endpoint.</summary>
     public const string AiRemoteConsents = "ai.remote-consents";
+
+    /// <summary>Files above this size (KB, invariant integer) are not parsed (UI-009).</summary>
+    public const string AnalysisMaxFileSizeKilobytes = "analysis.max-file-size-kb";
+
+    /// <summary>Scanning stops after this many files (invariant integer).</summary>
+    public const string AnalysisMaxFiles = "analysis.max-files";
+
+    /// <summary>Parse time limit per file in seconds (invariant integer).</summary>
+    public const string AnalysisParseTimeoutSeconds = "analysis.parse-timeout-seconds";
+
+    /// <summary>Additional excluded folder names, one per line.</summary>
+    public const string AnalysisExcludedFolders = "analysis.excluded-folders";
+
+    /// <summary>Git activity: maximum number of commits (invariant integer).</summary>
+    public const string GitHistoryMaxCommits = "git.history-max-commits";
+
+    /// <summary>Git activity: period in days, 0 = no date limit (invariant integer).</summary>
+    public const string GitHistoryDays = "git.history-days";
+
+    /// <summary>External editor command template, e.g. <c>code --goto "{path}:{line}"</c>; empty = not configured.</summary>
+    public const string EditorCommand = "editor.command";
 }

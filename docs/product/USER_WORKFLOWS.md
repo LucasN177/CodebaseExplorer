@@ -141,8 +141,9 @@ If an expansion would exceed the budget, the app offers a filtered or neighborho
 
 ## WF-11 Configure the application
 
-**Status:** partially implemented — theme switch (System/Light/Dark) and display of the local data
-directory exist on the Settings page; the theme choice is stored and restored at startup (STORE-005).
+**Status:** implemented — theme (stored, STORE-005), AI assistant (M7), analysis limits and additional excluded
+folders, Git activity window, external editor command, local data directory with disk usage, compaction and
+*Delete all data* (UI-009). Not configurable: the clone directory (always inside the app's data directory).
 
 Settings areas (target): Appearance (theme), Storage (data directory, cache cleanup), Analysis
 (limits, excludes), Git (clone directory, history depth), AI (provider, model, cloud opt-in),

@@ -33,6 +33,9 @@
           <!-- Back and the repository level (GRAPH-009) -->
           <Button Content="‹ Back" Command="{Binding BackCommand}" ToolTip.Tip="Restore the previous view (expansions, filters, neighborhood)"
                   AutomationProperties.Name="Back" />
+          <Button Content="⌂ Projects" Command="{Binding ShowTopLevelCommand}"
+                  ToolTip.Tip="Back to the project level: collapse everything and leave the neighborhood (filters stay)"
+                  AutomationProperties.Name="Back to the project level" />
           <TextBlock Text="View" VerticalAlignment="Center" Opacity="0.8" />
           <ComboBox ItemsSource="{Binding ViewModes}" SelectedItem="{Binding SelectedViewMode}" MinWidth="120"
                     AutomationProperties.Name="Graph view mode" ToolTip.Tip="Projects, or projects grouped by workspace, solution and ecosystem" />
@@ -334,6 +337,8 @@
           <DockPanel>
             <Button DockPanel.Dock="Right" Content="Copy path" FontSize="12" Padding="8,2"
                     Command="{Binding CopyPathCommand}" />
+            <Button DockPanel.Dock="Right" Content="Open in editor" FontSize="12" Padding="8,2" Margin="0,0,6,0"
+                    Command="{Binding OpenInEditorCommand}" IsVisible="{Binding IsEditorConfigured}" />
             <TextBlock Text="{Binding SnippetPath}" FontWeight="SemiBold" FontSize="12"
                        TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
           </DockPanel>

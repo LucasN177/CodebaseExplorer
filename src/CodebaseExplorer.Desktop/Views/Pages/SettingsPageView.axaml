@@ -48,6 +48,67 @@
     </StackPanel>
 
     <StackPanel Spacing="6">
+      <TextBlock Text="Analysis" FontWeight="SemiBold" />
+      <TextBlock TextWrapping="Wrap" Opacity="0.7"
+                 Text="Limits protect against very large or hostile repositories. Changes apply to the next import or re-analysis." />
+      <StackPanel Orientation="Horizontal" Spacing="16">
+        <StackPanel Spacing="4">
+          <TextBlock Text="Max. file size to parse (KB)" />
+          <NumericUpDown Value="{Binding MaxFileSizeKilobytes}" Minimum="{Binding MinFileSizeKilobytes}"
+                         Maximum="{Binding MaxFileSizeKilobytesLimit}" Increment="256" FormatString="0" MinWidth="160" />
+        </StackPanel>
+        <StackPanel Spacing="4">
+          <TextBlock Text="Max. files" />
+          <NumericUpDown Value="{Binding MaxFiles}" Minimum="{Binding MinFiles}" Maximum="{Binding MaxFilesLimit}"
+                         Increment="10000" FormatString="0" MinWidth="160" />
+        </StackPanel>
+        <StackPanel Spacing="4">
+          <TextBlock Text="Parse time per file (s)" />
+          <NumericUpDown Value="{Binding ParseTimeoutSeconds}" Minimum="{Binding MinParseSeconds}" Maximum="{Binding MaxParseSeconds}"
+                         Increment="1" FormatString="0" MinWidth="120" />
+        </StackPanel>
+      </StackPanel>
+      <TextBlock Text="Additional excluded folders (one name per line)" />
+      <TextBox Text="{Binding ExcludedFolders}" AcceptsReturn="True" MinHeight="64" MaxHeight="140" PlaceholderText="vendor&#10;generated" />
+      <TextBlock Text="{Binding BuiltInExcludes, StringFormat='Always excluded: {0}'}" TextWrapping="Wrap" FontSize="12" Opacity="0.7" />
+      <TextBlock Text="Git activity window" Margin="0,6,0,0" />
+      <StackPanel Orientation="Horizontal" Spacing="16">
+        <StackPanel Spacing="4">
+          <TextBlock Text="Max. commits" />
+          <NumericUpDown Value="{Binding HistoryMaxCommits}" Minimum="{Binding MinHistoryCommits}" Maximum="{Binding MaxHistoryCommits}"
+                         Increment="1000" FormatString="0" MinWidth="160" />
+        </StackPanel>
+        <StackPanel Spacing="4">
+          <TextBlock Text="Last days (0 = all)" />
+          <NumericUpDown Value="{Binding HistoryDays}" Minimum="0" Maximum="{Binding MaxHistoryDays}" Increment="30" FormatString="0" MinWidth="160" />
+        </StackPanel>
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="Save analysis settings" Command="{Binding SaveAnalysisSettingsCommand}" />
+        <Button Content="Reset to defaults" Command="{Binding ResetAnalysisSettingsCommand}" />
+      </StackPanel>
+      <TextBlock Text="{Binding AnalysisStatusMessage}" TextWrapping="Wrap" Opacity="0.8"
+                 IsVisible="{Binding AnalysisStatusMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+    </StackPanel>
+
+    <StackPanel Spacing="6">
+      <TextBlock Text="External editor" FontWeight="SemiBold" />
+      <TextBlock TextWrapping="Wrap" Opacity="0.7"
+                 Text="Command for 'Open in editor' next to source snippets. {path} is replaced by the file (always as one argument, no shell), {line} and {column} by the position. Leave empty to hide the button." />
+      <TextBox Text="{Binding EditorCommand}" PlaceholderText="code --goto &quot;{path}:{line}&quot;" />
+      <ItemsControl ItemsSource="{Binding EditorExamples}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="x:String">
+            <SelectableTextBlock Text="{Binding}" FontFamily="Cascadia Mono, Consolas, Menlo, monospace" FontSize="12" Opacity="0.75" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Button Content="Save editor command" Command="{Binding SaveEditorCommandCommand}" />
+      <TextBlock Text="{Binding EditorStatusMessage}" TextWrapping="Wrap" Opacity="0.8"
+                 IsVisible="{Binding EditorStatusMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+    </StackPanel>
+
+    <StackPanel Spacing="6">
       <TextBlock Text="Local data directory" FontWeight="SemiBold" />
       <SelectableTextBlock Text="{Binding DataDirectory}" TextWrapping="Wrap" Opacity="0.8" />
       <TextBlock TextWrapping="Wrap" Opacity="0.7"
@@ -62,7 +123,18 @@
       <TextBlock Text="{Binding CompactionMessage}" TextWrapping="Wrap" Opacity="0.8"
                  IsVisible="{Binding CompactionMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
       <TextBlock TextWrapping="Wrap" Opacity="0.7"
-                 Text="Removing a repository deletes its data, but the database file keeps its size until it is compacted. To delete everything, quit the app and delete the data folder." />
+                 Text="Removing a repository deletes its data, but the database file keeps its size until it is compacted." />
+      <Border BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,6,0,0" BorderBrush="{DynamicResource ErrorBorderBrush}">
+        <StackPanel Spacing="6">
+          <TextBlock Text="Delete all stored data" FontWeight="SemiBold" />
+          <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                     Text="Deletes every stored repository with its analysis runs, models, Git statistics, AI conversations and explanations, and the clones this app made; then compacts the database. Your own repository folders are not touched; settings are kept. This cannot be undone." />
+          <CheckBox Content="I understand that this cannot be undone" IsChecked="{Binding ConfirmDeleteAll}" />
+          <Button Content="Delete all data" Command="{Binding DeleteAllDataCommand}" />
+          <TextBlock Text="{Binding DeleteAllMessage}" TextWrapping="Wrap" Opacity="0.8"
+                     IsVisible="{Binding DeleteAllMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        </StackPanel>
+      </Border>
     </StackPanel>
 
     <StackPanel Spacing="6">

@@ -391,6 +391,13 @@ Each value is a JSON string; a row whose `ValueJson` is not a JSON string reads 
 | `ai.model` | model name at the provider, or empty | none selected | `AiSettingsStore`. |
 | `ai.max-context-tokens` | invariant integer 2048–262144 | 8192 | `AiSettingsStore`, prompt budgeting (AI-004). |
 | `ai.temperature` | invariant number 0–2 | 0.2 | `AiSettingsStore`. |
+| `analysis.max-file-size-kb` | invariant integer 16–65536 | 2048 | `AnalysisSettingsStore` (Application, UI-009) → `AnalysisLimits.MaxParseFileBytes` of the next import. |
+| `analysis.max-files` | invariant integer 100–5,000,000 | 500,000 | `AnalysisSettingsStore` → `AnalysisLimits.MaxFiles`. |
+| `analysis.parse-timeout-seconds` | invariant integer 1–120 | 5 | `AnalysisSettingsStore` → `AnalysisLimits.MaxParseDuration`. |
+| `analysis.excluded-folders` | folder names, one per line (no paths or wildcards), at most 100 | none | `AnalysisSettingsStore`; added to the built-in excludes; invalid names are dropped when reading. |
+| `git.history-max-commits` | invariant integer 1–1,000,000 | 5,000 | `AnalysisSettingsStore` → `GitHistoryWindow` of the next import. |
+| `git.history-days` | invariant integer 0–36,500 (0 = no date limit) | 365 | `AnalysisSettingsStore` → `GitHistoryWindow`. |
+| `editor.command` | command template with `{path}` (and optionally `{line}`, `{column}`), or empty | not configured | `PrepareEditorLaunch` (Application, UI-009); validated by `EditorCommandTemplate` when saved and used. |
 | `ai.remote-consents` | space-separated repository ids (`N` format) | none | `AiSettingsStore`; cleared when `ai.endpoint` changes. Not secret, only ids. |
 
 ### 4.18 Search index (AI retrieval, M7)
