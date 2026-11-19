@@ -2,7 +2,8 @@
 
 > Status: **accepted (specification)** · Last reviewed: 2026-11-17
 > Implementation status: **in progress (M7)** — AI-001: settings (`AiSettings`, keys `ai.*`), provider gate, HTTP
-> transport and the network guard test exist; AI is disabled by default.
+> transport and the network guard test exist; AI is disabled by default. AI-002: Ollama provider (health check,
+> model listing, `IChatClient`), tested against a stub server.
 > Related: [ADR-008](../decisions/ADR-008-hybrid-ai.md), [SECURITY.md](SECURITY.md).
 
 ## 1. Principles
@@ -48,9 +49,10 @@ flowchart LR
 
 ## 3. Provider abstraction
 
-- `Microsoft.Extensions.AI` (`IChatClient`) is the abstraction boundary. Planned packages:
-  `Microsoft.Extensions.AI` 10.11.0 (10.x line), `OllamaSharp` 5.5.2 (implements `IChatClient`) —
-  both to be re-verified in AI-001/AI-002.
+- `Microsoft.Extensions.AI` (`IChatClient`) is the abstraction boundary. Packages (re-verified 2026-11-19):
+  `Microsoft.Extensions.AI` 10.11.0 (10.x line; AI-001), `OllamaSharp` 5.5.2 (implements `IChatClient`; AI-002).
+- All HTTP clients are created by `AiTransport` (no redirects, no cookies); providers are used only behind the
+  `AiProviderGate`.
 - The AI module wraps `IChatClient` with: logging (no content in logs), timeout, cancellation,
   token counting where available.
 - Provider configuration (`UserSettings`): provider id, endpoint, model id, max context tokens,

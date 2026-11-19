@@ -19,6 +19,7 @@ public static class DependencyInjection
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddSingleton(_ => new AiTransport());
+        services.AddSingleton<IAiProvider, OllamaProvider>();
         services.AddSingleton<AiProviderGate>();
         services.AddSingleton<IAiAssistant, AiAssistant>();
         return services;

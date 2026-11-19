@@ -60,6 +60,8 @@
     <!-- 10.x line (verified 2026-11-19): 11.0.0 exists but depends on the 11.0 runtime packages; 10.11.0 depends on
          Microsoft.Extensions.* 10.0.13, which resolves within the 10.0.x line (AI-001, DEVELOPMENT_GUIDE.md §4). -->
     <PackageVersion Include="Microsoft.Extensions.AI" Version="10.11.0" />
+    <!-- Ollama client implementing IChatClient (AI-002); depends on Microsoft.Extensions.AI 10.8.0, resolved to 10.11.0. -->
+    <PackageVersion Include="OllamaSharp" Version="5.5.2" />
   </ItemGroup>
 
   <ItemGroup Label="Testing">
