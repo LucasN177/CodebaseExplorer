@@ -16,6 +16,9 @@ public interface IAiConversationStore
     /// <summary>Messages in order.</summary>
     Task<IReadOnlyList<AiMessage>> LoadMessagesAsync(Guid conversationId, CancellationToken cancellationToken);
 
+    /// <summary>One message with its conversation id, or null if it does not exist (any more).</summary>
+    Task<(Guid ConversationId, AiMessage Message)?> FindMessageAsync(Guid messageId, CancellationToken cancellationToken);
+
     /// <summary>
     /// Creates the conversation if it does not exist yet and appends the messages (their ordinals continue the
     /// conversation), setting its <see cref="AiConversation.UpdatedAt"/> — in one transaction.

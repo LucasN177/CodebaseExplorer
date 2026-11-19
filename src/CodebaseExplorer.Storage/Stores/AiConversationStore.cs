@@ -41,6 +41,13 @@ internal sealed class AiConversationStore(IDbContextFactory<CodebaseExplorerDbCo
         return [.. records.Select(ToDomain)];
     }
 
+    public async Task<(Guid ConversationId, AiMessage Message)?> FindMessageAsync(Guid messageId, CancellationToken cancellationToken)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        var record = await context.AiMessages.AsNoTracking().SingleOrDefaultAsync(m => m.Id == messageId, cancellationToken);
+        return record is null ? null : (record.ConversationId, ToDomain(record));
+    }
+
     public async Task AppendAsync(AiConversation conversation, IReadOnlyList<AiMessage> messages, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(conversation);

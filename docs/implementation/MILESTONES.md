@@ -11,7 +11,7 @@
 | M4 | Polyglot & large repositories | 🚧 all tasks implemented (2026-11-18); performance targets met (TEST_STRATEGY.md §8); ADR-012 accepted (whole-model reads stay); new explorer features not yet checked manually; macOS/Linux open | TS/JS/Python, filters/search/budget, performance targets. |
 | M5 | Git integration | 🟡 all 7 tasks implemented (started in parallel to M4); overlay and clone form not yet checked in the running app | Metadata, HTTPS clone, activity overlay. |
 | M6 | Documentation export | 🟡 both tasks implemented; export page not yet checked in the running app, Mermaid output not yet rendered in a viewer | Markdown + Mermaid report. |
-| M7 | Optional local AI | ⏳ planned | Ollama Q&A with validated citations; off by default. |
+| M7 | Optional local AI | 🟡 all 7 tasks implemented (2026-11-19); tested against a stub Ollama server; manual test with a real Ollama instance and the new pages in the running app pending | Ollama Q&A with validated citations; off by default. |
 | M8 | Hardening & release | ⏳ planned | Packaging, CI on 3 OSes, release gate. |
 
 ---
@@ -76,7 +76,9 @@
 
 - **Entry:** M4 done (retrieval benefits from all languages), STORE-005 done.
 - **Exit criteria:** AI off by default with network-guard test; Ollama Q&A with validated citations.
-- **Key risks:** answer quality on small local models; FTS5 availability.
+- **Key risks:** answer quality on small local models; FTS5 availability (verified in AI-003: available).
+- **Status (2026-11-19):** exit criteria met by automated tests (network guard, stub-server Q&A with validated
+  citations); a manual test with a real Ollama instance ([AI_MODEL_SETUP.md](../user/AI_MODEL_SETUP.md) §6) is open.
 
 ## M8 — Hardening & release
 

@@ -32,6 +32,7 @@ public static class DependencyInjection
         services.AddSingleton<IStorageMaintenance, StorageMaintenance>();
         services.AddSingleton<Application.AI.ISearchIndexStore, SearchIndexStore>();
         services.AddSingleton<Application.AI.IAiConversationStore, AiConversationStore>();
+        services.AddSingleton<Application.AI.IAiArtifactStore, AiArtifactStore>();
         services.AddDbContextFactory<CodebaseExplorerDbContext>((provider, options) =>
             Configure(options, ConnectionString(provider.GetRequiredService<IApplicationPaths>().DatabaseFilePath)));
 

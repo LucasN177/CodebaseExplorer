@@ -362,6 +362,11 @@ Reusable AI outputs attached to model elements (e.g. cached component explanatio
 
 Index: `IX_AIArtifacts_ElementId_ArtifactKind`.
 
+*Used since AI-008* (`AiArtifactStore`): a component explanation is stored as a conversation and an artifact with
+`MessageId` = the assistant message (which keeps citations and context manifest). Lookups require the repository's
+current `AnalysisRunId`, so a new run makes the artifact stale; saving replaces earlier artifacts of the same element
+and kind.
+
 ### 4.17 UserSettings
 
 | Column | Type | Constraints |

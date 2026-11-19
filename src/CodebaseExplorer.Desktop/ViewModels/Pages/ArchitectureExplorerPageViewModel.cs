@@ -61,9 +61,27 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         RepositorySession session,
         IUserSettingsStore settings,
         ShellStatus shell,
-        ILogger<ArchitectureExplorerPageViewModel> logger)
+        ILogger<ArchitectureExplorerPageViewModel> logger,
+        ComponentExplanationViewModel? explanation = null)
     {
         Graph = graph;
+        Explanation = explanation;
+        if (explanation is not null)
+        {
+            // AI-008: citations of an explanation show their lines below the inspector or focus their element.
+            explanation.CitationRequested += async (_, citation) =>
+            {
+                if (citation.CanOpenSource)
+                {
+                    await LoadSourceAsync(citation.Citation.Path!, citation.Citation.StartLine!.Value, citation.Citation.EndLine);
+                }
+                else if (citation.Citation.ElementId is { } elementId)
+                {
+                    await ShowElementAsync(elementId);
+                }
+            };
+        }
+
         _getGraphView = getGraphView;
         _getEdgeDetails = getEdgeDetails;
         _getSnippet = getSnippet;
@@ -551,6 +569,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         InspectorMessage = null;
         InspectedElementId = null;
         InspectedElementName = null;
+        Explanation?.SetElement(null);
     }
 
     /// <summary>Git activity of the inspected node (GIT-005), e.g. <c>12 file changes in 3 files · +120 −40 · …</c>; null without Git data.</summary>
@@ -644,6 +663,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             InspectorMetrics = $"fan-in {details.FanIn} · fan-out {details.FanOut} · size {details.Size}";
             InspectedElementId = details.Id;
             InspectedElementName = details.Name;
+            Explanation?.SetElement(details.Id);
             InspectorActivity = details.Activity is { } activity ? DescribeActivity(activity) : null;
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
@@ -668,6 +688,9 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             await ShowReferenceAsync(item.Reference, item.Label);
         }
     }
+
+    /// <summary>"Explain with AI" for the inspected element (AI-008); null when the AI module is not composed (tests).</summary>
+    public ComponentExplanationViewModel? Explanation { get; }
 
     /// <summary>The element whose details the inspector shows (model element id, <c>N</c> format); null otherwise.</summary>
     [ObservableProperty]
@@ -760,21 +783,25 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
     partial void OnSelectedEvidenceChanged(EvidenceItem? value) => _ = LoadSnippetAsync(value);
 
     /// <summary>Loads the snippet of an evidence record; late results of a previous selection are dropped.</summary>
-    private async Task LoadSnippetAsync(EvidenceItem? evidence)
+    private Task LoadSnippetAsync(EvidenceItem? evidence) =>
+        evidence is { HasSource: true } ? LoadSourceAsync(evidence.Path!, evidence.StartLine!.Value, evidence.EndLine) : LoadSourceAsync(null, 0, null);
+
+    /// <summary>Shows lines of an analyzed file in the snippet view (evidence, or a citation of an AI explanation).</summary>
+    private async Task LoadSourceAsync(string? path, int startLine, int? endLine)
     {
         var snippetNumber = ++_snippetNumber;
         SnippetLines.Clear();
         SnippetPath = null;
         SnippetMessage = null;
         _snippetAbsolutePath = null;
-        if (evidence is not { HasSource: true } || _query is not { } query)
+        if (path is null || _query is not { } query)
         {
             return;
         }
 
         try
         {
-            var result = await _getSnippet.ExecuteAsync(query.RepositoryId, evidence.Path!, evidence.StartLine!.Value, evidence.EndLine, CancellationToken.None);
+            var result = await _getSnippet.ExecuteAsync(query.RepositoryId, path, startLine, endLine, CancellationToken.None);
             if (snippetNumber != _snippetNumber)
             {
                 return;
@@ -783,7 +810,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             if (!result.TryGetValue(out var snippet, out var error))
             {
                 _logger.LogWarning("Source snippet failed with {ErrorCode}", error.Code); // never the content
-                SnippetPath = evidence.Path;
+                SnippetPath = path;
                 SnippetMessage = error.Message;
                 return;
             }

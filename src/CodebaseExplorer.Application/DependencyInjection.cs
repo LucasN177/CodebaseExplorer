@@ -35,6 +35,7 @@ public static class DependencyInjection
         services.AddSingleton<AI.EnsureSearchIndex>();
         services.AddSingleton<AI.AskRepositoryQuestion>();
         services.AddSingleton<AI.AiConversations>();
+        services.AddSingleton<AI.ExplainComponent>();
 
         return services;
     }

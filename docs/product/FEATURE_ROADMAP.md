@@ -27,7 +27,7 @@ fixed; progress is tracked by task status in [TASK_BREAKDOWN.md](../implementati
 | **M4** | Polyglot & large repositories | TS/JS/Python via Tree-sitter and manifests; hierarchical aggregation; filters; search; node budget; performance fixtures. | 🚧 implemented (2026-11-18), manual checks open |
 | **M5** | Git integration | Git metadata; HTTPS clone of GitHub/GitLab remotes; change-activity overlays. | ⏳ planned |
 | **M6** | Documentation export | Markdown + Mermaid architecture report. | ✅ implemented |
-| **M7** | Optional local AI | Ollama-based Q&A and explanations with validated citations. | ⏳ planned |
+| **M7** | Optional local AI | Ollama-based Q&A and explanations with validated citations. | 🟡 implemented (real-Ollama check pending) |
 | **M8** | MVP hardening & release | Cross-platform packaging, CI on 3 OSes, performance and security gates, docs. | ⏳ planned |
 
 ## Horizon 2 — After MVP (next 6–12 months)
