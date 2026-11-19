@@ -33,6 +33,9 @@
           <!-- Back and the repository level (GRAPH-009) -->
           <Button Content="‹ Back" Command="{Binding BackCommand}" ToolTip.Tip="Restore the previous view (expansions, filters, neighborhood)"
                   AutomationProperties.Name="Back" />
+          <Button Content="⌂ Projects" Command="{Binding ShowTopLevelCommand}"
+                  ToolTip.Tip="Back to the project level: collapse everything and leave the neighborhood (filters stay)"
+                  AutomationProperties.Name="Back to the project level" />
           <TextBlock Text="View" VerticalAlignment="Center" Opacity="0.8" />
           <ComboBox ItemsSource="{Binding ViewModes}" SelectedItem="{Binding SelectedViewMode}" MinWidth="120"
                     AutomationProperties.Name="Graph view mode" ToolTip.Tip="Projects, or projects grouped by workspace, solution and ecosystem" />

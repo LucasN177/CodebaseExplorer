@@ -232,7 +232,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         {
             // The repository was closed (removed): back to the empty state; late results of a running load are dropped.
             ++_loadNumber;
-            _query = null;
+            SetQuery(null);
             TruncationText = null;
             ResetNavigation();
             RepositoryName = null;
@@ -259,7 +259,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
                 return; // a newer import replaced this one
             }
 
-            _query = query;
+            SetQuery(query);
 
             if (!result.TryGetValue(out var view, out var error))
             {
@@ -331,7 +331,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             }
 
             Remember(query);
-            _query = next;
+            SetQuery(next);
             ShowTruncation(view);
             if (!await Graph.PatchGraphAsync(view, cancellationToken))
             {
@@ -383,7 +383,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
                 return;
             }
 
-            _query = next;
+            SetQuery(next);
             UpdateActivityHint(view);
             if (!await Graph.PatchGraphAsync(view, cancellationToken))
             {
@@ -750,7 +750,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             }
 
             Remember(query);
-            _query = next;
+            SetQuery(next);
             ShowTruncation(view);
             await Graph.PatchGraphAsync(view, CancellationToken.None);
         }
@@ -1220,7 +1220,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
                 Remember(previous);
             }
 
-            _query = next;
+            SetQuery(next);
             ShowTruncation(view);
             ShowNavigation(view, next);
             if (!await Graph.ShowGraphAsync(view, CancellationToken.None))
@@ -1277,6 +1277,39 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             _ = NavigateAsync(query with { Level = level });
         }
     }
+
+    /// <summary>The graph shows the plain project level: nothing expanded, no neighborhood, not grouped.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ShowTopLevelCommand))]
+    public partial bool IsAtTopLevel { get; private set; } = true;
+
+    /// <summary>
+    /// Back to the start view: the project level with everything collapsed and no neighborhood. Filters stay as they are
+    /// (they have their own reset); <see cref="BackCommand"/> returns to the view before.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanShowTopLevel))]
+    private Task ShowTopLevelAsync()
+    {
+        if (_query is not { } query)
+        {
+            return Task.CompletedTask;
+        }
+
+        var top = query with { Level = GraphLevels.Project, Expanded = [], Focus = null };
+        ShowControlsOf(top);
+        return NavigateAsync(top);
+    }
+
+    private bool CanShowTopLevel() => !IsAtTopLevel && HasGraph;
+
+    /// <summary>Every change of the current query goes through here, so <see cref="IsAtTopLevel"/> stays current.</summary>
+    private void SetQuery(GraphQuery? query)
+    {
+        _query = query;
+        IsAtTopLevel = query is null || (query.Focus is null && query.Expanded.Count == 0 && query.Level == GraphLevels.Project);
+    }
+
+    partial void OnHasGraphChanged(bool value) => ShowTopLevelCommand.NotifyCanExecuteChanged();
 
     /// <summary>Restores the previous view state: level, expansions, filters and neighborhood (WF-03 step 5).</summary>
     [RelayCommand(CanExecute = nameof(CanGoBack))]

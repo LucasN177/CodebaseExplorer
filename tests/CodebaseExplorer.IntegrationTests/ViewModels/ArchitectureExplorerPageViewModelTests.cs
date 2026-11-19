@@ -258,6 +258,33 @@ public sealed class ArchitectureExplorerPageViewModelTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ProjectsButton_CollapsesEverything_AndBackReturns()
+    {
+        var initial = await ImportFixtureAsync();
+        _host.PatchGraphAsync(default!, Arg.Any<CancellationToken>()).ReturnsForAnyArgs(true);
+        var domain = initial.Nodes.Single(n => n.Label == "Shop.Domain");
+        Assert.True(_viewModel.IsAtTopLevel);
+        Assert.False(_viewModel.ShowTopLevelCommand.CanExecute(null));
+
+        await _viewModel.SetExpandedAsync(domain.Id, expanded: true, TestContext.Current.CancellationToken);
+        var module = Assert.Single(LastPatch().Nodes, n => n.ParentId == domain.Id);
+        await _viewModel.SetExpandedAsync(module.Id, expanded: true, TestContext.Current.CancellationToken);
+        Assert.False(_viewModel.IsAtTopLevel);
+
+        await _viewModel.ShowTopLevelCommand.ExecuteAsync(null);
+
+        Assert.True(_viewModel.IsAtTopLevel);
+        Assert.Empty(_viewModel.CurrentQuery!.Expanded);
+        Assert.Null(_viewModel.CurrentQuery!.Focus);
+        Assert.Equal(GraphLevels.Project, _viewModel.CurrentQuery!.Level);
+        Assert.Null(_viewModel.ErrorMessage);
+
+        await _viewModel.BackCommand.ExecuteAsync(null);
+        Assert.Equal(2, _viewModel.CurrentQuery!.Expanded.Count);
+        Assert.True(_viewModel.ShowTopLevelCommand.CanExecute(null));
+    }
+
+    [Fact]
     public async Task ExpandAndCollapse_PatchTheGraph_AndAreReversible()
     {
         // GRAPH-006, end to end over the real model of dotnet-layered (projects → namespaces → types).
