@@ -29,6 +29,8 @@ internal sealed class VisibleTree
     private readonly ILookup<ElementId?, CodeModule> _childModules;
     private readonly ILookup<ElementId, CodeModule> _topModules;
     private readonly ILookup<ElementId, CodeEntity> _typesByModule;
+    private readonly ILookup<ElementId?, CodeEntity> _membersOf;
+    private bool _classLevel;
     private readonly Dictionary<ElementId, int> _filesByProject;
     private readonly Dictionary<ElementId, int> _entitiesByModule;
     private readonly HashSet<ElementId> _omittedRoots = [];
@@ -50,6 +52,7 @@ internal sealed class VisibleTree
         _childModules = model.Modules.Where(m => m.ParentModuleId is not null).ToLookup(m => m.ParentModuleId);
         _topModules = model.Modules.Where(m => m.ParentModuleId is null).ToLookup(m => m.ProjectId);
         _typesByModule = model.Entities.Where(e => e.ContainingEntityId is null && filter.Shows(e)).ToLookup(e => e.ModuleId);
+        _membersOf = model.Entities.Where(e => e.ContainingEntityId is not null && filter.Shows(e)).ToLookup(e => e.ContainingEntityId);
         _filesByProject = model.Files.Where(f => f.ProjectId is not null).GroupBy(f => f.ProjectId!.Value).ToDictionary(g => g.Key, g => g.Count());
         _entitiesByModule = model.Entities.GroupBy(e => e.ModuleId).ToDictionary(g => g.Key, g => g.Count());
     }
@@ -91,6 +94,27 @@ internal sealed class VisibleTree
         var dependencies = query.IncludeExternalDependencies
             ? model.ExternalDependencies.Where(tree._filter.Shows).OrderBy(d => d.DisplayName, StringComparer.Ordinal).ThenBy(d => d.Id.ToString(), StringComparer.Ordinal).ToArray()
             : [];
+
+        if (query.Level == GraphLevels.Entity)
+        {
+            // Class level: every top-level type of the shown projects as a root; types expand into their members.
+            tree._classLevel = true;
+            var shownProjects = projects.Select(p => p.Id).ToHashSet();
+            var types = model.Entities
+                .Where(e => e.ContainingEntityId is null && shownProjects.Contains(e.ProjectId) && tree._filter.Shows(e))
+                .OrderBy(e => e.QualifiedName, StringComparer.Ordinal)
+                .ThenBy(e => e.Id.ToString(), StringComparer.Ordinal)
+                .ToArray();
+            tree.SelectRoots([.. types.Select(t => t.Id)]);
+            var byId = projects.ToDictionary(p => p.Id);
+            foreach (var type in types.Where(t => !tree._omittedRoots.Contains(t.Id)))
+            {
+                tree.AddType(type, byId[type.ProjectId], parentId: null, expanded);
+            }
+
+            tree.AddAggregate();
+            return tree;
+        }
 
         if (query.Level == GraphLevels.Repository)
         {
@@ -336,6 +360,18 @@ internal sealed class VisibleTree
     /// <summary>The project (or external dependency) an element belongs to at the root level.</summary>
     private ElementId? RootOf(ElementReference reference)
     {
+        if (_classLevel)
+        {
+            // Class level: the outermost type containing the element; projects, files and modules have no root here.
+            var entity = reference.Kind == ElementKind.Entity ? _model.FindEntity(reference.Id) : null;
+            while (entity?.ContainingEntityId is { } container && _model.FindEntity(container) is { } parent)
+            {
+                entity = parent;
+            }
+
+            return entity?.Id;
+        }
+
         var root = reference.Kind switch
         {
             ElementKind.Project or ElementKind.ExternalDependency => reference.Id,
@@ -495,19 +531,55 @@ internal sealed class VisibleTree
 
         foreach (var type in types)
         {
-            Add(new GraphNodeDto
-            {
-                Id = type.Id.ToString(),
-                ParentId = id,
-                Kind = GraphNodeKinds.Entity,
-                Label = type.Name,
-                Sublabel = type.Kind.ToString().ToLowerInvariant(),
-                Language = type.Language.Value,
-                Ecosystem = project.Ecosystem.ToKeyToken(),
-                Metrics = new GraphNodeMetricsDto(0, 0, type.Metrics?.LineCount ?? 0),
-            }, id);
+            AddType(type, project, id, expanded);
         }
     }
+
+    /// <summary>
+    /// A type (or member) node; an expanded type shows its members — methods, constructors, properties, fields and
+    /// nested types — so calls and type usages attach to the member they come from (class level, GRAPH-011).
+    /// </summary>
+    private void AddType(CodeEntity type, CodeProject project, string? parentId, HashSet<ElementId> expanded)
+    {
+        var members = _membersOf[type.Id]
+            .OrderBy(m => MemberOrder(m.Kind))
+            .ThenBy(m => m.Name, StringComparer.Ordinal)
+            .ThenBy(m => m.Id.ToString(), StringComparer.Ordinal)
+            .ToArray();
+        var expand = expanded.Contains(type.Id) && members.Length > 0 && Fits(type.Id.ToString(), members.Length);
+        var id = Add(new GraphNodeDto
+        {
+            Id = type.Id.ToString(),
+            ParentId = parentId,
+            Kind = GraphNodeKinds.Entity,
+            Label = type.Name,
+            Sublabel = type.Kind.ToString().ToLowerInvariant(),
+            Language = type.Language.Value,
+            Ecosystem = project.Ecosystem.ToKeyToken(),
+            ChildCount = members.Length,
+            IsExpandable = members.Length > 0,
+            IsExpanded = expand,
+            Metrics = new GraphNodeMetricsDto(0, 0, type.Metrics?.LineCount ?? 0),
+        }, parentId);
+
+        if (expand)
+        {
+            foreach (var member in members)
+            {
+                AddType(member, project, id, expanded);
+            }
+        }
+    }
+
+    /// <summary>Members are listed methods first, then constructors, properties, fields, events and nested types.</summary>
+    private static int MemberOrder(EntityKind kind) => kind switch
+    {
+        EntityKind.Method or EntityKind.Function => 0,
+        EntityKind.Constructor => 1,
+        EntityKind.Property => 2,
+        EntityKind.Field => 3,
+        _ => 4,
+    };
 
     /// <summary>Skips namespaces without types that only contain one child namespace.</summary>
     private CodeModule Compress(CodeModule module)

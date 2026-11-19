@@ -107,7 +107,10 @@ public sealed class GetElementDetails(IArchitectureModelStore store, IGitActivit
                 entityElement.Metrics?.LineCount ?? 0,
                 model.Entities.Where(e => e.ContainingEntityId == id).OrderBy(e => e.Name, StringComparer.Ordinal)
                     .Select(e => Reference(model, new ElementReference(ElementKind.Entity, e.Id))),
-                reference => reference.Kind == ElementKind.Entity && IsWithin(model, reference.Id, id));
+                reference => reference.Kind == ElementKind.Entity && IsWithin(model, reference.Id, id)) with
+            {
+                MemberCalls = MemberCalls(model, entityElement),
+            };
         }
 
         if (model.FindExternalDependency(id) is { } dependency)
@@ -180,6 +183,47 @@ public sealed class GetElementDetails(IArchitectureModelStore store, IGitActivit
                         LevelToken(r.Relationship.Level),
                         r.Relationship.Occurrences,
                         r.Inner.Id == inspected ? null : Label(model, r.Inner)))]))];
+
+    /// <summary>At most this many calls are listed per member.</summary>
+    public const int MaxCallsPerMember = 50;
+
+    /// <summary>
+    /// The type's direct members with what each calls or instantiates (GRAPH-011): methods first, then constructors and the
+    /// rest; members without calls are kept, so the list also shows a type's methods. Calls inside the same type are included.
+    /// </summary>
+    private static List<MemberCallsDto> MemberCalls(ArchitectureModel model, CodeEntity type)
+    {
+        var members = model.Entities.Where(e => e.ContainingEntityId == type.Id).ToList();
+        if (members.Count == 0)
+        {
+            return [];
+        }
+
+        var memberIds = members.Select(m => m.Id).ToHashSet();
+        var calls = model.Relationships
+            .Where(r => r.Kind is RelationshipKind.Calls or RelationshipKind.Instantiates
+                && r.Source.Kind == ElementKind.Entity && memberIds.Contains(r.Source.Id))
+            .ToLookup(r => r.Source.Id);
+
+        return [.. members
+            .OrderBy(m => m.Kind switch
+            {
+                EntityKind.Method or EntityKind.Function => 0,
+                EntityKind.Constructor => 1,
+                EntityKind.Property => 2,
+                _ => 3,
+            })
+            .ThenBy(m => m.Name, StringComparer.Ordinal)
+            .ThenBy(m => m.Id.ToString(), StringComparer.Ordinal)
+            .Select(member => new MemberCallsDto(
+                Reference(model, new ElementReference(ElementKind.Entity, member.Id)),
+                KindText(member.Kind).ToLowerInvariant(),
+                [.. calls[member.Id]
+                    .OrderBy(r => r.Kind == RelationshipKind.Calls ? 0 : 1)
+                    .ThenBy(r => Label(model, r.Target), StringComparer.Ordinal)
+                    .Take(MaxCallsPerMember)
+                    .Select(r => new RelatedElementDto(Reference(model, r.Target), LevelToken(r.Level), r.Occurrences, r.Kind.ToKeyToken()))]))];
+    }
 
     /// <summary>A related element with the graph node that represents it and the expansions that make that node visible.</summary>
     internal static ElementReferenceDto Reference(ArchitectureModel model, ElementReference reference)

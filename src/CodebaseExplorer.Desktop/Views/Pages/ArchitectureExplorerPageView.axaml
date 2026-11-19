@@ -285,6 +285,34 @@
             </ItemsControl>
           </Expander>
 
+          <!-- GRAPH-011: methods of a type and what each of them calls or instantiates -->
+          <TextBlock Text="METHODS &amp; CALLS" Classes="inspectorSection" IsVisible="{Binding HasMemberCalls}" />
+          <ItemsControl ItemsSource="{Binding MemberCallGroups}" IsVisible="{Binding HasMemberCalls}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="pages:InspectorGroup">
+                <Expander Header="{Binding Title}" HorizontalAlignment="Stretch" Margin="0,0,0,4">
+                  <StackPanel>
+                    <TextBlock Text="Calls nothing that was analyzed." Classes="caption" IsVisible="{Binding IsEmpty}" />
+                    <ItemsControl ItemsSource="{Binding Items}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="pages:InspectorItem">
+                          <Button Classes="inspector-item" ToolTip.Tip="Show in graph" IsEnabled="{Binding CanShowInGraph}"
+                                  Command="{Binding $parent[UserControl].((pages:ArchitectureExplorerPageViewModel)DataContext).ShowInGraphCommand}"
+                                  CommandParameter="{Binding}">
+                            <StackPanel>
+                              <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                              <TextBlock Text="{Binding Detail}" Opacity="0.7" FontSize="11" TextWrapping="Wrap" />
+                            </StackPanel>
+                          </Button>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Expander>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
           <TextBlock Text="OUTGOING" Classes="inspectorSection" IsVisible="{Binding HasOutgoing}" />
           <ItemsControl ItemsSource="{Binding OutgoingGroups}">
             <ItemsControl.ItemTemplate>

@@ -94,7 +94,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         RelationshipKindFilters = [.. RelationshipKindNames.Select(k => new FilterOption(k.Token, k.Display, OnFilterOptionChanged))];
         MinLevelOptions = [new(null, "All evidence"), new(GraphEvidenceLevels.Syntactic, "Syntactic or confirmed"), new(GraphEvidenceLevels.Confirmed, "Confirmed only")];
         DirectionOptions = [new(GraphDirections.Both, "Both directions"), new(GraphDirections.Outgoing, "Outgoing"), new(GraphDirections.Incoming, "Incoming")];
-        ViewModes = [new(GraphLevels.Project, "Projects"), new(GraphLevels.Repository, "Grouped")];
+        ViewModes = [new(GraphLevels.Project, "Projects"), new(GraphLevels.Repository, "Grouped"), new(GraphLevels.Entity, "Classes")];
         _suppressFilterChanges = true;
         SelectedViewMode = ViewModes[0];
         SelectedMinLevel = MinLevelOptions[0];
@@ -119,6 +119,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         InspectorMembers.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasMembers));
         IncomingGroups.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasIncoming));
         OutgoingGroups.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasOutgoing));
+        MemberCallGroups.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasMemberCalls));
     }
 
     public override string Title => "Architecture Explorer";
@@ -557,6 +558,11 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
 
     public bool HasOutgoing => OutgoingGroups.Count > 0;
 
+    /// <summary>For a type: its methods with what each calls or instantiates (GRAPH-011).</summary>
+    public System.Collections.ObjectModel.ObservableCollection<InspectorGroup> MemberCallGroups { get; } = [];
+
+    public bool HasMemberCalls => MemberCallGroups.Count > 0;
+
     /// <summary>Loading state, an error, or why "show in graph" was not possible.</summary>
     [ObservableProperty]
     public partial string? InspectorMessage { get; private set; }
@@ -568,6 +574,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         InspectorMembers.Clear();
         IncomingGroups.Clear();
         OutgoingGroups.Clear();
+        MemberCallGroups.Clear();
         InspectorMetrics = null;
         InspectorActivity = null;
         InspectorMessage = null;
@@ -657,6 +664,12 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             foreach (var group in details.Incoming)
             {
                 IncomingGroups.Add(new InspectorGroup($"{group.Kind} ({group.Items.Count})", [.. group.Items.Select(InspectorItem.From)]));
+            }
+
+            foreach (var member in details.MemberCalls)
+            {
+                var count = member.Calls.Count == 1 ? "1 call" : $"{member.Calls.Count} calls";
+                MemberCallGroups.Add(new InspectorGroup($"{member.Member.Label}  ·  {member.Kind} · {count}", [.. member.Calls.Select(InspectorItem.Call)]));
             }
 
             foreach (var group in details.Outgoing)

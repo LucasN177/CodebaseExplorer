@@ -216,7 +216,6 @@ public sealed class GraphProjectorTests
 
     [Theory]
     [InlineData(GraphLevels.Module)]
-    [InlineData(GraphLevels.Entity)]
     [InlineData("unknown")]
     public void UnsupportedLevels_AreRejected(string level)
     {

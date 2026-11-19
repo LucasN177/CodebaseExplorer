@@ -16,7 +16,8 @@ namespace CodebaseExplorer.Graph.Projection;
 /// per external dependency). Expanded projects show their namespaces (L2), expanded modules their
 /// sub-namespaces and types (L3) as child nodes (mixed levels, GRAPH-006). Every relationship is
 /// attributed to the deepest visible node containing each endpoint and aggregated into one edge per
-/// ordered node pair; relationships inside one node or between a node and its own ancestor are dropped.
+/// ordered node pair; relationships inside one node or between a node and its own ancestor are dropped. The class level
+/// (<see cref="GraphLevels.Entity"/>, GRAPH-011) shows every top-level type as a root; types expand into their members.
 /// </summary>
 internal sealed class GraphProjector : IGraphProjector
 {
@@ -87,10 +88,10 @@ internal sealed class GraphProjector : IGraphProjector
             return ApplicationError.Validation(GraphErrorCodes.RepositoryMismatch, "The query is for another repository than the model.");
         }
 
-        if (query.Level is not (GraphLevels.Project or GraphLevels.Repository))
+        if (query.Level is not (GraphLevels.Project or GraphLevels.Repository or GraphLevels.Entity))
         {
             return ApplicationError.Validation(GraphErrorCodes.LevelNotSupported,
-                $"The graph level '{query.Level}' is not supported; supported: '{GraphLevels.Project}', '{GraphLevels.Repository}'.");
+                $"The graph level '{query.Level}' is not supported; supported: '{GraphLevels.Project}', '{GraphLevels.Repository}', '{GraphLevels.Entity}'.");
         }
 
         if (query.NodeBudget < 2 || query.NodeBudget > GraphQuery.MaxNodeBudget)

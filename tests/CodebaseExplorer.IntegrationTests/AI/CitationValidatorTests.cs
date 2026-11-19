@@ -12,6 +12,8 @@ public sealed class ImportedLayeredRepository : IAsyncLifetime
 
     internal StoredRepositoryModel Stored { get; private set; } = null!;
 
+    internal IServiceProvider Services => _app.Services;
+
     public async ValueTask InitializeAsync()
     {
         await _app.InitializeAsync();

@@ -42,6 +42,12 @@ public sealed record ElementDetailsDto
 
     /// <summary>The element itself as reference: the graph node that shows it and the expansions needed (AI citations, AI-006).</summary>
     public ElementReferenceDto? Reference { get; init; }
+
+    /// <summary>
+    /// For a type: its methods (and constructors, properties, …) with what each of them calls or instantiates — other
+    /// methods of the same type included (GRAPH-011). Empty for other elements.
+    /// </summary>
+    public IReadOnlyList<MemberCallsDto> MemberCalls { get; init; } = [];
 }
 
 /// <summary>
@@ -104,3 +110,9 @@ public sealed record RelatedElementDto(ElementReferenceDto Element, string Level
 /// <param name="GraphNodeId">The graph node that represents the element (a member is shown by its outermost type; a file by its project); null if it has no node.</param>
 /// <param name="ExpandPath">Ancestors to expand, outermost first (project, namespaces), so that <paramref name="GraphNodeId"/> is visible.</param>
 public sealed record ElementReferenceDto(string Id, string Kind, string Label, string? GraphNodeId, IReadOnlyList<string> ExpandPath);
+
+/// <summary>
+/// A member of a type and its outgoing calls (GRAPH-011). <c>Calls</c> uses <see cref="RelatedElementDto.Via"/> for the
+/// relationship kind (<c>calls</c> or <c>instantiates</c>); <c>Kind</c> is the member kind, e.g. <c>method</c>.
+/// </summary>
+public sealed record MemberCallsDto(ElementReferenceDto Member, string Kind, IReadOnlyList<RelatedElementDto> Calls);

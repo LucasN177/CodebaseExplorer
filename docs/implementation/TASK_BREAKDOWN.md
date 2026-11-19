@@ -677,6 +677,17 @@ Status overview (keep in sync):
 
 ---
 
+## Additions (requested after M7)
+
+### GRAPH-011 — Class-level graph with methods and calls
+- **Priority:** P1 · **Milestone:** — (user request 2026-11-19) · **Status:** done (graph checked in the running app on Windows; expanding a class and the inspector section not checked manually)
+- **Prerequisites:** GRAPH-006, UI-006
+- **Projects:** Graph, Application, Contracts, Desktop
+- **Description:** A graph of all classes of the repository; selecting a class shows its methods and which other classes or methods each of them calls.
+- **Note:** Done 2026-11-19. Graph: `GraphLevels.Entity` is accepted as root level — all top-level types of the shown projects as roots, node budget by type-to-type degree, neighborhood and filters as usual; types (also on the project level) expand into their members (methods first), so calls and instantiations attach to the calling/called method (GRAPH_ENGINE.md §2/§3). Application/Contracts: `ElementDetailsDto.MemberCalls` (`MemberCallsDto`: each direct member with its outgoing `calls`/`instantiates`, at most 50 per member, calls inside the type included). Desktop: view mode *Classes* in the Architecture Explorer, inspector section *Methods & calls* (one expander per member; a call opens the called class in the graph). Tests: `GraphClassLevelTests` (all types, aggregated edges, expanded types with method-to-method edges, project level expansion, budget and neighborhood), `MemberCallsTests` (dotnet-layered: `HandleAsync` calls `IOrderRepository.AddAsync` and instantiates `Order`; class graph hides tests).
+
+---
+
 ## M8 — MVP hardening and release
 
 ### QA-004 — Cross-platform packaging

@@ -82,8 +82,9 @@ expanded nodes add children (mixed levels, `parentId` = compound parent, parents
 
 - an expanded **project** shows its top-level namespaces; an expanded **module** shows its child
   namespaces and the types declared directly in it (`kind` `module` / `entity`; module `sublabel` = full
-  qualified name, entity `sublabel` = entity kind). Types and members are not expandable in M3 (members are
-  shown by the inspector, UI-006);
+  qualified name, entity `sublabel` = entity kind). Types were not expandable in M3 (members are shown by the
+  inspector, UI-006); **since GRAPH-011** a type with members expands into them (methods first, then constructors,
+  properties, fields and the rest; member `sublabel` = member kind, e.g. `method`), so calls attach to the member;
 - **namespace chains are compressed**: a namespace without types and with exactly one child namespace is
   skipped (`Shop` → `Shop.Domain` → `Shop.Domain.Orders` shows `Shop.Domain.Orders` directly); module labels
   are relative to the parent module (`Orders` under `Shop.Domain`), top-level ones fully qualified;
@@ -115,6 +116,12 @@ The whole model is still read per run (ADR-010; kept for the MVP after the QA-00
   (`truncation.reason = node-budget`).
 - **Breadcrumbs:** always start with the repository (`level = repository`); in neighborhood mode they continue with the
   compound parents of the focus and the focus itself.
+
+**Implemented (GRAPH-011, class level):** `GraphQuery.Level = entity` (L3 as root): every top-level type of the shown
+projects is a root node (no project/namespace compounds), sorted by qualified name; relationships are attributed to the
+outermost visible type, or to a member when its type is expanded; project-level relationships (references, packages) are
+not shown. Filters, the node budget (degree = relationships between types) with the "N more" node, the neighborhood
+view and breadcrumbs work as on the project level. The Architecture Explorer offers it as view mode *Classes*.
 
 **Implemented (GRAPH-009):** `GraphQuery.Level = repository` (L0): projects are grouped — npm/yarn/pnpm workspace
 (root and members), else the first .NET solution that lists the project (ordinal path), else the ecosystem (".NET
