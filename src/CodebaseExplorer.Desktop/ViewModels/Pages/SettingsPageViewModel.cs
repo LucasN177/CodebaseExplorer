@@ -64,7 +64,7 @@ public sealed partial class SettingsPageViewModel : PageViewModel
 
     public override string Title => "Settings";
 
-    public override string Glyph => "⚙";
+    public override string IconKey => "settings";
 
     public IReadOnlyList<AppTheme> Themes { get; } = Enum.GetValues<AppTheme>();
 

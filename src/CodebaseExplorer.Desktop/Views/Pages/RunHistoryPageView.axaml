@@ -3,73 +3,87 @@
              xmlns:pages="using:CodebaseExplorer.Desktop.ViewModels.Pages"
              x:Class="CodebaseExplorer.Desktop.Views.Pages.RunHistoryPageView"
              x:DataType="pages:RunHistoryPageViewModel">
+  <UserControl.Styles>
+    <Style Selector="ListBox.runs ListBoxItem">
+      <Setter Property="Padding" Value="12,8" />
+      <Setter Property="Margin" Value="0,1" />
+      <Setter Property="CornerRadius" Value="6" />
+    </Style>
+    <Style Selector="ListBox.runs ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource NavSelectedBrush}" />
+    </Style>
+  </UserControl.Styles>
   <DockPanel>
     <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,16">
-      <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold" />
-      <TextBlock Text="{Binding RepositoryName}" Opacity="0.8" IsVisible="{Binding HasRepository}" />
-      <Border IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
-              BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,8,0,0"
-              BorderBrush="{DynamicResource ErrorBorderBrush}"
-              Background="{DynamicResource ErrorBackgroundBrush}">
+      <TextBlock Text="{Binding Title}" Classes="pageTitle" />
+      <TextBlock Text="{Binding RepositoryName}" Classes="pageSubtitle" IsVisible="{Binding HasRepository}" />
+      <Border Classes="bannerError" Margin="0,8,0,0" IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}">
         <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
       </Border>
     </StackPanel>
 
-    <TextBlock DockPanel.Dock="Top" IsVisible="{Binding ShowEmptyState}" TextWrapping="Wrap" Opacity="0.8"
+    <TextBlock DockPanel.Dock="Top" IsVisible="{Binding ShowEmptyState}" Classes="pageSubtitle"
                Text="Open or import a repository on the start page to see its analysis runs." />
 
     <Grid ColumnDefinitions="320,16,*" IsVisible="{Binding HasRepository}">
       <!-- Runs, newest first -->
-      <ListBox Grid.Column="0" ItemsSource="{Binding Runs}" SelectedItem="{Binding SelectedRun}">
-        <ListBox.ItemTemplate>
-          <DataTemplate x:DataType="pages:RunItemViewModel">
-            <StackPanel Spacing="2" Margin="0,4">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                <TextBlock Text="current" FontSize="11" Opacity="0.7" VerticalAlignment="Center" IsVisible="{Binding IsCurrent}" />
+      <Border Grid.Column="0" Classes="panel" Padding="6">
+        <ListBox Classes="runs" ItemsSource="{Binding Runs}" SelectedItem="{Binding SelectedRun}" Background="Transparent">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="pages:RunItemViewModel">
+              <StackPanel Spacing="2">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                  <Border Classes="badge" IsVisible="{Binding IsCurrent}">
+                    <TextBlock Text="current" />
+                  </Border>
+                </StackPanel>
+                <TextBlock Text="{Binding Summary}" Classes="caption" />
               </StackPanel>
-              <TextBlock Text="{Binding Summary}" FontSize="12" Opacity="0.7" TextWrapping="Wrap" />
-            </StackPanel>
-          </DataTemplate>
-        </ListBox.ItemTemplate>
-      </ListBox>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Border>
 
       <!-- Details of the selected run -->
-      <DockPanel Grid.Column="2" IsVisible="{Binding HasSelectedRun}">
-        <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,12">
-          <TextBlock Text="{Binding SelectedRun.Title, FallbackValue=''}" FontSize="18" FontWeight="SemiBold" />
-          <TextBlock Text="{Binding SelectedRun.Summary, FallbackValue=''}" Opacity="0.8" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding SelectedRun.Statistics, FallbackValue=''}" Opacity="0.8" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding SelectedRun.CommitText, FallbackValue=''}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
-          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
-            <TextBlock Text="Diagnostics" FontWeight="SemiBold" VerticalAlignment="Center" />
-            <ComboBox ItemsSource="{Binding Filters}" SelectedItem="{Binding SelectedFilter}" MinWidth="140" />
+      <Border Grid.Column="2" Classes="panel" Padding="20" IsVisible="{Binding HasSelectedRun}">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,12">
+            <TextBlock Text="{Binding SelectedRun.Title, FallbackValue=''}" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding SelectedRun.Summary, FallbackValue=''}" Classes="muted" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding SelectedRun.Statistics, FallbackValue=''}" Classes="muted" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding SelectedRun.CommitText, FallbackValue=''}" Classes="caption mono" />
+            <Border Classes="divider" Margin="0,8" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="Diagnostics" Classes="sectionTitle" VerticalAlignment="Center" />
+              <ComboBox ItemsSource="{Binding Filters}" SelectedItem="{Binding SelectedFilter}" MinWidth="140" />
+            </StackPanel>
+            <TextBlock Text="{Binding DiagnosticsMessage}" Classes="muted"
+                       IsVisible="{Binding DiagnosticsMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
           </StackPanel>
-          <TextBlock Text="{Binding DiagnosticsMessage}" Opacity="0.7"
-                     IsVisible="{Binding DiagnosticsMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
-        </StackPanel>
-        <ScrollViewer>
-          <ItemsControl ItemsSource="{Binding Diagnostics}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="pages:DiagnosticItemViewModel">
-                <Border BorderThickness="0,0,0,1" Padding="0,6"
-                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
-                  <StackPanel Spacing="2">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                      <TextBlock Text="{Binding SeverityText}" FontWeight="SemiBold"
-                                 Foreground="{DynamicResource ErrorBorderBrush}" IsVisible="{Binding IsError}" />
-                      <TextBlock Text="{Binding SeverityText}" FontWeight="SemiBold" IsVisible="{Binding !IsError}" />
-                      <TextBlock Text="{Binding Code}" Opacity="0.7" />
+          <ScrollViewer>
+            <ItemsControl ItemsSource="{Binding Diagnostics}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="pages:DiagnosticItemViewModel">
+                  <Border BorderThickness="0,0,0,1" Padding="0,8" BorderBrush="{DynamicResource SubtleBorderBrush}">
+                    <StackPanel Spacing="3">
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="{Binding SeverityText}" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource ErrorBorderBrush}" IsVisible="{Binding IsError}" />
+                        <TextBlock Text="{Binding SeverityText}" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource WarningBrush}" IsVisible="{Binding !IsError}" />
+                        <TextBlock Text="{Binding Code}" Classes="mono muted" VerticalAlignment="Center" />
+                      </StackPanel>
+                      <SelectableTextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+                      <SelectableTextBlock Text="{Binding Origin}" Classes="caption mono" />
                     </StackPanel>
-                    <SelectableTextBlock Text="{Binding Message}" TextWrapping="Wrap" />
-                    <SelectableTextBlock Text="{Binding Origin}" FontSize="12" Opacity="0.7" TextWrapping="Wrap" />
-                  </StackPanel>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </ScrollViewer>
-      </DockPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
     </Grid>
   </DockPanel>
 </UserControl>

@@ -6,8 +6,8 @@ public abstract class PageViewModel : ViewModelBase
     /// <summary>Title shown in the navigation pane and the page header.</summary>
     public abstract string Title { get; }
 
-    /// <summary>Short text glyph used as navigation icon.</summary>
-    public abstract string Glyph { get; }
+    /// <summary>Key of the navigation icon (<c>Converters.AppIcons</c>), e.g. <c>home</c>.</summary>
+    public abstract string IconKey { get; }
 
     /// <summary>
     /// Called by the shell each time the page becomes the current page, to refresh its data. Must not throw:

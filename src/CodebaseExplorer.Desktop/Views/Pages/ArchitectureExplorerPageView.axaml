@@ -16,38 +16,67 @@
       <Setter Property="FontSize" Value="12" />
     </Style>
     <Style Selector="Border.evidence">
-      <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentLowBrush}" />
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+    <Style Selector="Border.toolbar">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SubtleBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="10,8" />
+    </Style>
+    <Style Selector="Border.toolbar TextBlock.toolLabel">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.separator">
+      <Setter Property="Width" Value="1" />
+      <Setter Property="Margin" Value="4,6" />
+      <Setter Property="Background" Value="{DynamicResource SubtleBorderBrush}" />
+    </Style>
+    <Style Selector="TextBlock.inspectorSection">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource TextTertiaryBrush}" />
+      <Setter Property="Margin" Value="0,8,0,0" />
     </Style>
   </UserControl.Styles>
   <DockPanel>
-    <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,16">
-      <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold" />
-      <DockPanel LastChildFill="False">
-        <TextBlock DockPanel.Dock="Left" Text="{Binding RepositoryName}" Opacity="0.7" VerticalAlignment="Center"
+    <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,12">
+      <StackPanel Spacing="2">
+        <TextBlock Text="{Binding Title}" Classes="pageTitle" />
+        <TextBlock Text="{Binding RepositoryName}" Classes="pageSubtitle"
                    IsVisible="{Binding RepositoryName, Converter={x:Static ObjectConverters.IsNotNull}}" />
+      </StackPanel>
+      <Border Classes="toolbar" IsVisible="{Binding HasGraph}">
+      <StackPanel Spacing="8">
+      <DockPanel LastChildFill="False">
+        <!-- Navigation: Back and the project level (GRAPH-009) -->
+        <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="4">
+          <Button Content="‹ Back" Classes="subtle" Command="{Binding BackCommand}" ToolTip.Tip="Restore the previous view (expansions, filters, neighborhood)"
+                  AutomationProperties.Name="Back" />
+          <Button Content="⌂ Projects" Classes="subtle" Command="{Binding ShowTopLevelCommand}"
+                  ToolTip.Tip="Back to the project level: collapse everything and leave the neighborhood (filters stay)"
+                  AutomationProperties.Name="Back to the project level" />
+        </StackPanel>
         <!-- Layout switcher (GRAPH-005); the choice is stored in the user settings -->
-        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasGraph}">
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+          <!-- Git-activity overlay (GIT-005): halo by file changes; off by default, not stored -->
           <!-- Git-activity overlay (GIT-005): halo by file changes; off by default, not stored -->
           <ToggleSwitch IsChecked="{Binding ShowActivity}" OnContent="Git activity" OffContent="Git activity"
                         AutomationProperties.Name="Show Git activity" />
-          <!-- Back and the repository level (GRAPH-009) -->
-          <Button Content="‹ Back" Command="{Binding BackCommand}" ToolTip.Tip="Restore the previous view (expansions, filters, neighborhood)"
-                  AutomationProperties.Name="Back" />
-          <Button Content="⌂ Projects" Command="{Binding ShowTopLevelCommand}"
-                  ToolTip.Tip="Back to the project level: collapse everything and leave the neighborhood (filters stay)"
-                  AutomationProperties.Name="Back to the project level" />
-          <TextBlock Text="View" VerticalAlignment="Center" Opacity="0.8" />
+          <Border Classes="separator" />
+          <TextBlock Text="View" Classes="toolLabel" />
           <ComboBox ItemsSource="{Binding ViewModes}" SelectedItem="{Binding SelectedViewMode}" MinWidth="120"
                     AutomationProperties.Name="Graph view mode" ToolTip.Tip="Projects, or projects grouped by workspace, solution and ecosystem" />
-          <TextBlock Text="Layout" VerticalAlignment="Center" Opacity="0.8" />
-          <ComboBox ItemsSource="{Binding Layouts}" SelectedItem="{Binding SelectedLayout}" MinWidth="160"
+          <TextBlock Text="Layout" Classes="toolLabel" />
+          <ComboBox ItemsSource="{Binding Layouts}" SelectedItem="{Binding SelectedLayout}" MinWidth="150"
                     AutomationProperties.Name="Graph layout" />
         </StackPanel>
       </DockPanel>
-      <TextBlock Text="{Binding ActivityHint}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"
-                 IsVisible="{Binding ActivityHint, Converter={x:Static ObjectConverters.IsNotNull}}" />
       <!-- Search (Ctrl/Cmd+K), filters and neighborhood view (GRAPH-007) -->
-      <DockPanel IsVisible="{Binding HasGraph}" Margin="0,8,0,0">
+      <DockPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" Margin="8,0,0,0">
           <Button Content="Neighborhood" Command="{Binding ShowNeighborhoodCommand}"
                   ToolTip.Tip="Show the selected element with its dependencies only" />
@@ -103,9 +132,11 @@
         <TextBox x:Name="SearchBox" Text="{Binding SearchText}" PlaceholderText="Search projects, modules, types… (Ctrl+K)"
                  AutomationProperties.Name="Search" />
       </DockPanel>
-      <Border IsVisible="{Binding SearchMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
-              BorderThickness="1" CornerRadius="6" Padding="6" Margin="0,4,0,0"
-              BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+      </StackPanel>
+      </Border>
+      <TextBlock Text="{Binding ActivityHint}" Classes="caption"
+                 IsVisible="{Binding ActivityHint, Converter={x:Static ObjectConverters.IsNotNull}}" />
+      <Border Classes="panel" Padding="6" IsVisible="{Binding SearchMessage, Converter={x:Static ObjectConverters.IsNotNull}}">
         <StackPanel Spacing="4">
           <TextBlock Text="{Binding SearchMessage}" Opacity="0.7" FontSize="12" />
           <ScrollViewer MaxHeight="240">
@@ -145,40 +176,31 @@
         </ItemsControl.ItemTemplate>
       </ItemsControl>
       <!-- Folder graph of a repository without projects (GRAPH-009) -->
-      <Border IsVisible="{Binding FolderHint, Converter={x:Static ObjectConverters.IsNotNull}}"
-              BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,8,0,0"
-              BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-              Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+      <Border Classes="banner" IsVisible="{Binding FolderHint, Converter={x:Static ObjectConverters.IsNotNull}}">
         <TextBlock Text="{Binding FolderHint}" TextWrapping="Wrap" FontSize="12" />
       </Border>
       <!-- Node budget (GRAPH-008): what was left out and how to see it -->
-      <Border IsVisible="{Binding TruncationText, Converter={x:Static ObjectConverters.IsNotNull}}"
-              BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,8,0,0"
-              BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-              Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+      <Border Classes="bannerWarning" IsVisible="{Binding TruncationText, Converter={x:Static ObjectConverters.IsNotNull}}">
         <TextBlock Text="{Binding TruncationText}" TextWrapping="Wrap" FontSize="12" />
       </Border>
-      <Border IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
-              BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,8,0,0"
-              BorderBrush="{DynamicResource ErrorBorderBrush}"
-              Background="{DynamicResource ErrorBackgroundBrush}">
+      <Border Classes="bannerError" IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}">
         <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
       </Border>
     </StackPanel>
 
     <!-- Selection panel and Component Inspector (UI-006): node details, relationships, evidence and source (UI-007) -->
-    <Border DockPanel.Dock="Right" Width="320" Margin="16,0,0,0" Padding="16"
-            IsVisible="{Binding HasGraph}"
-            BorderThickness="1" CornerRadius="6"
-            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+    <Border DockPanel.Dock="Right" Width="340" Margin="12,0,0,0" Padding="16" Classes="panel"
+            IsVisible="{Binding HasGraph}">
       <ScrollViewer HorizontalScrollBarVisibility="Disabled">
       <StackPanel Spacing="8">
-        <TextBlock Text="Selection" FontWeight="SemiBold" />
-        <TextBlock Text="Select a node or edge in the graph." Opacity="0.7" TextWrapping="Wrap"
+        <TextBlock Text="INSPECTOR" Classes="inspectorSection" Margin="0" />
+        <TextBlock Text="Select a node or edge in the graph." Classes="muted" TextWrapping="Wrap"
                    IsVisible="{Binding !HasSelection}" />
         <StackPanel Spacing="4" IsVisible="{Binding HasSelection}">
-          <TextBlock Text="{Binding SelectionName}" FontSize="16" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding SelectionKind}" Opacity="0.8" />
+          <TextBlock Text="{Binding SelectionName}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
+          <Border Classes="badge" HorizontalAlignment="Left">
+            <TextBlock Text="{Binding SelectionKind}" />
+          </Border>
           <TextBlock Text="{Binding SelectionDetail}" Opacity="0.7" TextWrapping="Wrap"
                      IsVisible="{Binding SelectionDetail, Converter={x:Static ObjectConverters.IsNotNull}}" />
           <TextBlock Text="{Binding SelectionCountText}" Opacity="0.6" FontSize="12"
@@ -189,16 +211,16 @@
         <TextBlock Text="{Binding InspectorMessage}" Opacity="0.7" TextWrapping="Wrap" FontSize="12"
                    IsVisible="{Binding InspectorMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
         <StackPanel Spacing="8" IsVisible="{Binding HasDetails}">
-          <TextBlock Text="{Binding InspectorMetrics}" Opacity="0.8" FontSize="12" />
+          <TextBlock Text="{Binding InspectorMetrics}" Classes="caption" />
           <StackPanel IsVisible="{Binding HasInspectorActivity}">
-            <TextBlock Text="Git activity" Opacity="0.6" FontSize="11" />
+            <TextBlock Text="GIT ACTIVITY" Classes="inspectorSection" />
             <TextBlock Text="{Binding InspectorActivity}" TextWrapping="Wrap" FontSize="12" />
           </StackPanel>
           <!-- AI-008: explanation of the inspected element; model output is shown as plain text only. -->
           <StackPanel x:Name="ExplanationPanel" Spacing="6" DataContext="{Binding Explanation}" x:DataType="pages:ComponentExplanationViewModel"
                       IsVisible="{Binding $parent[UserControl].((pages:ArchitectureExplorerPageViewModel)DataContext).Explanation, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <Button Content="Explain with AI" Command="{Binding ExplainCommand}" FontSize="12"
+              <Button Content="✦ Explain with AI" Classes="accent" Command="{Binding ExplainCommand}" FontSize="12"
                       ToolTip.Tip="Generates an explanation from the analysis facts and source of this element (AI must be enabled in Settings)." />
               <Button Content="Regenerate" Command="{Binding RegenerateCommand}" FontSize="12" IsVisible="{Binding HasExplanation}" />
               <Button Content="Cancel" Command="{Binding CancelCommand}" FontSize="12" IsVisible="{Binding IsBusy}" />
@@ -216,7 +238,7 @@
                       <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" FontSize="12" IsVisible="{Binding IsParagraph}" />
                       <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" FontSize="12" FontWeight="SemiBold" IsVisible="{Binding IsHeading}" />
                       <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" FontSize="12" Margin="8,0,0,0" IsVisible="{Binding IsBullet}" />
-                      <SelectableTextBlock Text="{Binding Text}" FontFamily="Cascadia Mono, Consolas, Menlo, monospace" FontSize="11" IsVisible="{Binding IsCode}" />
+                      <SelectableTextBlock Text="{Binding Text}" FontFamily="{StaticResource MonoFontFamily}" FontSize="11" IsVisible="{Binding IsCode}" />
                     </Panel>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
@@ -243,7 +265,7 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="pages:InspectorFact">
                 <StackPanel Margin="0,0,0,4">
-                  <TextBlock Text="{Binding Label}" Opacity="0.6" FontSize="11" />
+                  <TextBlock Text="{Binding Label}" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" />
                   <SelectableTextBlock Text="{Binding Value}" TextWrapping="Wrap" FontSize="12" />
                 </StackPanel>
               </DataTemplate>
@@ -263,7 +285,7 @@
             </ItemsControl>
           </Expander>
 
-          <TextBlock Text="Outgoing" FontWeight="SemiBold" IsVisible="{Binding HasOutgoing}" />
+          <TextBlock Text="OUTGOING" Classes="inspectorSection" IsVisible="{Binding HasOutgoing}" />
           <ItemsControl ItemsSource="{Binding OutgoingGroups}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="pages:InspectorGroup">
@@ -287,7 +309,7 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
 
-          <TextBlock Text="Incoming" FontWeight="SemiBold" IsVisible="{Binding HasIncoming}" />
+          <TextBlock Text="INCOMING" Classes="inspectorSection" IsVisible="{Binding HasIncoming}" />
           <ItemsControl ItemsSource="{Binding IncomingGroups}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="pages:InspectorGroup">
@@ -313,7 +335,7 @@
         </StackPanel>
 
         <!-- Evidence of the selected edge (GRAPH-010); select a record to see its source (UI-007) -->
-        <TextBlock Text="Evidence" FontWeight="SemiBold" Margin="0,8,0,0"
+        <TextBlock Text="EVIDENCE" Classes="inspectorSection"
                    IsVisible="{Binding HasEvidence}" />
         <ListBox MaxHeight="260" IsVisible="{Binding HasEvidence}" Background="Transparent"
                  ItemsSource="{Binding SelectionEvidence}" SelectedItem="{Binding SelectedEvidence}">
@@ -352,8 +374,8 @@
                   <Border Classes.evidence="{Binding IsEvidence}" Padding="2,0">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                       <TextBlock Text="{Binding NumberText}" Width="36" TextAlignment="Right" Opacity="0.5"
-                                 FontFamily="Cascadia Mono, Consolas, Menlo, monospace" FontSize="12" />
-                      <SelectableTextBlock Text="{Binding Text}" FontFamily="Cascadia Mono, Consolas, Menlo, monospace" FontSize="12" />
+                                 FontFamily="{StaticResource MonoFontFamily}" FontSize="12" />
+                      <SelectableTextBlock Text="{Binding Text}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12" />
                     </StackPanel>
                   </Border>
                 </DataTemplate>
@@ -365,14 +387,13 @@
       </ScrollViewer>
     </Border>
 
-    <Border BorderThickness="1" CornerRadius="6" ClipToBounds="True"
-            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+    <Border Classes="panel" ClipToBounds="True">
       <Grid>
         <controls:GraphHostControl Host="{Binding Graph}" IsVisible="{Binding HasGraph}" />
         <StackPanel IsVisible="{Binding ShowEmptyState}"
                     HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
-          <TextBlock Text="Architecture graph" FontSize="18" HorizontalAlignment="Center" />
-          <TextBlock Opacity="0.7" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="420"
+          <TextBlock Text="Architecture graph" Classes="sectionTitle" FontSize="18" HorizontalAlignment="Center" />
+          <TextBlock Classes="muted" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="420"
                      Text="No repository has been analyzed yet. Open a local folder on the Start page; its project graph is shown here." />
         </StackPanel>
       </Grid>

@@ -67,7 +67,7 @@ public sealed partial class StartPageViewModel : PageViewModel
 
     public override string Title => "Start";
 
-    public override string Glyph => "⌂";
+    public override string IconKey => "home";
 
     /// <summary>Analysis stages in pipeline order, with their state during the current import.</summary>
     public IReadOnlyList<ImportStageViewModel> Stages { get; }

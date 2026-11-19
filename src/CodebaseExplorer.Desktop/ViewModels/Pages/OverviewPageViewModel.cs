@@ -31,14 +31,14 @@ public sealed partial class OverviewPageViewModel : PageViewModel
 
     public override string Title => "Overview";
 
-    public override string Glyph => "▤";
+    public override string IconKey => "overview";
 
     /// <summary>Raised when the user asks to open the Architecture Explorer; the shell navigates.</summary>
     public event EventHandler? ExplorerRequested;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasOverview), nameof(ShowEmptyState), nameof(Name), nameof(RootPath), nameof(Tiles),
-        nameof(Languages), nameof(Ecosystems), nameof(HasNoProjects), nameof(MissingProjectsText), nameof(ModelRunText), nameof(NewerRunText))]
+        nameof(Languages), nameof(LanguageRows), nameof(Ecosystems), nameof(HasNoProjects), nameof(MissingProjectsText), nameof(ModelRunText), nameof(NewerRunText))]
     public partial RepositoryOverviewDto? Overview { get; private set; }
 
     public bool HasOverview => Overview is not null;
@@ -58,7 +58,7 @@ public sealed partial class OverviewPageViewModel : PageViewModel
     [
         new("Files", Number(overview.FileCount)),
         new("Projects", Number(overview.ProjectsByEcosystem.Sum(e => e.ProjectCount))),
-        new("External dependencies", Number(overview.ExternalDependencyCount)),
+        new("Packages", Number(overview.ExternalDependencyCount)),
         new("Relationships", Number(overview.RelationshipCount)),
         new("Warnings", Number(overview.WarningCount)),
         new("Errors", Number(overview.ErrorCount)),
@@ -68,6 +68,25 @@ public sealed partial class OverviewPageViewModel : PageViewModel
     public IReadOnlyList<string> Languages => Overview?.Languages
         .Select(l => $"{LanguageName(l.Language)} · {RunItemViewModel.Count(l.FileCount, "file")} · {RunItemViewModel.Count((int)Math.Min(l.LineCount, int.MaxValue), "line")}")
         .ToList() ?? [];
+
+    /// <summary>The languages as table rows with their share of the files (for the bar), largest first.</summary>
+    public IReadOnlyList<LanguageRow> LanguageRows
+    {
+        get
+        {
+            if (Overview?.Languages is not { Count: > 0 } languages)
+            {
+                return [];
+            }
+
+            var max = Math.Max(1, languages.Max(l => l.FileCount));
+            return [.. languages.Select(l => new LanguageRow(
+                LanguageName(l.Language),
+                RunItemViewModel.Count(l.FileCount, "file"),
+                RunItemViewModel.Count((int)Math.Min(l.LineCount, int.MaxValue), "line"),
+                100.0 * l.FileCount / max))];
+        }
+    }
 
     /// <summary>E.g. <c>.NET · 5 projects</c>.</summary>
     public IReadOnlyList<string> Ecosystems => Overview?.ProjectsByEcosystem
@@ -171,3 +190,6 @@ public sealed partial class OverviewPageViewModel : PageViewModel
 /// <param name="Label">What is counted.</param>
 /// <param name="Value">The formatted count.</param>
 public sealed record OverviewTile(string Label, string Value);
+
+/// <summary>A language of the overview table; <c>Share</c> is 0–100 relative to the language with the most files.</summary>
+public sealed record LanguageRow(string Name, string Files, string Lines, double Share);

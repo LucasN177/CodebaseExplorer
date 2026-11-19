@@ -28,7 +28,7 @@ public sealed partial class RunHistoryPageViewModel : PageViewModel
 
     public override string Title => "Run History";
 
-    public override string Glyph => "☰";
+    public override string IconKey => "history";
 
     /// <summary>Name of the repository whose runs are shown.</summary>
     [ObservableProperty]

@@ -38,14 +38,27 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         };
 
         // A successful import or opening a stored repository shows the overview (WF-01 step 5, UI-004), which links to the explorer.
+        _session = session;
         session.CurrentChanged += (_, _) =>
         {
+            OnPropertyChanged(nameof(RepositoryName));
+            OnPropertyChanged(nameof(RepositoryPath));
+            OnPropertyChanged(nameof(HasRepository));
             if (session.Current is not null)
             {
                 CurrentPage = overview;
             }
         };
     }
+
+    private readonly RepositorySession _session;
+
+    /// <summary>The open repository, shown in the sidebar.</summary>
+    public string? RepositoryName => _session.Current?.Name;
+
+    public string? RepositoryPath => _session.Current?.RootPath;
+
+    public bool HasRepository => _session.Current is not null;
 
     // Pages refresh their data whenever they are shown (e.g. the start page's recent repositories).
     partial void OnCurrentPageChanged(PageViewModel value)

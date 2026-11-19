@@ -123,7 +123,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
 
     public override string Title => "Architecture Explorer";
 
-    public override string Glyph => "◇";
+    public override string IconKey => "graph";
 
     /// <summary>The graph web view; bound to the graph host control.</summary>
     public IGraphViewHost Graph { get; }

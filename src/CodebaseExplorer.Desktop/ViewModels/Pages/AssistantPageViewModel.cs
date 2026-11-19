@@ -60,7 +60,7 @@ public sealed partial class AssistantPageViewModel : PageViewModel
 
     public override string Title => "Assistant";
 
-    public override string Glyph => "✦";
+    public override string IconKey => "assistant";
 
     /// <summary>Raised when a citation should be shown in the graph; the shell switches to the explorer.</summary>
     public event EventHandler<string>? ElementRequested;
