@@ -56,6 +56,28 @@ public sealed class GitRepositoryReaderTests
     }
 
     [Fact]
+    public async Task Open_ThroughDirectoryLink_KeepsTheCallersSpelling()
+    {
+        // macOS: the temp folder /var/... is a link to /private/var/..., and libgit2 reports the resolved work tree.
+        using var built = GitRepositoryBuilder.Create().Write("src/a.txt", "a\n").Commit("one").Build();
+        using var links = new TempDirectory();
+        if (!links.TryCreateSymbolicLink("alias", built.WorkingDirectory, isDirectory: true)
+            && !links.TryCreateJunction("alias", built.WorkingDirectory))
+        {
+            Assert.Skip("Directory links cannot be created on this machine.");
+        }
+
+        var alias = links.PathOf("alias");
+        var info = (await _reader.OpenAsync(Path.Combine(alias, "src"), Ct)).Value;
+        var snapshot = (await _reader.ReadSnapshotAsync(info, Ct)).Value;
+
+        Assert.Equal(Path.Combine(alias, "src"), info.RootPath);
+        Assert.Equal(alias, info.WorkingDirectory);
+        Assert.Equal("src", info.RootPrefix);
+        Assert.Equal(built.Commits[0], snapshot.HeadCommitSha);
+    }
+
+    [Fact]
     public async Task Open_FolderWithoutRepository_ReturnsNotFound()
     {
         using var folder = new TempDirectory();
