@@ -4,7 +4,7 @@
 > Implementation status: **in progress (M7)** — AI-001: settings (`AiSettings`, keys `ai.*`), provider gate, HTTP
 > transport and the network guard test exist; AI is disabled by default. AI-002: Ollama provider (health check,
 > model listing, `IChatClient`), tested against a stub server. AI-003: FTS5 search index, built on first AI use
-> (ADR-013).
+> (ADR-013). AI-004: `ContextRetriever` and `PromptBuilder` (context format below, snapshot-tested).
 > Related: [ADR-008](../decisions/ADR-008-hybrid-ai.md), [SECURITY.md](SECURITY.md).
 
 ## 1. Principles
@@ -73,6 +73,14 @@ flowchart LR
 ```
 
 - Snippets are bounded (default ≤ 60 lines each, total budget by model context size).
+- Budget (AI-004): context window − answer reserve (25 %, at least 1,024 tokens) − system prompt, question and history
+  (history ≤ 20 % of the window, newest kept). Facts take up to half of the context budget first, then snippets, then
+  the remaining facts. Tokens are estimated as characters / 4. What did not fit is counted in the manifest.
+- Order of candidates: selected element (facts, declaration, evidence lines) → repository overview → types matching
+  the question → their declarations → FTS hits. Snippets come only from files allowed by `SecretFilePolicy` whose content
+  still matches the analyzed hash.
+- Repository text cannot end the context block: `<context>`/`</context>` inside it is neutralized and code fences are
+  longer than any backtick run in the snippet.
 - Retrieval is scoped: whole repository, current graph selection, or a project/module.
 - Citation keys (`[F1]`, `[S1]`) map to exact file/line ranges server-side, so the model only has
   to repeat keys; the validator translates keys to locations. Free-form `path:line` citations are

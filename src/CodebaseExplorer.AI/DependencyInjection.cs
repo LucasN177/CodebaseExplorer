@@ -21,6 +21,7 @@ public static class DependencyInjection
         services.AddSingleton(_ => new AiTransport());
         services.AddSingleton<IAiProvider, OllamaProvider>();
         services.AddSingleton<AiProviderGate>();
+        services.AddSingleton<Retrieval.ContextRetriever>();
         services.AddSingleton<IAiAssistant, AiAssistant>();
         return services;
     }

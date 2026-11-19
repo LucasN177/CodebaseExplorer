@@ -47,6 +47,44 @@ public static class SearchTerms
     }
 
     /// <summary>
+    /// A crude English stem so that <c>orders</c>/<c>order</c> and <c>placed</c>/<c>place</c> meet: one of the suffixes
+    /// <c>ing</c>, <c>ies</c> (→ <c>y</c>), <c>es</c>, <c>ed</c>, <c>s</c>, <c>e</c> is removed if at least three
+    /// characters remain. Used for matching and as an additional prefix search term, never shown to anyone.
+    /// </summary>
+    public static string Stem(string word)
+    {
+        ArgumentNullException.ThrowIfNull(word);
+        foreach (var (suffix, replacement) in Suffixes)
+        {
+            if (word.Length - suffix.Length >= 3 && word.EndsWith(suffix, StringComparison.Ordinal))
+            {
+                return word[..^suffix.Length] + replacement;
+            }
+        }
+
+        return word;
+    }
+
+    /// <summary>The query terms followed by their stems that differ from every term (for prefix search).</summary>
+    public static IReadOnlyList<string> WithStems(IReadOnlyList<string> terms)
+    {
+        ArgumentNullException.ThrowIfNull(terms);
+        var result = terms.ToList();
+        foreach (var stem in terms.Select(Stem))
+        {
+            if (!result.Contains(stem, StringComparer.Ordinal))
+            {
+                result.Add(stem);
+            }
+        }
+
+        return result;
+    }
+
+    private static readonly (string Suffix, string Replacement)[] Suffixes =
+        [("ing", ""), ("ies", "y"), ("es", ""), ("ed", ""), ("s", ""), ("e", "")];
+
+    /// <summary>
     /// Space-separated words of the identifiers in <paramref name="text"/> that the index would not find otherwise
     /// (the parts of compound identifiers), distinct, at most <paramref name="maxLength"/> characters.
     /// </summary>

@@ -1,0 +1,322 @@
+<context>
+[F1] fact: repository "dotnet-layered" has 6 projects and 19 files; languages: csharp (9 files), xml (8 files), markdown (1 file), sln (1 file)
+[F2] fact: project "Shop.Application" (dotnet, csharp, DotNetProject) in src/Shop.Application, project file src/Shop.Application/Shop.Application.csproj
+[F3] fact: project "Shop.Domain" (dotnet, csharp, DotNetProject) in src/Shop.Domain, project file src/Shop.Domain/Shop.Domain.csproj
+[F4] fact: project "Shop.Infrastructure" (dotnet, csharp, DotNetProject) in src/Shop.Infrastructure, project file src/Shop.Infrastructure/Shop.Infrastructure.csproj
+[F5] fact: project "Shop.Legacy" (dotnet, csharp, Unknown) in src/Shop.Legacy
+[F6] fact: project "Shop.Tests" (dotnet, csharp, DotNetProject) in tests/Shop.Tests, project file tests/Shop.Tests/Shop.Tests.csproj
+[F7] fact: project "Shop.Web" (dotnet, csharp, DotNetProject) in src/Shop.Web, project file src/Shop.Web/Shop.Web.csproj
+[F8] fact: project "Shop.Application" depends on package "Microsoft.Extensions.DependencyInjection.Abstractions" (PackageReference, Confirmed)
+     evidence: src/Shop.Application/Shop.Application.csproj:8-8
+[F9] fact: project "Shop.Application" references project "Shop.Domain" (ProjectReference, Confirmed)
+     evidence: src/Shop.Application/Shop.Application.csproj:4-4
+[F10] fact: project "Shop.Infrastructure" depends on package "Microsoft.EntityFrameworkCore.Sqlite" (PackageReference, Confirmed)
+     evidence: src/Shop.Infrastructure/Shop.Infrastructure.csproj:10-10
+[F11] fact: project "Shop.Infrastructure" references project "Shop.Application" (ProjectReference, Confirmed)
+     evidence: src/Shop.Infrastructure/Shop.Infrastructure.csproj:4-4
+[F12] fact: project "Shop.Infrastructure" references project "Shop.Domain" (ProjectReference, Confirmed)
+     evidence: src/Shop.Infrastructure/Shop.Infrastructure.csproj:5-5
+[F13] fact: project "Shop.Infrastructure" references project "Shop.Legacy" (ProjectReference, Syntactic)
+     evidence: src/Shop.Infrastructure/Shop.Infrastructure.csproj:6-6
+[F14] fact: project "Shop.Tests" depends on package "NSubstitute" (PackageReference, Confirmed)
+     evidence: tests/Shop.Tests/Shop.Tests.csproj:9-9
+[F15] fact: project "Shop.Tests" depends on package "xunit.v3" (PackageReference, Confirmed)
+     evidence: tests/Shop.Tests/Shop.Tests.csproj:8-8
+[F16] fact: project "Shop.Tests" references project "Shop.Application" (ProjectReference, Confirmed)
+     evidence: tests/Shop.Tests/Shop.Tests.csproj:14-14
+[F17] fact: project "Shop.Tests" references project "Shop.Domain" (ProjectReference, Confirmed)
+     evidence: tests/Shop.Tests/Shop.Tests.csproj:13-13
+[F18] fact: project "Shop.Web" uses package "Microsoft.AspNetCore.App" (FrameworkReference, Confirmed)
+     evidence: src/Shop.Web/Shop.Web.csproj:9-9
+[F19] fact: project "Shop.Web" references project "Shop.Application" (ProjectReference, Confirmed)
+     evidence: src/Shop.Web/Shop.Web.csproj:13-13
+[F20] fact: project "Shop.Web" references project "Shop.Infrastructure" (ProjectReference, Confirmed)
+     evidence: src/Shop.Web/Shop.Web.csproj:14-14
+[F21] fact: class "Shop.Application.Orders.PlaceOrderHandler" in project "Shop.Application" (Public) — matches the question
+     evidence: src/Shop.Application/Orders/PlaceOrderHandler.cs:5-5
+[F22] fact: class "Shop.Tests.PlaceOrderHandlerTests" in project "Shop.Tests" (Public) — matches the question
+     evidence: tests/Shop.Tests/PlaceOrderHandlerTests.cs:8-8
+[F23] fact: interface "Shop.Domain.Orders.IOrderRepository" in project "Shop.Domain" (Public) — matches the question
+     evidence: src/Shop.Domain/Orders/IOrderRepository.cs:3-3
+[F24] fact: class "Shop.Domain.Orders.Order" in project "Shop.Domain" (Public) — matches the question
+     evidence: src/Shop.Domain/Orders/Order.cs:3-3
+[F25] fact: record "Shop.Domain.Orders.OrderLine" in project "Shop.Domain" (Public) — matches the question
+     evidence: src/Shop.Domain/Orders/OrderLine.cs:3-3
+[F26] fact: class "Shop.Infrastructure.Persistence.SqliteOrderRepository" in project "Shop.Infrastructure" (Public) — matches the question
+     evidence: src/Shop.Infrastructure/Persistence/SqliteOrderRepository.cs:5-5
+[S1] snippet: src/Shop.Application/Orders/PlaceOrderHandler.cs:5-13 (declaration of PlaceOrderHandler)
+```csharp
+public sealed class PlaceOrderHandler(IOrderRepository repository)
+{
+    public async Task<Guid> HandleAsync(string customer, CancellationToken cancellationToken)
+    {
+        var order = new Order(Guid.NewGuid(), customer);
+        await repository.AddAsync(order, cancellationToken);
+        return order.Id;
+    }
+}
+```
+[S2] snippet: tests/Shop.Tests/PlaceOrderHandlerTests.cs:8-20 (declaration of PlaceOrderHandlerTests)
+```csharp
+public sealed class PlaceOrderHandlerTests
+{
+    [Fact]
+    public async Task HandleAsync_AddsOrder()
+    {
+        var repository = Substitute.For<IOrderRepository>();
+        var handler = new PlaceOrderHandler(repository);
+
+        await handler.HandleAsync("alice", CancellationToken.None);
+
+        await repository.Received(1).AddAsync(Arg.Any<Order>(), Arg.Any<CancellationToken>());
+    }
+}
+```
+[S3] snippet: src/Shop.Domain/Orders/IOrderRepository.cs:3-6 (declaration of IOrderRepository)
+```csharp
+public interface IOrderRepository
+{
+    Task AddAsync(Order order, CancellationToken cancellationToken);
+}
+```
+[S4] snippet: src/Shop.Domain/Orders/Order.cs:3-16 (declaration of Order)
+```csharp
+public sealed class Order
+{
+    public Order(Guid id, string customer)
+    {
+        Id = id;
+        Customer = customer;
+    }
+
+    public Guid Id { get; }
+
+    public string Customer { get; }
+
+    public List<OrderLine> Lines { get; } = [];
+}
+```
+[S5] snippet: src/Shop.Domain/Orders/OrderLine.cs:3-3 (declaration of OrderLine)
+```csharp
+public sealed record OrderLine(string Product, int Quantity);
+```
+[S6] snippet: EXPECTED.md:1-40 (search match)
+```markdown
+# Fixture `dotnet-layered` — expected analysis results
+
+Oracle for ANALYSIS-002 … ANALYSIS-004 (and the type list for ANALYSIS-005/006). Tests assert
+against this document, not against current analyzer output. Paths are repository-relative with `/`.
+Locations are `line:column` (1-based) of the first character (`<`) of the XML element. All files
+use LF line endings and are stored byte-exact (`.gitattributes`: `-text`).
+
+## 1. Files with project markers
+
+| Path | Marker | Classification |
+|---|---|---|
+| `Shop.sln` | `DotNetSolution` | `SolutionFile` |
+| `Shop.slnx` | `DotNetSolutionXml` | `SolutionFile` |
+| `src/Shop.Domain/Shop.Domain.csproj` | `DotNetProject` | `ProjectManifest` |
+| `src/Shop.Application/Shop.Application.csproj` | `DotNetProject` | `ProjectManifest` |
+| `src/Shop.Infrastructure/Shop.Infrastructure.csproj` | `DotNetProject` | `ProjectManifest` |
+| `src/Shop.Web/Shop.Web.csproj` | `DotNetProject` | `ProjectManifest` |
+| `tests/Shop.Tests/Shop.Tests.csproj` | `DotNetProject` | `ProjectManifest` |
+
+`Directory.Build.props` and `Directory.Packages.props` are `Configuration` files (no marker).
+`EXPECTED.md` itself is `Documentation`; analyzers must not treat it specially.
+
+## 2. Solutions and solution folders
+
+Both solution files describe the same layout; parsing either must give identical memberships.
+
+| Project file | Solution folder in `Shop.slnx` | Solution folder in `Shop.sln` |
+|---|---|---|
+| `src/Shop.Domain/Shop.Domain.csproj` | `/src/` (line 3) | `src` (line 10, nested via `NestedProjects`) |
+| `src/Shop.Application/Shop.Application.csproj` | `/src/` (line 4) | `src` (line 12) |
+| `src/Shop.Infrastructure/Shop.Infrastructure.csproj` | `/src/` (line 5) | `src` (line 14) |
+| `src/Shop.Web/Shop.Web.csproj` | `/src/` (line 6) | `src` (line 16) |
+| `tests/Shop.Tests/Shop.Tests.csproj` | `/tests/` (line 9) | `tests` (line 18) |
+
+The `.sln` contains two solution-folder entries (`src`, `tests`, lines 6 and 8) that are **not**
+projects. `Shop.Legacy` is in neither solution.
+
+## 3. Projects
+
+All projects: ecosystem `DotNet`, kind `DotNetProject`, primary language `csharp`, SDK
+```
+[S7] snippet: EXPECTED.md:121-139 (search match)
+```markdown
+## 8. Types (for ANALYSIS-005/006, informational for M1)
+
+| Project | Namespace | Type | Kind | Declaration |
+|---|---|---|---|---|
+| `Shop.Domain` | `Shop.Domain.Orders` | `Order` | class | `src/Shop.Domain/Orders/Order.cs:3` |
+| `Shop.Domain` | `Shop.Domain.Orders` | `OrderLine` | record | `src/Shop.Domain/Orders/OrderLine.cs:3` |
+| `Shop.Domain` | `Shop.Domain.Orders` | `IOrderRepository` | interface | `src/Shop.Domain/Orders/IOrderRepository.cs:3` |
+| `Shop.Application` | `Shop.Application.Orders` | `PlaceOrderHandler` | class | `src/Shop.Application/Orders/PlaceOrderHandler.cs:5` |
+| `Shop.Application` | `Shop.Application` | `DependencyInjection` | static class | `src/Shop.Application/DependencyInjection.cs:5` |
+| `Shop.Infrastructure` | `Shop.Infrastructure.Persistence` | `SqliteOrderRepository` | class | `src/Shop.Infrastructure/Persistence/SqliteOrderRepository.cs:5` |
+| `Shop.Infrastructure` | `Shop.Infrastructure.Persistence` | `ShopDbContext` | class | `src/Shop.Infrastructure/Persistence/ShopDbContext.cs:6` |
+| `Shop.Web` | (global) | `Program` | class (top-level statements) | `src/Shop.Web/Program.cs:1` |
+| `Shop.Tests` | `Shop.Tests` | `PlaceOrderHandlerTests` | class | `tests/Shop.Tests/PlaceOrderHandlerTests.cs:8` |
+
+Key type relationships (detailed expectations are added by ANALYSIS-006): `SqliteOrderRepository`
+implements `IOrderRepository`; `PlaceOrderHandler` uses `IOrderRepository` and instantiates `Order`;
+`ShopDbContext` inherits `Microsoft.EntityFrameworkCore.DbContext` (external, unresolved without
+restored packages); `DependencyInjection.AddApplication` registers `PlaceOrderHandler` (heuristic,
+ANALYSIS-007).
+```
+[S8] snippet: tests/Shop.Tests/PlaceOrderHandlerTests.cs:1-20 (search match)
+```csharp
+using NSubstitute;
+using Shop.Application.Orders;
+using Shop.Domain.Orders;
+using Xunit;
+
+namespace Shop.Tests;
+
+public sealed class PlaceOrderHandlerTests
+{
+    [Fact]
+    public async Task HandleAsync_AddsOrder()
+    {
+        var repository = Substitute.For<IOrderRepository>();
+        var handler = new PlaceOrderHandler(repository);
+
+        await handler.HandleAsync("alice", CancellationToken.None);
+
+        await repository.Received(1).AddAsync(Arg.Any<Order>(), Arg.Any<CancellationToken>());
+    }
+}
+```
+[S9] snippet: src/Shop.Application/DependencyInjection.cs:1-13 (search match)
+```csharp
+using Microsoft.Extensions.DependencyInjection;
+using Shop.Application.Orders;
+
+namespace Shop.Application;
+
+public static class DependencyInjection
+{
+    public static IServiceCollection AddApplication(this IServiceCollection services)
+    {
+        services.AddScoped<PlaceOrderHandler>();
+        return services;
+    }
+}
+```
+[S10] snippet: EXPECTED.md:91-130 (search match)
+```markdown
+All: relationship kind `PackageReference`, level `Confirmed`, rule `csproj.PackageReference`,
+attribute `versionSpec` as listed, `devOnly` not set (NuGet has no dev-dependency flag here).
+
+**Conditional reference — must not appear:** `Microsoft.EntityFrameworkCore.SqlServer` in
+`src/Shop.Infrastructure/Shop.Infrastructure.csproj:14:5` is inside
+`<ItemGroup Condition="'$(UseSqlServer)' == 'true'">` (line 13). `UseSqlServer` statically resolves
+to `false` (`Directory.Build.props:6`), so the condition is false and **no** relationship to
+`Microsoft.EntityFrameworkCore.SqlServer` is produced. The `PackageVersion` for it
+(`Directory.Packages.props:8`) alone does not create a dependency.
+
+Expected external dependencies (NuGet, normalized names): `microsoft.extensions.dependencyinjection.abstractions`,
+`microsoft.entityframeworkcore.sqlite`, `xunit.v3`, `nsubstitute`.
+
+## 6. Framework references (`FrameworkReference`)
+
+| Project | Framework | Evidence location | Level |
+|---|---|---|---|
+| `Shop.Web` | `Microsoft.AspNetCore.App` | `src/Shop.Web/Shop.Web.csproj:9:5` | `Confirmed` |
+
+External dependency: ecosystem `DotNetFramework`, normalized name `microsoft.aspnetcore.app`;
+relationship kind `FrameworkReference`, rule `csproj.FrameworkReference`.
+
+## 7. Expected diagnostics (project-system analysis)
+
+| Severity | About | Location |
+|---|---|---|
+| `Warning` | Referenced project file `src/Shop.Legacy/Shop.Legacy.csproj` does not exist | `src/Shop.Infrastructure/Shop.Infrastructure.csproj:6:5` |
+
+No other warnings or errors are expected from ANALYSIS-002 … ANALYSIS-004.
+
+## 8. Types (for ANALYSIS-005/006, informational for M1)
+
+| Project | Namespace | Type | Kind | Declaration |
+|---|---|---|---|---|
+| `Shop.Domain` | `Shop.Domain.Orders` | `Order` | class | `src/Shop.Domain/Orders/Order.cs:3` |
+| `Shop.Domain` | `Shop.Domain.Orders` | `OrderLine` | record | `src/Shop.Domain/Orders/OrderLine.cs:3` |
+| `Shop.Domain` | `Shop.Domain.Orders` | `IOrderRepository` | interface | `src/Shop.Domain/Orders/IOrderRepository.cs:3` |
+| `Shop.Application` | `Shop.Application.Orders` | `PlaceOrderHandler` | class | `src/Shop.Application/Orders/PlaceOrderHandler.cs:5` |
+| `Shop.Application` | `Shop.Application` | `DependencyInjection` | static class | `src/Shop.Application/DependencyInjection.cs:5` |
+| `Shop.Infrastructure` | `Shop.Infrastructure.Persistence` | `SqliteOrderRepository` | class | `src/Shop.Infrastructure/Persistence/SqliteOrderRepository.cs:5` |
+```
+[S11] snippet: EXPECTED.md:61-100 (search match)
+```markdown
+| `Shop.Web` | `Shop.Infrastructure` | `src/Shop.Web/Shop.Web.csproj:14:5` | `Confirmed` |
+| `Shop.Tests` | `Shop.Domain` | `tests/Shop.Tests/Shop.Tests.csproj:13:5` | `Confirmed` |
+| `Shop.Tests` | `Shop.Application` | `tests/Shop.Tests/Shop.Tests.csproj:14:5` | `Confirmed` |
+
+Rule id for all: `csproj.ProjectReference`; analyzer `dotnet.msbuild-static`.
+
+**Negative case — missing project:** `src/Shop.Infrastructure/Shop.Infrastructure.csproj:6:5`
+references `../Shop.Legacy/Shop.Legacy.csproj`, which does not exist. Expected: the reference is
+kept as `Syntactic` (target resolved by path only; no `CodeProject` for `Shop.Legacy` exists, so the
+graph shows it as an unresolved target) **and** a `Warning` diagnostic naming the missing file and
+the evidence location.
+
+Representation (decided in ANALYSIS-004): the target is a **placeholder project** named
+`Shop.Legacy`, kind `Unknown`, ecosystem `DotNet`, root directory `src/Shop.Legacy`, no project file,
+properties `resolution=missing` and `referencedPath=src/Shop.Legacy/Shop.Legacy.csproj`. Placeholders
+never own files. The model therefore contains **6** projects (5 real + 1 placeholder) and **13**
+relationships (8 project references, 4 package references, 1 framework reference).
+
+## 5. Package references (`PackageReference`) with central package management
+
+`Directory.Packages.props` enables CPM (line 3). Versions resolve from `PackageVersion` items unless
+a `VersionOverride` is given.
+
+| Project | Package (NuGet) | Version spec | Version source | Evidence location |
+|---|---|---|---|---|
+| `Shop.Application` | `Microsoft.Extensions.DependencyInjection.Abstractions` | `10.0.15` | `Directory.Packages.props:6:5` | `src/Shop.Application/Shop.Application.csproj:8:5` |
+| `Shop.Infrastructure` | `Microsoft.EntityFrameworkCore.Sqlite` | `10.0.15` | `Directory.Packages.props:7:5` | `src/Shop.Infrastructure/Shop.Infrastructure.csproj:10:5` |
+| `Shop.Tests` | `xunit.v3` | `4.0.3` | `Directory.Packages.props:9:5` | `tests/Shop.Tests/Shop.Tests.csproj:8:5` |
+| `Shop.Tests` | `NSubstitute` | `5.3.0` | `VersionOverride` (same element) | `tests/Shop.Tests/Shop.Tests.csproj:9:5` |
+
+All: relationship kind `PackageReference`, level `Confirmed`, rule `csproj.PackageReference`,
+attribute `versionSpec` as listed, `devOnly` not set (NuGet has no dev-dependency flag here).
+
+**Conditional reference — must not appear:** `Microsoft.EntityFrameworkCore.SqlServer` in
+`src/Shop.Infrastructure/Shop.Infrastructure.csproj:14:5` is inside
+`<ItemGroup Condition="'$(UseSqlServer)' == 'true'">` (line 13). `UseSqlServer` statically resolves
+to `false` (`Directory.Build.props:6`), so the condition is false and **no** relationship to
+`Microsoft.EntityFrameworkCore.SqlServer` is produced. The `PackageVersion` for it
+(`Directory.Packages.props:8`) alone does not create a dependency.
+
+```
+[S12] snippet: src/Shop.Infrastructure/Persistence/SqliteOrderRepository.cs:1-12 (search match)
+```csharp
+using Shop.Domain.Orders;
+
+namespace Shop.Infrastructure.Persistence;
+
+public sealed class SqliteOrderRepository(ShopDbContext context) : IOrderRepository
+{
+    public async Task AddAsync(Order order, CancellationToken cancellationToken)
+    {
+        context.Orders.Add(order);
+        await context.SaveChangesAsync(cancellationToken);
+    }
+}
+```
+[S13] snippet: src/Shop.Infrastructure/Persistence/ShopDbContext.cs:1-9 (search match)
+```csharp
+using Microsoft.EntityFrameworkCore;
+using Shop.Domain.Orders;
+
+namespace Shop.Infrastructure.Persistence;
+
+public sealed class ShopDbContext(DbContextOptions<ShopDbContext> options) : DbContext(options)
+{
+    public DbSet<Order> Orders => Set<Order>();
+}
+```
+</context>
+
+Question: How are orders placed and stored?

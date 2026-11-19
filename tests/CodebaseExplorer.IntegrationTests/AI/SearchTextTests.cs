@@ -23,6 +23,17 @@ public sealed class SearchTextTests
         Assert.All(terms, t => Assert.True(t.All(c => char.IsAsciiLetterOrDigit(c) || c == '_'), t));
     }
 
+    [Theory]
+    [InlineData("orders", "order")]
+    [InlineData("order", "order")]
+    [InlineData("placed", "plac")]
+    [InlineData("place", "plac")]
+    [InlineData("repositories", "repository")]
+    [InlineData("classes", "class")]
+    [InlineData("handling", "handl")]
+    [InlineData("is", "is")]
+    public void Stems_LetWordFormsMeet(string word, string stem) => Assert.Equal(stem, SearchTerms.Stem(word));
+
     [Fact]
     public void Keywords_ArePartsOfCompoundIdentifiers()
     {

@@ -69,3 +69,4 @@ dist/
 
 # Snapshot test output for review (EXPORT-001)
 *.received.md
+*.received.txt
