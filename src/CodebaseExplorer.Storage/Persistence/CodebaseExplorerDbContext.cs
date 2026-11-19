@@ -43,6 +43,8 @@ internal sealed class CodebaseExplorerDbContext(DbContextOptions<CodebaseExplore
 
     public DbSet<GitChangeRecord> GitChanges => Set<GitChangeRecord>();
 
+    public DbSet<SearchIndexStateRecord> SearchIndexStates => Set<SearchIndexStateRecord>();
+
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
         configurationBuilder.Properties<Guid>().HaveConversion<GuidToBytesConverter>();

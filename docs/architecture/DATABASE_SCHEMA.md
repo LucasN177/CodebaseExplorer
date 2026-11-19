@@ -381,9 +381,36 @@ Each value is a JSON string; a row whose `ValueJson` is not a JSON string reads 
 
 ### 4.18 Search index (AI retrieval, M7)
 
-`SearchChunks` — an FTS5 virtual table (`ChunkId`, `RepositoryId`, `FileId`, `StartLine`,
-`EndLine`, `Text`) for lexical retrieval. Created by a raw-SQL migration. **Pending verification**
-that the SQLite library bundled with the EF Core SQLite provider includes FTS5 (task AI-003).
+*Implemented in AI-003* (migration `AddSearchIndex`, `SearchIndexStore`, ADR-013). **Verified:** the SQLite bundled
+with the EF Core SQLite provider (SQLitePCLRaw.bundle_e_sqlite3 2.1.13) is compiled with FTS5
+(`sqlite_compileoption_used('ENABLE_FTS5') = 1`, Storage test `SearchIndexStoreTests.BundledSqlite_HasFts5`).
+
+`SearchChunks` — FTS5 virtual table, created by raw SQL (EF cannot model virtual tables):
+
+| Column | Notes |
+|---|---|
+| `rowid` | Chunk id (implicit). |
+| RepositoryId | UNINDEXED; lowercase hex of the 16-byte `Repositories.Id` BLOB. |
+| FileId | UNINDEXED; lowercase hex of `Files.Id`. |
+| StartLine / EndLine | UNINDEXED; 1-based, inclusive. |
+| Text | Indexed; the chunk's lines (≤ 40, long lines cut at 400 characters). |
+| Keywords | Indexed; words of compound identifiers in the chunk (`InvoiceService` → `invoice service`). |
+
+Tokenizer `unicode61 remove_diacritics 2`. Queries are built only from plain words (`SearchTerms`), each quoted, prefix
+match for words of 4+ characters, joined with `OR`, ranked by `bm25`. Trigger `TR_Repositories_DeleteSearchChunks`
+deletes a repository's chunks when the repository row is deleted (no foreign keys on virtual tables).
+
+`SearchIndexStates` — one row per indexed repository:
+
+| Column | Type | Constraints |
+|---|---|---|
+| RepositoryId | BLOB(16) | PK, FK → Repositories (CASCADE) |
+| AnalysisRunId | BLOB(16) | NN — the run the chunks were built from; a different current run triggers a rebuild |
+| ChunkCount | INTEGER | NN |
+| IndexedAt | TEXT | NN |
+
+The index is built on first AI use, not during analysis (ADR-013); secret files and files changed since the analysis
+are not indexed.
 
 ## 5. Migrations
 

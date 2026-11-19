@@ -713,6 +713,27 @@ namespace CodebaseExplorer.Storage.Migrations
                     b.ToTable("Repositories", (string)null);
                 });
 
+            modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.SearchIndexStateRecord", b =>
+                {
+                    b.Property<byte[]>("RepositoryId")
+                        .HasColumnType("BLOB");
+
+                    b.Property<byte[]>("AnalysisRunId")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<int>("ChunkCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("IndexedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("RepositoryId");
+
+                    b.ToTable("SearchIndexStates", (string)null);
+                });
+
             modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.UserSettingRecord", b =>
                 {
                     b.Property<string>("Key")
@@ -918,6 +939,15 @@ namespace CodebaseExplorer.Storage.Migrations
                         .WithMany()
                         .HasForeignKey("LastAnalysisRunId")
                         .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.SearchIndexStateRecord", b =>
+                {
+                    b.HasOne("CodebaseExplorer.Storage.Persistence.Entities.RepositoryRecord", null)
+                        .WithOne()
+                        .HasForeignKey("CodebaseExplorer.Storage.Persistence.Entities.SearchIndexStateRecord", "RepositoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.AnalysisRunRecord", b =>
