@@ -176,7 +176,8 @@ More: [docs/development/DEVELOPMENT_GUIDE.md](docs/development/DEVELOPMENT_GUIDE
 |---|---|
 | Product | [Vision](docs/product/VISION.md) · [Concept](docs/product/PRODUCT_CONCEPT.md) · [MVP scope](docs/product/MVP_SCOPE.md) · [Roadmap](docs/product/FEATURE_ROADMAP.md) · [User workflows](docs/product/USER_WORKFLOWS.md) |
 | Architecture | [System](docs/architecture/SYSTEM_ARCHITECTURE.md) · [Solution structure](docs/architecture/SOLUTION_STRUCTURE.md) · [Domain model](docs/architecture/DOMAIN_MODEL.md) · [Database](docs/architecture/DATABASE_SCHEMA.md) · [Analysis engine](docs/architecture/ANALYSIS_ENGINE.md) · [Graph engine](docs/architecture/GRAPH_ENGINE.md) · [Git](docs/architecture/GIT_INTEGRATION.md) · [AI](docs/architecture/AI_ARCHITECTURE.md) · [Security](docs/architecture/SECURITY.md) |
-| Decisions | [ADR index](docs/decisions/README.md) (ADR-001 … ADR-009) |
+| Decisions | [ADR index](docs/decisions/README.md) (ADR-001 … ADR-013) |
+| User guides | [Connecting a local AI model (Ollama)](docs/user/AI_MODEL_SETUP.md) |
 | Implementation | [Plan](docs/implementation/IMPLEMENTATION_PLAN.md) · [Milestones](docs/implementation/MILESTONES.md) · [Tasks](docs/implementation/TASK_BREAKDOWN.md) · [Test strategy](docs/implementation/TEST_STRATEGY.md) · [Definition of Done](docs/implementation/DEFINITION_OF_DONE.md) |
 | Development | [Guide](docs/development/DEVELOPMENT_GUIDE.md) · [Coding standards](docs/development/CODING_STANDARDS.md) · [Git workflow](docs/development/GIT_WORKFLOW.md) · [AI agent guidelines](docs/development/AI_AGENT_GUIDELINES.md) · [CLAUDE.md](CLAUDE.md) |
 
