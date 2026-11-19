@@ -79,7 +79,8 @@ function start(): void {
   const container = document.getElementById('graph');
   if (container === null) return;
 
-  const cy = cytoscape({ container, elements: [], style: stylesheet('light'), wheelSensitivity: 0.3 });
+  // Zoom per mouse-wheel step: 1.5 × Cytoscape's default (0.3 made zooming far too slow in the WebView).
+  const cy = cytoscape({ container, elements: [], style: stylesheet('light'), wheelSensitivity: 1.5 });
   const renderer = new CytoscapeRenderer(cy, container);
   const controller = new GraphViewController(renderer, new Bridge(hostTransport()));
 
