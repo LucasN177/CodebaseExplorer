@@ -69,15 +69,21 @@ internal sealed class LibGit2RepositoryReader : IGitRepositoryReader
 
             var workTree = TrimSeparators(Path.GetFullPath(workingDirectory));
             var root = TrimSeparators(rootPath);
-            var prefix = Path.GetRelativePath(workTree, root);
-            if (prefix == ".")
+            var prefix = RelativeInside(workTree, root);
+            if (prefix is null)
             {
-                prefix = string.Empty;
-            }
-            else if (Path.IsPathRooted(prefix) || prefix == ".." || prefix.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal))
-            {
-                // The discovered work tree does not contain the folder (e.g. core.worktree points elsewhere).
-                return NotARepository(rootPath);
+                // libgit2 reports the work tree with symbolic links resolved (macOS: /var → /private/var), so compare
+                // the resolved paths and express the work tree in the caller's spelling where it is an ancestor.
+                var resolvedWorkTree = ResolveLinks(workTree);
+                prefix = RelativeInside(resolvedWorkTree, ResolveLinks(root));
+                if (prefix is null)
+                {
+                    // The discovered work tree does not contain the folder (e.g. core.worktree points elsewhere).
+                    return NotARepository(rootPath);
+                }
+
+                var ancestor = Ancestor(root, prefix);
+                workTree = ancestor is not null && PathsEqual(ResolveLinks(ancestor), resolvedWorkTree) ? ancestor : resolvedWorkTree;
             }
 
             return new GitRepositoryInfo(
@@ -139,6 +145,68 @@ internal sealed class LibGit2RepositoryReader : IGitRepositoryReader
     private static ApplicationError ReadFailed(string path, LibGit2SharpException exception) =>
         ApplicationError.Failure(GitErrorCodes.ReadFailed, $"The Git repository could not be read: {exception.Message}",
             new Dictionary<string, string> { ["path"] = path });
+
+    /// <summary><paramref name="path"/> relative to <paramref name="directory"/> ("" for itself), or null if outside it.</summary>
+    private static string? RelativeInside(string directory, string path)
+    {
+        var relative = Path.GetRelativePath(directory, path);
+        if (relative == ".")
+        {
+            return string.Empty;
+        }
+
+        return Path.IsPathRooted(relative) || relative == ".." || relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal)
+            ? null
+            : relative;
+    }
+
+    /// <summary>The ancestor of <paramref name="path"/> that <paramref name="relative"/> leads down from, if the segments match.</summary>
+    private static string? Ancestor(string path, string relative)
+    {
+        var current = path;
+        var segments = relative.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+        for (var i = segments.Length - 1; i >= 0; i--)
+        {
+            if (!PathsEqual(Path.GetFileName(current), segments[i]) || Path.GetDirectoryName(current) is not { } parent)
+            {
+                return null;
+            }
+
+            current = parent;
+        }
+
+        return TrimSeparators(current);
+    }
+
+    /// <summary>The path with every symbolic link (or junction) along it resolved; unresolvable parts stay as they are.</summary>
+    private static string ResolveLinks(string path, int depth = 0)
+    {
+        const int MaxDepth = 32;
+        var root = Path.GetPathRoot(path) ?? string.Empty;
+        var current = root;
+        try
+        {
+            foreach (var segment in path[root.Length..].Split(
+                [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries))
+            {
+                current = Path.Combine(current, segment);
+                var directory = new DirectoryInfo(current);
+                if (depth < MaxDepth && directory.LinkTarget is not null && directory.ResolveLinkTarget(returnFinalTarget: true) is { } target)
+                {
+                    current = ResolveLinks(Path.GetFullPath(target.FullName), depth + 1);
+                }
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return TrimSeparators(path);
+        }
+
+        return TrimSeparators(current);
+    }
+
+    private static bool PathsEqual(string left, string right) =>
+        string.Equals(left, right, OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
 
     private static string TrimSeparators(string path)
     {
