@@ -80,6 +80,8 @@ flowchart LR
 - Budget (AI-004): context window − answer reserve (25 %, at least 1,024 tokens) − system prompt, question and history
   (history ≤ 20 % of the window, newest kept). Facts take up to half of the context budget first, then snippets, then
   the remaining facts. Tokens are estimated as characters / 4. What did not fit is counted in the manifest.
+  The same window is sent to Ollama as `num_ctx` (`IAiProvider.ConfigureOptions`); Ollama's default window (2048/4096)
+  would otherwise cut the start of the prompt.
 - Order of candidates: selected element (facts, declaration, evidence lines) → repository overview → types matching
   the question → their declarations → FTS hits. Snippets come only from files allowed by `SecretFilePolicy` whose content
   still matches the analyzed hash.

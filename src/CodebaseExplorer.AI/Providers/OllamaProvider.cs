@@ -69,6 +69,16 @@ internal sealed class OllamaProvider(AiTransport transport, ILogger<OllamaProvid
         return new OwningChatClient(new OllamaApiClient(http, settings.ModelId ?? string.Empty), http);
     }
 
+    /// <summary>
+    /// Ollama's default context window (<c>num_ctx</c>, 2048 or 4096 depending on the version) is smaller than the budget
+    /// of the prompt; without this Ollama silently drops the beginning of the prompt (system rules and facts).
+    /// </summary>
+    public void ConfigureOptions(ChatOptions options, AiSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        options.AddOllamaOption(OllamaSharp.Models.OllamaOption.NumCtx, settings.MaxContextTokens);
+    }
+
     /// <summary>Network, protocol and timeout failures (expected when the server is down); not the caller's cancellation.</summary>
     internal static bool IsTransportFailure(Exception exception, CancellationToken cancellationToken) =>
         exception is HttpRequestException or JsonException or InvalidOperationException or NotSupportedException

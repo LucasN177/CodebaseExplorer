@@ -21,4 +21,7 @@ internal interface IAiProvider
 
     /// <summary>Creates the chat client for the configured model. The caller disposes it.</summary>
     IChatClient CreateChatClient(AiSettings settings);
+
+    /// <summary>Adds provider-specific options, e.g. the context window the prompt was budgeted for.</summary>
+    void ConfigureOptions(ChatOptions options, AiSettings settings);
 }

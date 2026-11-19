@@ -57,6 +57,10 @@ internal sealed class SpyProvider(string id = AiSettings.OllamaProviderId) : IAi
         return Task.FromResult<Result<AiProviderStatus>>(new AiProviderStatus(Id, settings.Endpoint, settings.IsRemoteEndpoint, ["spy-model"], null));
     }
 
+    public void ConfigureOptions(ChatOptions options, AiSettings settings)
+    {
+    }
+
     public IChatClient CreateChatClient(AiSettings settings)
     {
         ChatClientsCreated++;

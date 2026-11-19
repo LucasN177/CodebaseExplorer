@@ -61,6 +61,7 @@ internal sealed class AiAssistant(
             MaxOutputTokens = Math.Max(256, settings.MaxContextTokens / 4),
             // No tools: the model can only produce text (ADR-008, AI_ARCHITECTURE.md §1.5).
         };
+        provider.ConfigureOptions(options, settings);
 
         var stopwatch = Stopwatch.StartNew();
         var text = new StringBuilder();

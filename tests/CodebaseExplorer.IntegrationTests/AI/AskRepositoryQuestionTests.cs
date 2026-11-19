@@ -59,6 +59,7 @@ public sealed class AskRepositoryQuestionTests : IAsyncLifetime
 
         var request = Assert.Single(_server.ChatRequests).RootElement;
         Assert.Equal("llama3.2:3b", request.GetProperty("model").GetString());
+        Assert.Equal(AiSettings.DefaultMaxContextTokens, request.GetProperty("options").GetProperty("num_ctx").GetInt32());
         var messages = request.GetProperty("messages");
         Assert.Equal("system", messages[0].GetProperty("role").GetString());
         Assert.StartsWith("<context>", messages[messages.GetArrayLength() - 1].GetProperty("content").GetString(), StringComparison.Ordinal);
