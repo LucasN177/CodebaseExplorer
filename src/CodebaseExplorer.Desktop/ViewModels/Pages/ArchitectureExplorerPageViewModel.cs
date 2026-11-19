@@ -61,9 +61,27 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         RepositorySession session,
         IUserSettingsStore settings,
         ShellStatus shell,
-        ILogger<ArchitectureExplorerPageViewModel> logger)
+        ILogger<ArchitectureExplorerPageViewModel> logger,
+        ComponentExplanationViewModel? explanation = null)
     {
         Graph = graph;
+        Explanation = explanation;
+        if (explanation is not null)
+        {
+            // AI-008: citations of an explanation show their lines below the inspector or focus their element.
+            explanation.CitationRequested += async (_, citation) =>
+            {
+                if (citation.CanOpenSource)
+                {
+                    await LoadSourceAsync(citation.Citation.Path!, citation.Citation.StartLine!.Value, citation.Citation.EndLine);
+                }
+                else if (citation.Citation.ElementId is { } elementId)
+                {
+                    await ShowElementAsync(elementId);
+                }
+            };
+        }
+
         _getGraphView = getGraphView;
         _getEdgeDetails = getEdgeDetails;
         _getSnippet = getSnippet;
@@ -549,6 +567,9 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         InspectorMetrics = null;
         InspectorActivity = null;
         InspectorMessage = null;
+        InspectedElementId = null;
+        InspectedElementName = null;
+        Explanation?.SetElement(null);
     }
 
     /// <summary>Git activity of the inspected node (GIT-005), e.g. <c>12 file changes in 3 files · +120 −40 · …</c>; null without Git data.</summary>
@@ -640,6 +661,9 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             }
 
             InspectorMetrics = $"fan-in {details.FanIn} · fan-out {details.FanOut} · size {details.Size}";
+            InspectedElementId = details.Id;
+            InspectedElementName = details.Name;
+            Explanation?.SetElement(details.Id);
             InspectorActivity = details.Activity is { } activity ? DescribeActivity(activity) : null;
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
@@ -659,14 +683,54 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
     [RelayCommand]
     private async Task ShowInGraphAsync(InspectorItem? item)
     {
-        if (item?.Reference.GraphNodeId is not { } nodeId || _query is not { } query)
+        if (item is not null)
         {
-            return;
+            await ShowReferenceAsync(item.Reference, item.Label);
+        }
+    }
+
+    /// <summary>"Explain with AI" for the inspected element (AI-008); null when the AI module is not composed (tests).</summary>
+    public ComponentExplanationViewModel? Explanation { get; }
+
+    /// <summary>The element whose details the inspector shows (model element id, <c>N</c> format); null otherwise.</summary>
+    [ObservableProperty]
+    public partial string? InspectedElementId { get; private set; }
+
+    /// <summary>Name of <see cref="InspectedElementId"/>.</summary>
+    [ObservableProperty]
+    public partial string? InspectedElementName { get; private set; }
+
+    /// <summary>
+    /// Shows a model element in the graph (AI citations, AI-006): expands its containers, selects and centers its node.
+    /// Returns false if the element is not part of the current model or cannot be shown.
+    /// </summary>
+    public async Task<bool> ShowElementAsync(string elementId, CancellationToken cancellationToken = default)
+    {
+        if (_query is not { } query)
+        {
+            return false;
+        }
+
+        var result = await _getDetails.ExecuteAsync(query.RepositoryId, elementId, cancellationToken);
+        if (!result.TryGetValue(out var details, out var error))
+        {
+            InspectorMessage = error.Message;
+            return false;
+        }
+
+        return details.Reference is { } reference && await ShowReferenceAsync(reference, details.Name);
+    }
+
+    private async Task<bool> ShowReferenceAsync(ElementReferenceDto reference, string label)
+    {
+        if (reference.GraphNodeId is not { } nodeId || _query is not { } query)
+        {
+            return false;
         }
 
         var expanded = query.Expanded.ToHashSet(StringComparer.Ordinal);
         var changed = false;
-        foreach (var ancestor in item.Reference.ExpandPath)
+        foreach (var ancestor in reference.ExpandPath)
         {
             changed |= expanded.Add(ancestor); // all of them, not only the first new one
         }
@@ -678,7 +742,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             if (!result.TryGetValue(out var view, out var error))
             {
                 InspectorMessage = error.Message;
-                return;
+                return false;
             }
 
             Remember(query);
@@ -689,10 +753,13 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
 
         if (!await Graph.FocusAsync(nodeId, CancellationToken.None))
         {
-            InspectorMessage = item.Reference.Kind == "external-dependency"
-                ? $"{item.Label} is not shown: external dependencies are hidden in the graph."
-                : $"{item.Label} could not be shown in the graph.";
+            InspectorMessage = reference.Kind == "external-dependency"
+                ? $"{label} is not shown: external dependencies are hidden in the graph."
+                : $"{label} could not be shown in the graph.";
+            return false;
         }
+
+        return true;
     }
 
     /// <summary>The evidence record whose source snippet is shown (UI-007).</summary>
@@ -716,21 +783,25 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
     partial void OnSelectedEvidenceChanged(EvidenceItem? value) => _ = LoadSnippetAsync(value);
 
     /// <summary>Loads the snippet of an evidence record; late results of a previous selection are dropped.</summary>
-    private async Task LoadSnippetAsync(EvidenceItem? evidence)
+    private Task LoadSnippetAsync(EvidenceItem? evidence) =>
+        evidence is { HasSource: true } ? LoadSourceAsync(evidence.Path!, evidence.StartLine!.Value, evidence.EndLine) : LoadSourceAsync(null, 0, null);
+
+    /// <summary>Shows lines of an analyzed file in the snippet view (evidence, or a citation of an AI explanation).</summary>
+    private async Task LoadSourceAsync(string? path, int startLine, int? endLine)
     {
         var snippetNumber = ++_snippetNumber;
         SnippetLines.Clear();
         SnippetPath = null;
         SnippetMessage = null;
         _snippetAbsolutePath = null;
-        if (evidence is not { HasSource: true } || _query is not { } query)
+        if (path is null || _query is not { } query)
         {
             return;
         }
 
         try
         {
-            var result = await _getSnippet.ExecuteAsync(query.RepositoryId, evidence.Path!, evidence.StartLine!.Value, evidence.EndLine, CancellationToken.None);
+            var result = await _getSnippet.ExecuteAsync(query.RepositoryId, path, startLine, endLine, CancellationToken.None);
             if (snippetNumber != _snippetNumber)
             {
                 return;
@@ -739,7 +810,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             if (!result.TryGetValue(out var snippet, out var error))
             {
                 _logger.LogWarning("Source snippet failed with {ErrorCode}", error.Code); // never the content
-                SnippetPath = evidence.Path;
+                SnippetPath = path;
                 SnippetMessage = error.Message;
                 return;
             }

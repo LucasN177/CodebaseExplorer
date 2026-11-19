@@ -1,7 +1,14 @@
 # AI Architecture — Codebase Explorer
 
 > Status: **accepted (specification)** · Last reviewed: 2026-11-17
-> Implementation status: **not implemented** (module seam `AddAiModule()` exists; AI is disabled by default).
+> Implementation status: **in progress (M7)** — AI-001: settings (`AiSettings`, keys `ai.*`), provider gate, HTTP
+> transport and the network guard test exist; AI is disabled by default. AI-002: Ollama provider (health check,
+> model listing, `IChatClient`), tested against a stub server. AI-003: FTS5 search index, built on first AI use
+> (ADR-013). AI-004: `ContextRetriever` and `PromptBuilder` (context format below, snapshot-tested). AI-005:
+> `CitationValidator`. AI-006: `IAiAssistant.AskAsync`, use cases `AskRepositoryQuestion`/`AiConversations`,
+> conversation tables, *Assistant* page. AI-008: `ExplainComponent` (*Explain with AI* in the Component Inspector,
+> cached per run). Not yet verified against a real Ollama instance. Setup guide:
+> [docs/user/AI_MODEL_SETUP.md](../user/AI_MODEL_SETUP.md).
 > Related: [ADR-008](../decisions/ADR-008-hybrid-ai.md), [SECURITY.md](SECURITY.md).
 
 ## 1. Principles
@@ -47,9 +54,10 @@ flowchart LR
 
 ## 3. Provider abstraction
 
-- `Microsoft.Extensions.AI` (`IChatClient`) is the abstraction boundary. Planned packages:
-  `Microsoft.Extensions.AI` 10.11.0 (10.x line), `OllamaSharp` 5.5.2 (implements `IChatClient`) —
-  both to be re-verified in AI-001/AI-002.
+- `Microsoft.Extensions.AI` (`IChatClient`) is the abstraction boundary. Packages (re-verified 2026-11-19):
+  `Microsoft.Extensions.AI` 10.11.0 (10.x line; AI-001), `OllamaSharp` 5.5.2 (implements `IChatClient`; AI-002).
+- All HTTP clients are created by `AiTransport` (no redirects, no cookies); providers are used only behind the
+  `AiProviderGate`.
 - The AI module wraps `IChatClient` with: logging (no content in logs), timeout, cancellation,
   token counting where available.
 - Provider configuration (`UserSettings`): provider id, endpoint, model id, max context tokens,
@@ -69,6 +77,16 @@ flowchart LR
 ```
 
 - Snippets are bounded (default ≤ 60 lines each, total budget by model context size).
+- Budget (AI-004): context window − answer reserve (25 %, at least 1,024 tokens) − system prompt, question and history
+  (history ≤ 20 % of the window, newest kept). Facts take up to half of the context budget first, then snippets, then
+  the remaining facts. Tokens are estimated as characters / 4. What did not fit is counted in the manifest.
+  The same window is sent to Ollama as `num_ctx` (`IAiProvider.ConfigureOptions`); Ollama's default window (2048/4096)
+  would otherwise cut the start of the prompt.
+- Order of candidates: selected element (facts, declaration, evidence lines) → repository overview → types matching
+  the question → their declarations → FTS hits. Snippets come only from files allowed by `SecretFilePolicy` whose content
+  still matches the analyzed hash.
+- Repository text cannot end the context block: `<context>`/`</context>` inside it is neutralized and code fences are
+  longer than any backtick run in the snippet.
 - Retrieval is scoped: whole repository, current graph selection, or a project/module.
 - Citation keys (`[F1]`, `[S1]`) map to exact file/line ranges server-side, so the model only has
   to repeat keys; the validator translates keys to locations. Free-form `path:line` citations are

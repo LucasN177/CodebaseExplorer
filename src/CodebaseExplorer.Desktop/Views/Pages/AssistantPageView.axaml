@@ -1,0 +1,158 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pages="using:CodebaseExplorer.Desktop.ViewModels.Pages"
+             x:Class="CodebaseExplorer.Desktop.Views.Pages.AssistantPageView"
+             x:DataType="pages:AssistantPageViewModel"
+             x:Name="Root">
+  <!-- AI-006: every text of an answer is shown as plain text; no HTML, images or links of model output are rendered. -->
+  <DockPanel>
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,12">
+      <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold" />
+      <TextBlock Text="{Binding RepositoryName}" Opacity="0.8" IsVisible="{Binding HasRepository}" />
+      <TextBlock Text="{Binding AiStatus}" TextWrapping="Wrap" Opacity="0.8" IsVisible="{Binding !IsRemote}" />
+      <Border IsVisible="{Binding IsRemote}" BorderThickness="1" CornerRadius="6" Padding="10"
+              BorderBrush="{DynamicResource ErrorBorderBrush}" Background="{DynamicResource ErrorBackgroundBrush}">
+        <TextBlock Text="{Binding AiStatus}" TextWrapping="Wrap" />
+      </Border>
+    </StackPanel>
+
+    <TextBlock DockPanel.Dock="Top" IsVisible="{Binding ShowEmptyState}" TextWrapping="Wrap" Opacity="0.8"
+               Text="Open or import a repository on the start page to ask questions about it." />
+
+    <Grid ColumnDefinitions="240,16,*,16,360" IsVisible="{Binding HasRepository}">
+      <!-- Conversation history -->
+      <DockPanel Grid.Column="0">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+          <Button Content="New conversation" Command="{Binding NewConversationCommand}" />
+          <Button Content="Delete" Command="{Binding DeleteConversationCommand}" ToolTip.Tip="Deletes the selected conversation." />
+        </StackPanel>
+        <ListBox ItemsSource="{Binding Conversations}" SelectedItem="{Binding SelectedConversation}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="pages:AiConversationItem">
+              <StackPanel Spacing="2" Margin="0,4">
+                <TextBlock Text="{Binding Title}" TextWrapping="Wrap" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Detail}" FontSize="11" Opacity="0.7" TextWrapping="Wrap" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+
+      <!-- Messages and question -->
+      <DockPanel Grid.Column="2">
+        <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,12,0,0">
+          <Border IsVisible="{Binding ConsentText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                  BorderThickness="1" CornerRadius="6" Padding="10"
+                  BorderBrush="{DynamicResource ErrorBorderBrush}" Background="{DynamicResource ErrorBackgroundBrush}">
+            <StackPanel Spacing="8">
+              <TextBlock Text="{Binding ConsentText}" TextWrapping="Wrap" />
+              <Button Content="Allow for this repository and ask" Command="{Binding AllowRemoteCommand}" />
+            </StackPanel>
+          </Border>
+          <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Opacity="0.8"
+                     IsVisible="{Binding StatusMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+          <CheckBox IsChecked="{Binding AboutSelection}" IsVisible="{Binding HasExplorerSelection}" Content="{Binding SelectionText}" />
+          <TextBox Text="{Binding Question}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" MaxHeight="160"
+                   PlaceholderText="Ask about this repository, e.g. &quot;Which projects depend on the domain?&quot;"
+                   IsEnabled="{Binding IsAiEnabled}" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Ask" Command="{Binding AskCommand}" HotKey="Ctrl+Enter" ToolTip.Tip="Ctrl+Enter" />
+            <Button Content="Cancel" Command="{Binding CancelCommand}" />
+          </StackPanel>
+        </StackPanel>
+
+        <ScrollViewer>
+          <ItemsControl ItemsSource="{Binding Messages}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="pages:AiMessageItem">
+                <Border BorderThickness="0,0,0,1" Padding="0,10" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="You" FontWeight="SemiBold" IsVisible="{Binding IsUser}" />
+                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsAssistant}">
+                      <TextBlock Text="Assistant" FontWeight="SemiBold" />
+                      <TextBlock Text="AI-generated — check the citations" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- While streaming: the raw text. Afterwards: plain-text Markdown blocks. -->
+                    <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" IsVisible="{Binding IsStreaming}" />
+                    <ItemsControl ItemsSource="{Binding Blocks}" IsVisible="{Binding IsComplete}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="pages:MarkdownBlock">
+                          <Panel Margin="0,2">
+                            <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" IsVisible="{Binding IsParagraph}" />
+                            <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" FontWeight="SemiBold" FontSize="15" IsVisible="{Binding IsHeading}" />
+                            <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" Margin="12,0,0,0" IsVisible="{Binding IsBullet}" />
+                            <Border IsVisible="{Binding IsCode}" BorderThickness="1" CornerRadius="4" Padding="8"
+                                    BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+                              <SelectableTextBlock Text="{Binding Text}" FontFamily="Cascadia Mono, Consolas, Menlo, monospace" FontSize="12" />
+                            </Border>
+                          </Panel>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="{Binding Meta}" FontSize="11" Opacity="0.7" IsVisible="{Binding IsAssistant}" />
+                    <ItemsControl ItemsSource="{Binding Citations}" IsVisible="{Binding HasCitations}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <WrapPanel />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="pages:AiCitationItem">
+                          <Panel Margin="0,0,6,6">
+                            <Button Content="{Binding Label}" ToolTip.Tip="{Binding ToolTip}" FontSize="12" IsVisible="{Binding Verified}"
+                                    Command="{Binding #Root.((pages:AssistantPageViewModel)DataContext).OpenCitationCommand}"
+                                    CommandParameter="{Binding}" />
+                            <Button Content="{Binding Label, StringFormat='⚠ {0}'}" ToolTip.Tip="{Binding ToolTip}" FontSize="12"
+                                    IsVisible="{Binding Unverified}" Foreground="{DynamicResource ErrorBorderBrush}"
+                                    Command="{Binding #Root.((pages:AssistantPageViewModel)DataContext).OpenCitationCommand}"
+                                    CommandParameter="{Binding}" />
+                          </Panel>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Expander Header="Context sent to the model" IsVisible="{Binding HasContext}">
+                      <ItemsControl ItemsSource="{Binding Context}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="x:String">
+                            <SelectableTextBlock Text="{Binding}" FontSize="12" TextWrapping="Wrap" Opacity="0.85" />
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </Expander>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </DockPanel>
+
+      <!-- Cited source lines -->
+      <StackPanel Grid.Column="4" Spacing="6">
+        <TextBlock Text="Cited source" FontWeight="SemiBold" />
+        <TextBlock Text="Click a citation to see its lines." Opacity="0.7" TextWrapping="Wrap"
+                   IsVisible="{Binding SnippetPath, Converter={x:Static ObjectConverters.IsNull}}" />
+        <TextBlock Text="{Binding SnippetPath}" Opacity="0.8" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding SnippetMessage}" TextWrapping="Wrap" Opacity="0.8"
+                   IsVisible="{Binding SnippetMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        <ScrollViewer MaxHeight="520" HorizontalScrollBarVisibility="Auto" IsVisible="{Binding HasSnippet}">
+          <ItemsControl ItemsSource="{Binding SnippetLines}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="pages:SnippetLine">
+                <Border Classes.evidence="{Binding IsEvidence}" Padding="2,0">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="{Binding NumberText}" Width="36" TextAlignment="Right" Opacity="0.5"
+                               FontFamily="Cascadia Mono, Consolas, Menlo, monospace" FontSize="12" />
+                    <SelectableTextBlock Text="{Binding Text}" FontFamily="Cascadia Mono, Consolas, Menlo, monospace" FontSize="12" />
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </StackPanel>
+    </Grid>
+  </DockPanel>
+</UserControl>

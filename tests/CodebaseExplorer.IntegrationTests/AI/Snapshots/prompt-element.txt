@@ -1,0 +1,82 @@
+<context>
+[F1] fact: class "Shop.Application.Orders.PlaceOrderHandler" in project "Shop.Application" (Public) — the selected element
+     evidence: src/Shop.Application/Orders/PlaceOrderHandler.cs:5-5
+[F2] fact: class "Shop.Application.Orders.PlaceOrderHandler" contains: HandleAsync, PlaceOrderHandler
+[F3] fact: class "Shop.Application.Orders.PlaceOrderHandler" uses interface "Shop.Domain.Orders.IOrderRepository" (UsesType, Confirmed)
+     evidence: src/Shop.Application/Orders/PlaceOrderHandler.cs:5-5
+[F4] fact: method "Shop.Tests.PlaceOrderHandlerTests.HandleAsync_AddsOrder" instantiates class "Shop.Application.Orders.PlaceOrderHandler" (Instantiates, Confirmed)
+     evidence: tests/Shop.Tests/PlaceOrderHandlerTests.cs:14-14
+[F5] fact: method "Shop.Application.DependencyInjection.AddApplication" registers class "Shop.Application.Orders.PlaceOrderHandler" (RegistersService, Heuristic)
+     evidence: src/Shop.Application/DependencyInjection.cs:10-10
+[F6] fact: method "Shop.Application.DependencyInjection.AddApplication" uses class "Shop.Application.Orders.PlaceOrderHandler" (UsesType, Confirmed)
+     evidence: src/Shop.Application/DependencyInjection.cs:10-10
+[F7] fact: method "Shop.Tests.PlaceOrderHandlerTests.HandleAsync_AddsOrder" uses class "Shop.Application.Orders.PlaceOrderHandler" (UsesType, Confirmed)
+     evidence: tests/Shop.Tests/PlaceOrderHandlerTests.cs:14-14
+[F8] fact: repository "dotnet-layered" has 6 projects and 19 files; languages: csharp (9 files), xml (8 files), markdown (1 file), sln (1 file)
+[F9] fact: project "Shop.Application" (dotnet, csharp, DotNetProject) in src/Shop.Application, project file src/Shop.Application/Shop.Application.csproj
+[F10] fact: project "Shop.Domain" (dotnet, csharp, DotNetProject) in src/Shop.Domain, project file src/Shop.Domain/Shop.Domain.csproj
+[F11] fact: project "Shop.Infrastructure" (dotnet, csharp, DotNetProject) in src/Shop.Infrastructure, project file src/Shop.Infrastructure/Shop.Infrastructure.csproj
+[F12] fact: project "Shop.Legacy" (dotnet, csharp, Unknown) in src/Shop.Legacy
+[F13] fact: project "Shop.Tests" (dotnet, csharp, DotNetProject) in tests/Shop.Tests, project file tests/Shop.Tests/Shop.Tests.csproj
+[F14] fact: project "Shop.Web" (dotnet, csharp, DotNetProject) in src/Shop.Web, project file src/Shop.Web/Shop.Web.csproj
+[F15] fact: project "Shop.Application" depends on package "Microsoft.Extensions.DependencyInjection.Abstractions" (PackageReference, Confirmed)
+     evidence: src/Shop.Application/Shop.Application.csproj:8-8
+[F16] fact: project "Shop.Application" references project "Shop.Domain" (ProjectReference, Confirmed)
+     evidence: src/Shop.Application/Shop.Application.csproj:4-4
+[F17] fact: project "Shop.Infrastructure" depends on package "Microsoft.EntityFrameworkCore.Sqlite" (PackageReference, Confirmed)
+     evidence: src/Shop.Infrastructure/Shop.Infrastructure.csproj:10-10
+[F18] fact: project "Shop.Infrastructure" references project "Shop.Application" (ProjectReference, Confirmed)
+     evidence: src/Shop.Infrastructure/Shop.Infrastructure.csproj:4-4
+[F19] fact: project "Shop.Infrastructure" references project "Shop.Domain" (ProjectReference, Confirmed)
+     evidence: src/Shop.Infrastructure/Shop.Infrastructure.csproj:5-5
+[F20] fact: project "Shop.Infrastructure" references project "Shop.Legacy" (ProjectReference, Syntactic)
+     evidence: src/Shop.Infrastructure/Shop.Infrastructure.csproj:6-6
+[F21] fact: project "Shop.Tests" depends on package "NSubstitute" (PackageReference, Confirmed)
+     evidence: tests/Shop.Tests/Shop.Tests.csproj:9-9
+[F22] fact: project "Shop.Tests" depends on package "xunit.v3" (PackageReference, Confirmed)
+     evidence: tests/Shop.Tests/Shop.Tests.csproj:8-8
+[F23] fact: project "Shop.Tests" references project "Shop.Application" (ProjectReference, Confirmed)
+     evidence: tests/Shop.Tests/Shop.Tests.csproj:14-14
+[F24] fact: project "Shop.Tests" references project "Shop.Domain" (ProjectReference, Confirmed)
+     evidence: tests/Shop.Tests/Shop.Tests.csproj:13-13
+[F25] fact: project "Shop.Web" uses package "Microsoft.AspNetCore.App" (FrameworkReference, Confirmed)
+     evidence: src/Shop.Web/Shop.Web.csproj:9-9
+[F26] fact: project "Shop.Web" references project "Shop.Application" (ProjectReference, Confirmed)
+     evidence: src/Shop.Web/Shop.Web.csproj:13-13
+[F27] fact: project "Shop.Web" references project "Shop.Infrastructure" (ProjectReference, Confirmed)
+     evidence: src/Shop.Web/Shop.Web.csproj:14-14
+[S1] snippet: src/Shop.Application/Orders/PlaceOrderHandler.cs:5-13 (selected element)
+```csharp
+public sealed class PlaceOrderHandler(IOrderRepository repository)
+{
+    public async Task<Guid> HandleAsync(string customer, CancellationToken cancellationToken)
+    {
+        var order = new Order(Guid.NewGuid(), customer);
+        await repository.AddAsync(order, cancellationToken);
+        return order.Id;
+    }
+}
+```
+[S2] snippet: src/Shop.Application/DependencyInjection.cs:7-13 (evidence of a relationship)
+```csharp
+{
+    public static IServiceCollection AddApplication(this IServiceCollection services)
+    {
+        services.AddScoped<PlaceOrderHandler>();
+        return services;
+    }
+}
+```
+[S3] snippet: tests/Shop.Tests/PlaceOrderHandlerTests.cs:11-17 (evidence of a relationship)
+```csharp
+    public async Task HandleAsync_AddsOrder()
+    {
+        var repository = Substitute.For<IOrderRepository>();
+        var handler = new PlaceOrderHandler(repository);
+
+        await handler.HandleAsync("alice", CancellationToken.None);
+
+```
+</context>
+
+Question: Explain this component.

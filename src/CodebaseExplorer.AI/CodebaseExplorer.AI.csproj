@@ -8,6 +8,15 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <!-- IChatClient abstraction (ADR-008, AI-001). -->
+    <PackageReference Include="Microsoft.Extensions.AI" />
+    <!-- Ollama provider (AI-002). -->
+    <PackageReference Include="OllamaSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CodebaseExplorer.IntegrationTests" />
   </ItemGroup>
 
 </Project>

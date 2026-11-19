@@ -15,16 +15,27 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         StartPageViewModel start,
         OverviewPageViewModel overview,
         ArchitectureExplorerPageViewModel architectureExplorer,
+        AssistantPageViewModel assistant,
         RunHistoryPageViewModel runHistory,
         ExportPageViewModel export,
         SettingsPageViewModel settings,
         RepositorySession session,
         ShellStatus shell)
     {
-        Pages = [start, overview, architectureExplorer, runHistory, export, settings];
+        Pages = [start, overview, architectureExplorer, assistant, runHistory, export, settings];
         CurrentPage = start;
         Shell = shell;
         overview.ExplorerRequested += (_, _) => CurrentPage = architectureExplorer;
+
+        // A citation of an AI answer that names a model element is shown in the graph (AI-006).
+        assistant.ElementRequested += async (_, elementId) =>
+        {
+            CurrentPage = architectureExplorer;
+            if (!await architectureExplorer.ShowElementAsync(elementId))
+            {
+                Shell.Notify(NotificationSeverity.Warning, "The cited element could not be shown in the graph.");
+            }
+        };
 
         // A successful import or opening a stored repository shows the overview (WF-01 step 5, UI-004), which links to the explorer.
         session.CurrentChanged += (_, _) =>

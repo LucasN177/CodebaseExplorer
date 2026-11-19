@@ -16,6 +16,139 @@ namespace CodebaseExplorer.Storage.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.15");
 
+            modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.AiArtifactRecord", b =>
+                {
+                    b.Property<byte[]>("Id")
+                        .HasColumnType("BLOB");
+
+                    b.Property<byte[]>("AnalysisRunId")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("ArtifactKind")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("ElementId")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("ElementKind")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("MessageId")
+                        .HasColumnType("BLOB");
+
+                    b.Property<byte[]>("RepositoryId")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MessageId");
+
+                    b.HasIndex("RepositoryId");
+
+                    b.HasIndex("ElementId", "ArtifactKind")
+                        .HasDatabaseName("IX_AIArtifacts_ElementId_ArtifactKind");
+
+                    b.ToTable("AIArtifacts", (string)null);
+                });
+
+            modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.AiConversationRecord", b =>
+                {
+                    b.Property<byte[]>("Id")
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsCloudProvider")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ModelId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProviderId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("RepositoryId")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RepositoryId", "UpdatedAt")
+                        .HasDatabaseName("IX_AIConversations_RepositoryId_UpdatedAt");
+
+                    b.ToTable("AIConversations", (string)null);
+                });
+
+            modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.AiMessageRecord", b =>
+                {
+                    b.Property<byte[]>("Id")
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("CitationsJson")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("CompletionTokens")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContextManifestJson")
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("ConversationId")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("PromptTokens")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversationId", "Ordinal")
+                        .IsUnique()
+                        .HasDatabaseName("UX_AIMessages_ConversationId_Ordinal");
+
+                    b.ToTable("AIMessages", (string)null);
+                });
+
             modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.AnalysisDiagnosticRecord", b =>
                 {
                     b.Property<long>("Id")
@@ -713,6 +846,27 @@ namespace CodebaseExplorer.Storage.Migrations
                     b.ToTable("Repositories", (string)null);
                 });
 
+            modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.SearchIndexStateRecord", b =>
+                {
+                    b.Property<byte[]>("RepositoryId")
+                        .HasColumnType("BLOB");
+
+                    b.Property<byte[]>("AnalysisRunId")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<int>("ChunkCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("IndexedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("RepositoryId");
+
+                    b.ToTable("SearchIndexStates", (string)null);
+                });
+
             modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.UserSettingRecord", b =>
                 {
                     b.Property<string>("Key")
@@ -729,6 +883,38 @@ namespace CodebaseExplorer.Storage.Migrations
                     b.HasKey("Key");
 
                     b.ToTable("UserSettings", (string)null);
+                });
+
+            modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.AiArtifactRecord", b =>
+                {
+                    b.HasOne("CodebaseExplorer.Storage.Persistence.Entities.AiMessageRecord", null)
+                        .WithMany()
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("CodebaseExplorer.Storage.Persistence.Entities.RepositoryRecord", null)
+                        .WithMany()
+                        .HasForeignKey("RepositoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.AiConversationRecord", b =>
+                {
+                    b.HasOne("CodebaseExplorer.Storage.Persistence.Entities.RepositoryRecord", null)
+                        .WithMany()
+                        .HasForeignKey("RepositoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.AiMessageRecord", b =>
+                {
+                    b.HasOne("CodebaseExplorer.Storage.Persistence.Entities.AiConversationRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.AnalysisDiagnosticRecord", b =>
@@ -918,6 +1104,15 @@ namespace CodebaseExplorer.Storage.Migrations
                         .WithMany()
                         .HasForeignKey("LastAnalysisRunId")
                         .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.SearchIndexStateRecord", b =>
+                {
+                    b.HasOne("CodebaseExplorer.Storage.Persistence.Entities.RepositoryRecord", null)
+                        .WithOne()
+                        .HasForeignKey("CodebaseExplorer.Storage.Persistence.Entities.SearchIndexStateRecord", "RepositoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("CodebaseExplorer.Storage.Persistence.Entities.AnalysisRunRecord", b =>

@@ -58,8 +58,13 @@ clones HTTPS remotes through an inline form with a masked token (UI-008).
 M6: `ExportArchitectureReport` generates the Markdown/Mermaid architecture report (pure text in `Application/Export`,
 snapshot test for `dotnet-layered`; EXPORT-001), written from the *Export* page (scope, sections, target folder, confirmation
 before writing into the repository; `ReportFileWriter`; EXPORT-002).
-No AI functionality exists yet. Next: the open manual checks (M1 on macOS/Linux, M4 explorer features, M5 overlay and
-clone form, M6 export page) and M7 in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
+M7 (all tasks implemented, AI off by default): AI settings, provider gate and HTTP transport with a network-guard test
+(AI-001, `Microsoft.Extensions.AI` 10.11.0), the Ollama provider (AI-002, OllamaSharp 5.5.2, tested against
+`StubOllamaServer`), the FTS5 search index built on first AI use (AI-003, ADR-013), facts-first retrieval and prompt
+building (AI-004), citation validation (AI-005), the *Assistant* page with stored conversations (AI-006) and
+*Explain with AI* in the Component Inspector, cached per run (AI-008). User guide: `docs/user/AI_MODEL_SETUP.md`.
+Next: the open manual checks (M1 on macOS/Linux, M4 explorer features, M5 overlay and clone form, M6 export page,
+M7 with a real Ollama instance) in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 
 ## Commands
 

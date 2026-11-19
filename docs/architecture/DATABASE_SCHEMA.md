@@ -320,6 +320,10 @@ replacing a model deletes the statistics of the previous snapshot — only the c
 
 Index: `IX_AIConversations_RepositoryId_UpdatedAt`.
 
+*Implemented in AI-006* (migration `AddAiConversations`, `AiConversationStore`, together with §4.15 and §4.16).
+`IsCloudProvider` is set when the conversation's context left this machine — a cloud provider **or** a non-loopback
+endpoint (both need consent, AI_ARCHITECTURE.md §5); once set it stays set.
+
 ### 4.15 AIMessages
 
 | Column | Type | Constraints |
@@ -335,6 +339,11 @@ Index: `IX_AIConversations_RepositoryId_UpdatedAt`.
 | CreatedAt | TEXT | NN |
 
 Index: `UX_AIMessages_ConversationId_Ordinal`.
+
+JSON shapes (AI-006, camelCase): `CitationsJson` = list of `{text, key, path, startLine, endLine, elementId, verified,
+problem}` (null when the message has no citations); `ContextManifestJson` = `{entries: [{key, kind, label, path,
+startLine, endLine, elementId, tokens}], budgetTokens, usedTokens, omittedEntries}` (assistant messages only). Messages
+are written only for complete answers; a failed or cancelled question stores nothing.
 
 ### 4.16 AIArtifacts
 
@@ -352,6 +361,11 @@ Reusable AI outputs attached to model elements (e.g. cached component explanatio
 | CreatedAt | TEXT | NN |
 
 Index: `IX_AIArtifacts_ElementId_ArtifactKind`.
+
+*Used since AI-008* (`AiArtifactStore`): a component explanation is stored as a conversation and an artifact with
+`MessageId` = the assistant message (which keeps citations and context manifest). Lookups require the repository's
+current `AnalysisRunId`, so a new run makes the artifact stale; saving replaces earlier artifacts of the same element
+and kind.
 
 ### 4.17 UserSettings
 
@@ -371,12 +385,46 @@ Each value is a JSON string; a row whose `ValueJson` is not a JSON string reads 
 |---|---|---|---|
 | `appearance.theme` | `"system"`, `"light"`, `"dark"` | `system` | `ThemeService` (Desktop): restored before the main window is shown, written when the user changes the theme. |
 | `graph.layout` | `"force"`, `"hierarchical"`, `"concentric"` | `force` | `ArchitectureExplorerPageViewModel` (Desktop, GRAPH-005): restored at startup and sent to the graph view before any graph, written when the user switches the layout. |
+| `ai.enabled` | `"true"`, `"false"` | off (anything but `"true"`) | `AiSettingsStore` (Application, AI-001), Settings page. |
+| `ai.provider` | `"ollama"` | `ollama` | `AiSettingsStore`. |
+| `ai.endpoint` | absolute http(s) URL without credentials | `http://localhost:11434` | `AiSettingsStore`; non-loopback = remote (consent needed). |
+| `ai.model` | model name at the provider, or empty | none selected | `AiSettingsStore`. |
+| `ai.max-context-tokens` | invariant integer 2048–262144 | 8192 | `AiSettingsStore`, prompt budgeting (AI-004). |
+| `ai.temperature` | invariant number 0–2 | 0.2 | `AiSettingsStore`. |
+| `ai.remote-consents` | space-separated repository ids (`N` format) | none | `AiSettingsStore`; cleared when `ai.endpoint` changes. Not secret, only ids. |
 
 ### 4.18 Search index (AI retrieval, M7)
 
-`SearchChunks` — an FTS5 virtual table (`ChunkId`, `RepositoryId`, `FileId`, `StartLine`,
-`EndLine`, `Text`) for lexical retrieval. Created by a raw-SQL migration. **Pending verification**
-that the SQLite library bundled with the EF Core SQLite provider includes FTS5 (task AI-003).
+*Implemented in AI-003* (migration `AddSearchIndex`, `SearchIndexStore`, ADR-013). **Verified:** the SQLite bundled
+with the EF Core SQLite provider (SQLitePCLRaw.bundle_e_sqlite3 2.1.13) is compiled with FTS5
+(`sqlite_compileoption_used('ENABLE_FTS5') = 1`, Storage test `SearchIndexStoreTests.BundledSqlite_HasFts5`).
+
+`SearchChunks` — FTS5 virtual table, created by raw SQL (EF cannot model virtual tables):
+
+| Column | Notes |
+|---|---|
+| `rowid` | Chunk id (implicit). |
+| RepositoryId | UNINDEXED; lowercase hex of the 16-byte `Repositories.Id` BLOB. |
+| FileId | UNINDEXED; lowercase hex of `Files.Id`. |
+| StartLine / EndLine | UNINDEXED; 1-based, inclusive. |
+| Text | Indexed; the chunk's lines (≤ 40, long lines cut at 400 characters). |
+| Keywords | Indexed; words of compound identifiers in the chunk (`InvoiceService` → `invoice service`). |
+
+Tokenizer `unicode61 remove_diacritics 2`. Queries are built only from plain words (`SearchTerms`), each quoted, prefix
+match for words of 4+ characters, joined with `OR`, ranked by `bm25`. Trigger `TR_Repositories_DeleteSearchChunks`
+deletes a repository's chunks when the repository row is deleted (no foreign keys on virtual tables).
+
+`SearchIndexStates` — one row per indexed repository:
+
+| Column | Type | Constraints |
+|---|---|---|
+| RepositoryId | BLOB(16) | PK, FK → Repositories (CASCADE) |
+| AnalysisRunId | BLOB(16) | NN — the run the chunks were built from; a different current run triggers a rebuild |
+| ChunkCount | INTEGER | NN |
+| IndexedAt | TEXT | NN |
+
+The index is built on first AI use, not during analysis (ADR-013); secret files and files changed since the analysis
+are not indexed.
 
 ## 5. Migrations
 

@@ -3,12 +3,48 @@
              xmlns:pages="using:CodebaseExplorer.Desktop.ViewModels.Pages"
              x:Class="CodebaseExplorer.Desktop.Views.Pages.SettingsPageView"
              x:DataType="pages:SettingsPageViewModel">
+  <ScrollViewer>
   <StackPanel Spacing="20" MaxWidth="640" HorizontalAlignment="Left">
     <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold" />
 
     <StackPanel Spacing="6">
       <TextBlock Text="Theme" FontWeight="SemiBold" />
       <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}" MinWidth="200" />
+    </StackPanel>
+
+    <StackPanel Spacing="6">
+      <TextBlock Text="AI assistant (optional)" FontWeight="SemiBold" />
+      <TextBlock TextWrapping="Wrap" Opacity="0.7"
+                 Text="Answers questions about the analyzed repository with a local Ollama model and cites its sources. Off by default; when off, nothing is sent anywhere. See docs/user/AI_MODEL_SETUP.md." />
+      <CheckBox Content="Enable the AI assistant" IsChecked="{Binding AiEnabled}" />
+      <StackPanel Spacing="6" IsEnabled="{Binding AiEnabled}">
+        <TextBlock Text="Provider: Ollama" Opacity="0.8" />
+        <TextBlock Text="Endpoint" />
+        <TextBox Text="{Binding AiEndpoint}" PlaceholderText="http://localhost:11434" />
+        <TextBlock Text="{Binding AiRemoteWarning}" TextWrapping="Wrap" Foreground="DarkOrange"
+                   IsVisible="{Binding AiRemoteWarning, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        <TextBlock Text="Model" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <AutoCompleteBox Text="{Binding AiModel}" ItemsSource="{Binding AiModels}" MinWidth="260"
+                           FilterMode="ContainsOrdinal" PlaceholderText="e.g. qwen2.5-coder:7b" />
+          <Button Content="Test connection" Command="{Binding TestAiConnectionCommand}"
+                  ToolTip.Tip="Checks that the endpoint answers and lists its models. Sends no repository content." />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="16">
+          <StackPanel Spacing="4">
+            <TextBlock Text="Context size (tokens)" />
+            <NumericUpDown Value="{Binding AiMaxContextTokens}" Minimum="{Binding AiMinContextTokens}"
+                           Maximum="{Binding AiMaxContextTokensLimit}" Increment="1024" FormatString="0" MinWidth="160" />
+          </StackPanel>
+          <StackPanel Spacing="4">
+            <TextBlock Text="Temperature" />
+            <NumericUpDown Value="{Binding AiTemperature}" Minimum="0" Maximum="2" Increment="0.1" FormatString="0.0" MinWidth="120" />
+          </StackPanel>
+        </StackPanel>
+      </StackPanel>
+      <Button Content="Save AI settings" Command="{Binding SaveAiSettingsCommand}" />
+      <TextBlock Text="{Binding AiStatusMessage}" TextWrapping="Wrap" Opacity="0.8"
+                 IsVisible="{Binding AiStatusMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
     </StackPanel>
 
     <StackPanel Spacing="6">
@@ -37,4 +73,5 @@
                  Text="Logs contain file paths and error details, never file contents or secrets." />
     </StackPanel>
   </StackPanel>
+  </ScrollViewer>
 </UserControl>

@@ -1,4 +1,5 @@
 using CodebaseExplorer.Application.Abstractions;
+using CodebaseExplorer.Application.AI;
 using CodebaseExplorer.Desktop.Services;
 using CodebaseExplorer.Desktop.ViewModels.Pages;
 using Microsoft.Extensions.DependencyInjection;
@@ -136,7 +137,46 @@ public sealed class SettingsPageViewModelTests : IAsyncLifetime
     [InlineData(3L * 1024 * 1024 * 1024, "3.00 GB")]
     public void Sizes_AreReadable(long bytes, string expected) => Assert.Equal(expected, SettingsPageViewModel.Size(bytes));
 
+    [Fact]
+    public async Task AiSettings_AreOffByDefault_AndSavedValuesSurviveActivation()
+    {
+        var viewModel = CreateViewModel(Substitute.For<IThemeService>());
+        await viewModel.ActivateAsync();
+        Assert.False(viewModel.AiEnabled);
+        Assert.Equal(AiSettings.DefaultEndpoint, viewModel.AiEndpoint);
+        Assert.Null(viewModel.AiRemoteWarning);
+
+        viewModel.AiEnabled = true;
+        viewModel.AiModel = "qwen2.5-coder:7b";
+        viewModel.AiMaxContextTokens = 16384;
+        await viewModel.SaveAiSettingsCommand.ExecuteAsync(null);
+        Assert.Equal("Saved.", viewModel.AiStatusMessage);
+
+        var reloaded = CreateViewModel(Substitute.For<IThemeService>());
+        await reloaded.ActivateAsync();
+        Assert.True(reloaded.AiEnabled);
+        Assert.Equal("qwen2.5-coder:7b", reloaded.AiModel);
+        Assert.Equal(16384, reloaded.AiMaxContextTokens);
+    }
+
+    [Fact]
+    public async Task RemoteEndpoint_ShowsAWarning_AndInvalidValuesAreNotSaved()
+    {
+        var viewModel = CreateViewModel(Substitute.For<IThemeService>());
+        await viewModel.ActivateAsync();
+        viewModel.AiEnabled = true;
+
+        viewModel.AiEndpoint = "http://gpu-box.example:11434";
+        Assert.NotNull(viewModel.AiRemoteWarning);
+
+        viewModel.AiEndpoint = "ftp://localhost";
+        await viewModel.SaveAiSettingsCommand.ExecuteAsync(null);
+        Assert.StartsWith("The endpoint must be", viewModel.AiStatusMessage, StringComparison.Ordinal);
+        Assert.False((await _app.Services.GetRequiredService<AiSettingsStore>().LoadAsync(Token)).Enabled);
+    }
+
     private SettingsPageViewModel CreateViewModel(IThemeService theme, IStorageMaintenance? storage = null) =>
         new(theme, _app.Services.GetRequiredService<IApplicationPaths>(), storage ?? _app.Services.GetRequiredService<IStorageMaintenance>(),
-            _folders, _shell, NullLogger<SettingsPageViewModel>.Instance);
+            _folders, _app.Services.GetRequiredService<AiSettingsStore>(), _app.Services.GetRequiredService<IAiAssistant>(),
+            _shell, NullLogger<SettingsPageViewModel>.Instance);
 }

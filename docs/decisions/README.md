@@ -22,6 +22,7 @@ spike changes the decision itself, a new superseding ADR is written instead.
 | [ADR-010](ADR-010-model-read-path-and-gc.md) | Whole-Model Reads in M2 and Memory-Conserving GC | Accepted |
 | [ADR-011](ADR-011-embedded-reference-assemblies.md) | Embedded Reference Assemblies for C# Compilations | Accepted |
 | [ADR-012](ADR-012-whole-model-reads-after-benchmarks.md) | Keep Whole-Model Reads for the MVP after the M4 Benchmarks | Accepted |
+| [ADR-013](ADR-013-search-index-on-first-ai-use.md) | Build the AI Search Index on First AI Use, Not During Analysis | Accepted |
 
 ## Template
 

@@ -13,7 +13,9 @@ quickly — without uploading code and without executing it.
 > Its project-level dependency graph is shown in the Architecture Explorer (verified on Windows), and the analysis is
 > saved in a local SQLite database.
 > Git repositories are recognized: runs record the commit, a Git-activity overlay shows how often the files of projects,
-> namespaces and types changed, and HTTPS remotes can be cloned and analyzed (M5). **There are no AI features yet.**
+> namespaces and types changed, and HTTPS remotes can be cloned and analyzed (M5). An optional AI assistant (off by
+> default) answers questions about a repository with a local Ollama model and validated citations (M7; tested against a
+> stub server, not yet with a real Ollama instance) — setup: [docs/user/AI_MODEL_SETUP.md](docs/user/AI_MODEL_SETUP.md).
 > See [Project status](#project-status).
 
 ---
@@ -56,7 +58,7 @@ analysis. Full vision: [docs/product/VISION.md](docs/product/VISION.md).
 | Local persistence (SQLite) and analysis history | 🚧 in progress (M2: database created and migrated at startup; analysis runs and models are saved — reopening a saved repository from the UI follows with REPO-005) |
 | Git metadata and change-activity overlays | ✅ available (M5: HEAD, branch and remotes per run; per-file change statistics of the last 365 days / 5,000 commits; *Git activity* toggle in the graph and a Git line in the Component Inspector) |
 | Markdown/Mermaid architecture export | ✅ available (M6: *Export* page — whole repository or current graph view, selectable sections, target folder outside the repository by default, writing into the repository only after confirmation) |
-| Optional local AI (Ollama) with cited answers | ⏳ planned (M7) |
+| Optional local AI (Ollama) with cited answers | 🟡 implemented, off by default (M7: *Assistant* page — questions about the whole repository or the element selected in the explorer, streamed answers, citations checked against the model and clickable, context sent to the model visible, conversation history, cancel; remote endpoints only after per-repository consent; *Explain with AI* in the Component Inspector, cached until the next analysis). Not yet verified with a real Ollama instance. Setup: [AI_MODEL_SETUP.md](docs/user/AI_MODEL_SETUP.md) |
 
 Scope details: [docs/product/MVP_SCOPE.md](docs/product/MVP_SCOPE.md).
 
@@ -126,7 +128,8 @@ enforced by architecture tests. Details: [docs/architecture/SYSTEM_ARCHITECTURE.
 | M4 Polyglot & scale | 🚧 in progress (see [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md)) |
 | M5 Git | ✅ implemented (started in parallel to M4; manual UI checks pending, see [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md)) |
 | M6 Export | ✅ implemented (export page not yet checked manually in the running app) |
-| M7 Local AI · M8 Release | ⏳ planned |
+| M7 Local AI | ✅ implemented (off by default; tested against a stub server — manual test with a real Ollama instance and the new pages in the running app pending) |
+| M8 Release | ⏳ planned |
 
 What exists today: 10 source projects and 6 test projects, central package management, module
 registration seams, a composition root, the Avalonia shell, and the language-independent domain
@@ -173,7 +176,8 @@ More: [docs/development/DEVELOPMENT_GUIDE.md](docs/development/DEVELOPMENT_GUIDE
 |---|---|
 | Product | [Vision](docs/product/VISION.md) · [Concept](docs/product/PRODUCT_CONCEPT.md) · [MVP scope](docs/product/MVP_SCOPE.md) · [Roadmap](docs/product/FEATURE_ROADMAP.md) · [User workflows](docs/product/USER_WORKFLOWS.md) |
 | Architecture | [System](docs/architecture/SYSTEM_ARCHITECTURE.md) · [Solution structure](docs/architecture/SOLUTION_STRUCTURE.md) · [Domain model](docs/architecture/DOMAIN_MODEL.md) · [Database](docs/architecture/DATABASE_SCHEMA.md) · [Analysis engine](docs/architecture/ANALYSIS_ENGINE.md) · [Graph engine](docs/architecture/GRAPH_ENGINE.md) · [Git](docs/architecture/GIT_INTEGRATION.md) · [AI](docs/architecture/AI_ARCHITECTURE.md) · [Security](docs/architecture/SECURITY.md) |
-| Decisions | [ADR index](docs/decisions/README.md) (ADR-001 … ADR-009) |
+| Decisions | [ADR index](docs/decisions/README.md) (ADR-001 … ADR-013) |
+| User guides | [Connecting a local AI model (Ollama)](docs/user/AI_MODEL_SETUP.md) |
 | Implementation | [Plan](docs/implementation/IMPLEMENTATION_PLAN.md) · [Milestones](docs/implementation/MILESTONES.md) · [Tasks](docs/implementation/TASK_BREAKDOWN.md) · [Test strategy](docs/implementation/TEST_STRATEGY.md) · [Definition of Done](docs/implementation/DEFINITION_OF_DONE.md) |
 | Development | [Guide](docs/development/DEVELOPMENT_GUIDE.md) · [Coding standards](docs/development/CODING_STANDARDS.md) · [Git workflow](docs/development/GIT_WORKFLOW.md) · [AI agent guidelines](docs/development/AI_AGENT_GUIDELINES.md) · [CLAUDE.md](CLAUDE.md) |
 
