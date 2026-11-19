@@ -20,6 +20,8 @@
   <ItemGroup>
     <!-- Window icon (title bar, taskbar, Alt+Tab), loaded as avares://CodebaseExplorer/Assets/app-icon.ico. -->
     <AvaloniaResource Include="Assets\app-icon.ico" />
+    <!-- App mark in the sidebar. -->
+    <AvaloniaResource Include="Assets\app-icon.png" />
   </ItemGroup>
 
   <ItemGroup>

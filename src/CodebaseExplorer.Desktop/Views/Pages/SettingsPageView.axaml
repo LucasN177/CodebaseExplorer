@@ -3,147 +3,235 @@
              xmlns:pages="using:CodebaseExplorer.Desktop.ViewModels.Pages"
              x:Class="CodebaseExplorer.Desktop.Views.Pages.SettingsPageView"
              x:DataType="pages:SettingsPageViewModel">
+  <!-- Every section is a card: title and explanation on the left, the controls on the right. -->
+  <UserControl.Styles>
+    <Style Selector="StackPanel.settingHeader">
+      <Setter Property="Spacing" Value="6" />
+      <Setter Property="Grid.Column" Value="0" />
+    </Style>
+    <Style Selector="StackPanel.settingBody">
+      <Setter Property="Spacing" Value="10" />
+      <Setter Property="Grid.Column" Value="2" />
+    </Style>
+    <Style Selector="StackPanel.field">
+      <Setter Property="Spacing" Value="4" />
+    </Style>
+    <Style Selector="TextBlock.status">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+    </Style>
+  </UserControl.Styles>
   <ScrollViewer>
-  <StackPanel Spacing="20" MaxWidth="640" HorizontalAlignment="Left">
-    <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold" />
-
-    <StackPanel Spacing="6">
-      <TextBlock Text="Theme" FontWeight="SemiBold" />
-      <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}" MinWidth="200" />
+  <StackPanel Spacing="16" MaxWidth="1000" HorizontalAlignment="Left" Margin="0,0,16,0">
+    <StackPanel Spacing="4">
+      <TextBlock Text="{Binding Title}" Classes="pageTitle" />
+      <TextBlock Classes="pageSubtitle" Text="Appearance, analysis, external editor, the optional AI assistant and local data." />
     </StackPanel>
 
-    <StackPanel Spacing="6">
-      <TextBlock Text="AI assistant (optional)" FontWeight="SemiBold" />
-      <TextBlock TextWrapping="Wrap" Opacity="0.7"
-                 Text="Answers questions about the analyzed repository with a local Ollama model and cites its sources. Off by default; when off, nothing is sent anywhere. See docs/user/AI_MODEL_SETUP.md." />
-      <CheckBox Content="Enable the AI assistant" IsChecked="{Binding AiEnabled}" />
-      <StackPanel Spacing="6" IsEnabled="{Binding AiEnabled}">
-        <TextBlock Text="Provider: Ollama" Opacity="0.8" />
-        <TextBlock Text="Endpoint" />
-        <TextBox Text="{Binding AiEndpoint}" PlaceholderText="http://localhost:11434" />
-        <TextBlock Text="{Binding AiRemoteWarning}" TextWrapping="Wrap" Foreground="DarkOrange"
-                   IsVisible="{Binding AiRemoteWarning, Converter={x:Static ObjectConverters.IsNotNull}}" />
-        <TextBlock Text="Model" />
-        <StackPanel Orientation="Horizontal" Spacing="8">
-          <AutoCompleteBox Text="{Binding AiModel}" ItemsSource="{Binding AiModels}" MinWidth="260"
-                           FilterMode="ContainsOrdinal" PlaceholderText="e.g. qwen2.5-coder:7b" />
-          <Button Content="Test connection" Command="{Binding TestAiConnectionCommand}"
-                  ToolTip.Tip="Checks that the endpoint answers and lists its models. Sends no repository content." />
+    <!-- Appearance -->
+    <Border Classes="card">
+      <Grid ColumnDefinitions="240,32,*">
+        <StackPanel Classes="settingHeader">
+          <TextBlock Text="Appearance" Classes="sectionTitle" />
+          <TextBlock Classes="caption" Text="Follow the system or choose light or dark. Remembered across restarts." />
         </StackPanel>
-        <StackPanel Orientation="Horizontal" Spacing="16">
-          <StackPanel Spacing="4">
-            <TextBlock Text="Context size (tokens)" />
-            <NumericUpDown Value="{Binding AiMaxContextTokens}" Minimum="{Binding AiMinContextTokens}"
-                           Maximum="{Binding AiMaxContextTokensLimit}" Increment="1024" FormatString="0" MinWidth="160" />
-          </StackPanel>
-          <StackPanel Spacing="4">
-            <TextBlock Text="Temperature" />
-            <NumericUpDown Value="{Binding AiTemperature}" Minimum="0" Maximum="2" Increment="0.1" FormatString="0.0" MinWidth="120" />
+        <StackPanel Classes="settingBody">
+          <StackPanel Classes="field">
+            <TextBlock Text="Theme" Classes="label" />
+            <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}" MinWidth="220" />
           </StackPanel>
         </StackPanel>
-      </StackPanel>
-      <Button Content="Save AI settings" Command="{Binding SaveAiSettingsCommand}" />
-      <TextBlock Text="{Binding AiStatusMessage}" TextWrapping="Wrap" Opacity="0.8"
-                 IsVisible="{Binding AiStatusMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
-    </StackPanel>
+      </Grid>
+    </Border>
 
-    <StackPanel Spacing="6">
-      <TextBlock Text="Analysis" FontWeight="SemiBold" />
-      <TextBlock TextWrapping="Wrap" Opacity="0.7"
-                 Text="Limits protect against very large or hostile repositories. Changes apply to the next import or re-analysis." />
-      <StackPanel Orientation="Horizontal" Spacing="16">
-        <StackPanel Spacing="4">
-          <TextBlock Text="Max. file size to parse (KB)" />
-          <NumericUpDown Value="{Binding MaxFileSizeKilobytes}" Minimum="{Binding MinFileSizeKilobytes}"
-                         Maximum="{Binding MaxFileSizeKilobytesLimit}" Increment="256" FormatString="0" MinWidth="160" />
+    <!-- Analysis and Git (UI-009) -->
+    <Border Classes="card">
+      <Grid ColumnDefinitions="240,32,*">
+        <StackPanel Classes="settingHeader">
+          <TextBlock Text="Analysis" Classes="sectionTitle" />
+          <TextBlock Classes="caption" Text="Limits protect against very large or hostile repositories. Changes apply to the next import or re-analysis." />
         </StackPanel>
-        <StackPanel Spacing="4">
-          <TextBlock Text="Max. files" />
-          <NumericUpDown Value="{Binding MaxFiles}" Minimum="{Binding MinFiles}" Maximum="{Binding MaxFilesLimit}"
-                         Increment="10000" FormatString="0" MinWidth="160" />
+        <StackPanel Classes="settingBody">
+          <WrapPanel>
+            <StackPanel Classes="field" Margin="0,0,16,8">
+              <TextBlock Text="Max. file size to parse (KB)" Classes="label" />
+              <NumericUpDown Value="{Binding MaxFileSizeKilobytes}" Minimum="{Binding MinFileSizeKilobytes}"
+                             Maximum="{Binding MaxFileSizeKilobytesLimit}" Increment="256" FormatString="0" MinWidth="170" />
+            </StackPanel>
+            <StackPanel Classes="field" Margin="0,0,16,8">
+              <TextBlock Text="Max. files" Classes="label" />
+              <NumericUpDown Value="{Binding MaxFiles}" Minimum="{Binding MinFiles}" Maximum="{Binding MaxFilesLimit}"
+                             Increment="10000" FormatString="0" MinWidth="170" />
+            </StackPanel>
+            <StackPanel Classes="field" Margin="0,0,16,8">
+              <TextBlock Text="Parse time per file (s)" Classes="label" />
+              <NumericUpDown Value="{Binding ParseTimeoutSeconds}" Minimum="{Binding MinParseSeconds}" Maximum="{Binding MaxParseSeconds}"
+                             Increment="1" FormatString="0" MinWidth="140" />
+            </StackPanel>
+          </WrapPanel>
+          <StackPanel Classes="field">
+            <TextBlock Text="Additional excluded folders (one name per line)" Classes="label" />
+            <TextBox Text="{Binding ExcludedFolders}" AcceptsReturn="True" MinHeight="72" MaxHeight="140" PlaceholderText="vendor&#10;generated" />
+            <TextBlock Text="{Binding BuiltInExcludes, StringFormat='Always excluded: {0}'}" Classes="caption" />
+          </StackPanel>
+          <TextBlock Text="Git activity window" Classes="label" Margin="0,4,0,0" />
+          <WrapPanel>
+            <StackPanel Classes="field" Margin="0,0,16,8">
+              <TextBlock Text="Max. commits" FontSize="12" Classes="muted" />
+              <NumericUpDown Value="{Binding HistoryMaxCommits}" Minimum="{Binding MinHistoryCommits}" Maximum="{Binding MaxHistoryCommits}"
+                             Increment="1000" FormatString="0" MinWidth="170" />
+            </StackPanel>
+            <StackPanel Classes="field" Margin="0,0,16,8">
+              <TextBlock Text="Last days (0 = all)" FontSize="12" Classes="muted" />
+              <NumericUpDown Value="{Binding HistoryDays}" Minimum="0" Maximum="{Binding MaxHistoryDays}" Increment="30" FormatString="0" MinWidth="170" />
+            </StackPanel>
+          </WrapPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Save" Classes="accent" Command="{Binding SaveAnalysisSettingsCommand}" />
+            <Button Content="Reset to defaults" Classes="subtle" Command="{Binding ResetAnalysisSettingsCommand}" />
+          </StackPanel>
+          <TextBlock Text="{Binding AnalysisStatusMessage}" Classes="status"
+                     IsVisible="{Binding AnalysisStatusMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
         </StackPanel>
-        <StackPanel Spacing="4">
-          <TextBlock Text="Parse time per file (s)" />
-          <NumericUpDown Value="{Binding ParseTimeoutSeconds}" Minimum="{Binding MinParseSeconds}" Maximum="{Binding MaxParseSeconds}"
-                         Increment="1" FormatString="0" MinWidth="120" />
-        </StackPanel>
-      </StackPanel>
-      <TextBlock Text="Additional excluded folders (one name per line)" />
-      <TextBox Text="{Binding ExcludedFolders}" AcceptsReturn="True" MinHeight="64" MaxHeight="140" PlaceholderText="vendor&#10;generated" />
-      <TextBlock Text="{Binding BuiltInExcludes, StringFormat='Always excluded: {0}'}" TextWrapping="Wrap" FontSize="12" Opacity="0.7" />
-      <TextBlock Text="Git activity window" Margin="0,6,0,0" />
-      <StackPanel Orientation="Horizontal" Spacing="16">
-        <StackPanel Spacing="4">
-          <TextBlock Text="Max. commits" />
-          <NumericUpDown Value="{Binding HistoryMaxCommits}" Minimum="{Binding MinHistoryCommits}" Maximum="{Binding MaxHistoryCommits}"
-                         Increment="1000" FormatString="0" MinWidth="160" />
-        </StackPanel>
-        <StackPanel Spacing="4">
-          <TextBlock Text="Last days (0 = all)" />
-          <NumericUpDown Value="{Binding HistoryDays}" Minimum="0" Maximum="{Binding MaxHistoryDays}" Increment="30" FormatString="0" MinWidth="160" />
-        </StackPanel>
-      </StackPanel>
-      <StackPanel Orientation="Horizontal" Spacing="8">
-        <Button Content="Save analysis settings" Command="{Binding SaveAnalysisSettingsCommand}" />
-        <Button Content="Reset to defaults" Command="{Binding ResetAnalysisSettingsCommand}" />
-      </StackPanel>
-      <TextBlock Text="{Binding AnalysisStatusMessage}" TextWrapping="Wrap" Opacity="0.8"
-                 IsVisible="{Binding AnalysisStatusMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
-    </StackPanel>
+      </Grid>
+    </Border>
 
-    <StackPanel Spacing="6">
-      <TextBlock Text="External editor" FontWeight="SemiBold" />
-      <TextBlock TextWrapping="Wrap" Opacity="0.7"
-                 Text="Command for 'Open in editor' next to source snippets. {path} is replaced by the file (always as one argument, no shell), {line} and {column} by the position. Leave empty to hide the button." />
-      <TextBox Text="{Binding EditorCommand}" PlaceholderText="code --goto &quot;{path}:{line}&quot;" />
-      <ItemsControl ItemsSource="{Binding EditorExamples}">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="x:String">
-            <SelectableTextBlock Text="{Binding}" FontFamily="Cascadia Mono, Consolas, Menlo, monospace" FontSize="12" Opacity="0.75" />
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-      <Button Content="Save editor command" Command="{Binding SaveEditorCommandCommand}" />
-      <TextBlock Text="{Binding EditorStatusMessage}" TextWrapping="Wrap" Opacity="0.8"
-                 IsVisible="{Binding EditorStatusMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
-    </StackPanel>
+    <!-- External editor (UI-009) -->
+    <Border Classes="card">
+      <Grid ColumnDefinitions="240,32,*">
+        <StackPanel Classes="settingHeader">
+          <TextBlock Text="External editor" Classes="sectionTitle" />
+          <TextBlock Classes="caption"
+                     Text="Command for 'Open in editor' next to source snippets. {path} is replaced by the file (always one argument, no shell), {line} and {column} by the position. Leave empty to hide the button." />
+        </StackPanel>
+        <StackPanel Classes="settingBody">
+          <StackPanel Classes="field">
+            <TextBlock Text="Command" Classes="label" />
+            <TextBox Text="{Binding EditorCommand}" PlaceholderText="code --goto &quot;{path}:{line}&quot;" FontFamily="{StaticResource MonoFontFamily}" />
+          </StackPanel>
+          <Border Classes="cardFlat">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Examples" Classes="label" Margin="0,0,0,4" />
+              <ItemsControl ItemsSource="{Binding EditorExamples}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:String">
+                    <SelectableTextBlock Text="{Binding}" Classes="mono muted" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+          <Button Content="Save" Classes="accent" Command="{Binding SaveEditorCommandCommand}" />
+          <TextBlock Text="{Binding EditorStatusMessage}" Classes="status"
+                     IsVisible="{Binding EditorStatusMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        </StackPanel>
+      </Grid>
+    </Border>
 
-    <StackPanel Spacing="6">
-      <TextBlock Text="Local data directory" FontWeight="SemiBold" />
-      <SelectableTextBlock Text="{Binding DataDirectory}" TextWrapping="Wrap" Opacity="0.8" />
-      <TextBlock TextWrapping="Wrap" Opacity="0.7"
-                 Text="Repository contents and analysis results are stored only on this machine." />
-      <TextBlock Text="{Binding StorageUsageText}" Opacity="0.8"
-                 IsVisible="{Binding StorageUsageText, Converter={x:Static ObjectConverters.IsNotNull}}" />
-      <StackPanel Orientation="Horizontal" Spacing="8">
-        <Button Content="Open data folder" Command="{Binding OpenDataDirectoryCommand}" />
-        <Button Content="Compact database" Command="{Binding CompactCommand}"
-                ToolTip.Tip="Gives the space of removed repositories and replaced analysis runs back to the disk. Run it while no analysis is running." />
-      </StackPanel>
-      <TextBlock Text="{Binding CompactionMessage}" TextWrapping="Wrap" Opacity="0.8"
-                 IsVisible="{Binding CompactionMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
-      <TextBlock TextWrapping="Wrap" Opacity="0.7"
-                 Text="Removing a repository deletes its data, but the database file keeps its size until it is compacted." />
-      <Border BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,6,0,0" BorderBrush="{DynamicResource ErrorBorderBrush}">
-        <StackPanel Spacing="6">
-          <TextBlock Text="Delete all stored data" FontWeight="SemiBold" />
-          <TextBlock TextWrapping="Wrap" Opacity="0.8"
-                     Text="Deletes every stored repository with its analysis runs, models, Git statistics, AI conversations and explanations, and the clones this app made; then compacts the database. Your own repository folders are not touched; settings are kept. This cannot be undone." />
+    <!-- AI assistant (AI-001/AI-002) -->
+    <Border Classes="card">
+      <Grid ColumnDefinitions="240,32,*">
+        <StackPanel Classes="settingHeader">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="AI assistant" Classes="sectionTitle" />
+            <Border Classes="badge"><TextBlock Text="optional" /></Border>
+          </StackPanel>
+          <TextBlock Classes="caption"
+                     Text="Answers questions about the analyzed repository with a local Ollama model and cites its sources. Off by default; when off, nothing is sent anywhere. Setup: docs/user/AI_MODEL_SETUP.md." />
+        </StackPanel>
+        <StackPanel Classes="settingBody">
+          <ToggleSwitch IsChecked="{Binding AiEnabled}" OnContent="Enabled" OffContent="Disabled" />
+          <StackPanel Spacing="10" IsEnabled="{Binding AiEnabled}">
+            <StackPanel Classes="field">
+              <TextBlock Text="Provider" Classes="label" />
+              <TextBlock Text="Ollama" />
+            </StackPanel>
+            <StackPanel Classes="field">
+              <TextBlock Text="Endpoint" Classes="label" />
+              <TextBox Text="{Binding AiEndpoint}" PlaceholderText="http://localhost:11434" />
+            </StackPanel>
+            <Border Classes="bannerWarning" IsVisible="{Binding AiRemoteWarning, Converter={x:Static ObjectConverters.IsNotNull}}">
+              <TextBlock Text="{Binding AiRemoteWarning}" TextWrapping="Wrap" />
+            </Border>
+            <StackPanel Classes="field">
+              <TextBlock Text="Model" Classes="label" />
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Content="Test connection" Margin="8,0,0,0" Command="{Binding TestAiConnectionCommand}"
+                        ToolTip.Tip="Checks that the endpoint answers and lists its models. Sends no repository content." />
+                <AutoCompleteBox Text="{Binding AiModel}" ItemsSource="{Binding AiModels}"
+                                 FilterMode="ContainsOrdinal" PlaceholderText="e.g. qwen2.5-coder:7b" />
+              </DockPanel>
+            </StackPanel>
+            <WrapPanel>
+              <StackPanel Classes="field" Margin="0,0,16,0">
+                <TextBlock Text="Context size (tokens)" Classes="label" />
+                <NumericUpDown Value="{Binding AiMaxContextTokens}" Minimum="{Binding AiMinContextTokens}"
+                               Maximum="{Binding AiMaxContextTokensLimit}" Increment="1024" FormatString="0" MinWidth="170" />
+              </StackPanel>
+              <StackPanel Classes="field">
+                <TextBlock Text="Temperature" Classes="label" />
+                <NumericUpDown Value="{Binding AiTemperature}" Minimum="0" Maximum="2" Increment="0.1" FormatString="0.0" MinWidth="130" />
+              </StackPanel>
+            </WrapPanel>
+          </StackPanel>
+          <Button Content="Save" Classes="accent" Command="{Binding SaveAiSettingsCommand}" />
+          <TextBlock Text="{Binding AiStatusMessage}" Classes="status"
+                     IsVisible="{Binding AiStatusMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Local data -->
+    <Border Classes="card">
+      <Grid ColumnDefinitions="240,32,*">
+        <StackPanel Classes="settingHeader">
+          <TextBlock Text="Local data" Classes="sectionTitle" />
+          <TextBlock Classes="caption" Text="Repository contents and analysis results are stored only on this machine." />
+        </StackPanel>
+        <StackPanel Classes="settingBody">
+          <StackPanel Classes="field">
+            <TextBlock Text="Data directory" Classes="label" />
+            <SelectableTextBlock Text="{Binding DataDirectory}" Classes="mono" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding StorageUsageText}" Classes="caption"
+                       IsVisible="{Binding StorageUsageText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Open data folder" Command="{Binding OpenDataDirectoryCommand}" />
+            <Button Content="Compact database" Command="{Binding CompactCommand}"
+                    ToolTip.Tip="Gives the space of removed repositories and replaced analysis runs back to the disk. Run it while no analysis is running." />
+          </StackPanel>
+          <TextBlock Text="{Binding CompactionMessage}" Classes="status"
+                     IsVisible="{Binding CompactionMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+          <TextBlock Classes="caption" Text="Removing a repository deletes its data, but the database file keeps its size until it is compacted." />
+          <Border Classes="divider" Margin="0,4" />
+          <StackPanel Classes="field">
+            <TextBlock Text="Log files" Classes="label" />
+            <SelectableTextBlock Text="{Binding LogsDirectory}" Classes="mono" TextWrapping="Wrap" />
+            <TextBlock Classes="caption" Text="Logs contain file paths and error details, never file contents or secrets." />
+          </StackPanel>
+          <Button Content="Open log folder" Command="{Binding OpenLogsDirectoryCommand}" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Danger zone -->
+    <Border Classes="card" BorderBrush="{DynamicResource ErrorBorderBrush}">
+      <Grid ColumnDefinitions="240,32,*">
+        <StackPanel Classes="settingHeader">
+          <TextBlock Text="Delete all stored data" Classes="sectionTitle" Foreground="{DynamicResource ErrorBorderBrush}" />
+          <TextBlock Classes="caption" Text="This cannot be undone." />
+        </StackPanel>
+        <StackPanel Classes="settingBody">
+          <TextBlock TextWrapping="Wrap"
+                     Text="Deletes every stored repository with its analysis runs, models, Git statistics, AI conversations and explanations, and the clones this app made; then compacts the database. Your own repository folders are not touched; settings are kept." />
           <CheckBox Content="I understand that this cannot be undone" IsChecked="{Binding ConfirmDeleteAll}" />
-          <Button Content="Delete all data" Command="{Binding DeleteAllDataCommand}" />
-          <TextBlock Text="{Binding DeleteAllMessage}" TextWrapping="Wrap" Opacity="0.8"
+          <Button Content="Delete all data" Classes="danger" Command="{Binding DeleteAllDataCommand}" />
+          <TextBlock Text="{Binding DeleteAllMessage}" Classes="status"
                      IsVisible="{Binding DeleteAllMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
         </StackPanel>
-      </Border>
-    </StackPanel>
-
-    <StackPanel Spacing="6">
-      <TextBlock Text="Log files" FontWeight="SemiBold" />
-      <SelectableTextBlock Text="{Binding LogsDirectory}" TextWrapping="Wrap" Opacity="0.8" />
-      <Button Content="Open log folder" Command="{Binding OpenLogsDirectoryCommand}" />
-      <TextBlock TextWrapping="Wrap" Opacity="0.7"
-                 Text="Logs contain file paths and error details, never file contents or secrets." />
-    </StackPanel>
+      </Grid>
+    </Border>
   </StackPanel>
   </ScrollViewer>
 </UserControl>

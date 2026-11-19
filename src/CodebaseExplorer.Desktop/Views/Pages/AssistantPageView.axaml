@@ -5,59 +5,91 @@
              x:DataType="pages:AssistantPageViewModel"
              x:Name="Root">
   <!-- AI-006: every text of an answer is shown as plain text; no HTML, images or links of model output are rendered. -->
+  <UserControl.Styles>
+    <Style Selector="Border.message">
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="14,10" />
+      <Setter Property="Margin" Value="0,6" />
+    </Style>
+    <Style Selector="Border.message.user">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="HorizontalAlignment" Value="Right" />
+      <Setter Property="MaxWidth" Value="640" />
+    </Style>
+    <Style Selector="Border.message.assistant">
+      <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SubtleBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="ListBox.conversations ListBoxItem">
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Margin" Value="0,1" />
+      <Setter Property="Padding" Value="10,6" />
+    </Style>
+    <Style Selector="ListBox.conversations ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource NavSelectedBrush}" />
+    </Style>
+    <Style Selector="Border.evidence">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+  </UserControl.Styles>
   <DockPanel>
-    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,12">
-      <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold" />
-      <TextBlock Text="{Binding RepositoryName}" Opacity="0.8" IsVisible="{Binding HasRepository}" />
-      <TextBlock Text="{Binding AiStatus}" TextWrapping="Wrap" Opacity="0.8" IsVisible="{Binding !IsRemote}" />
-      <Border IsVisible="{Binding IsRemote}" BorderThickness="1" CornerRadius="6" Padding="10"
-              BorderBrush="{DynamicResource ErrorBorderBrush}" Background="{DynamicResource ErrorBackgroundBrush}">
-        <TextBlock Text="{Binding AiStatus}" TextWrapping="Wrap" />
+    <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,12">
+      <StackPanel Spacing="2">
+        <TextBlock Text="{Binding Title}" Classes="pageTitle" />
+        <TextBlock Text="{Binding RepositoryName}" Classes="pageSubtitle" IsVisible="{Binding HasRepository}" />
+      </StackPanel>
+      <Border Classes="banner" IsVisible="{Binding !IsRemote}">
+        <TextBlock Text="{Binding AiStatus}" TextWrapping="Wrap" FontSize="12" />
+      </Border>
+      <Border Classes="bannerWarning" IsVisible="{Binding IsRemote}">
+        <TextBlock Text="{Binding AiStatus}" TextWrapping="Wrap" FontSize="12" />
       </Border>
     </StackPanel>
 
-    <TextBlock DockPanel.Dock="Top" IsVisible="{Binding ShowEmptyState}" TextWrapping="Wrap" Opacity="0.8"
+    <TextBlock DockPanel.Dock="Top" IsVisible="{Binding ShowEmptyState}" Classes="pageSubtitle"
                Text="Open or import a repository on the start page to ask questions about it." />
 
-    <Grid ColumnDefinitions="240,16,*,16,360" IsVisible="{Binding HasRepository}">
+    <Grid ColumnDefinitions="240,12,*,12,340" IsVisible="{Binding HasRepository}">
       <!-- Conversation history -->
-      <DockPanel Grid.Column="0">
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
-          <Button Content="New conversation" Command="{Binding NewConversationCommand}" />
-          <Button Content="Delete" Command="{Binding DeleteConversationCommand}" ToolTip.Tip="Deletes the selected conversation." />
+      <Border Grid.Column="0" Classes="panel" Padding="8">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="2,0,0,8">
+          <Button Content="+ New" Classes="accent" Command="{Binding NewConversationCommand}" ToolTip.Tip="Start a new conversation" />
+          <Button Content="Delete" Classes="subtle danger" Command="{Binding DeleteConversationCommand}" ToolTip.Tip="Deletes the selected conversation." />
         </StackPanel>
-        <ListBox ItemsSource="{Binding Conversations}" SelectedItem="{Binding SelectedConversation}">
+        <ListBox Classes="conversations" ItemsSource="{Binding Conversations}" SelectedItem="{Binding SelectedConversation}" Background="Transparent">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="pages:AiConversationItem">
               <StackPanel Spacing="2" Margin="0,4">
                 <TextBlock Text="{Binding Title}" TextWrapping="Wrap" FontWeight="SemiBold" />
-                <TextBlock Text="{Binding Detail}" FontSize="11" Opacity="0.7" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Detail}" FontSize="11" Classes="muted" TextWrapping="Wrap" />
               </StackPanel>
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
       </DockPanel>
+      </Border>
 
       <!-- Messages and question -->
-      <DockPanel Grid.Column="2">
+      <Border Grid.Column="2" Classes="panel" Padding="16,12">
+      <DockPanel>
         <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,12,0,0">
-          <Border IsVisible="{Binding ConsentText, Converter={x:Static ObjectConverters.IsNotNull}}"
-                  BorderThickness="1" CornerRadius="6" Padding="10"
-                  BorderBrush="{DynamicResource ErrorBorderBrush}" Background="{DynamicResource ErrorBackgroundBrush}">
+          <Border Classes="bannerWarning" IsVisible="{Binding ConsentText, Converter={x:Static ObjectConverters.IsNotNull}}">
             <StackPanel Spacing="8">
               <TextBlock Text="{Binding ConsentText}" TextWrapping="Wrap" />
               <Button Content="Allow for this repository and ask" Command="{Binding AllowRemoteCommand}" />
             </StackPanel>
           </Border>
-          <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Opacity="0.8"
+          <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Classes="caption"
                      IsVisible="{Binding StatusMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
           <CheckBox IsChecked="{Binding AboutSelection}" IsVisible="{Binding HasExplorerSelection}" Content="{Binding SelectionText}" />
           <TextBox Text="{Binding Question}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" MaxHeight="160"
                    PlaceholderText="Ask about this repository, e.g. &quot;Which projects depend on the domain?&quot;"
                    IsEnabled="{Binding IsAiEnabled}" />
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="Ask" Command="{Binding AskCommand}" HotKey="Ctrl+Enter" ToolTip.Tip="Ctrl+Enter" />
-            <Button Content="Cancel" Command="{Binding CancelCommand}" />
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Content="Cancel" Classes="subtle" Command="{Binding CancelCommand}" />
+            <Button Content="Ask  ⏎" Classes="accent" Command="{Binding AskCommand}" HotKey="Ctrl+Enter" ToolTip.Tip="Ctrl+Enter" />
           </StackPanel>
         </StackPanel>
 
@@ -65,12 +97,11 @@
           <ItemsControl ItemsSource="{Binding Messages}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="pages:AiMessageItem">
-                <Border BorderThickness="0,0,0,1" Padding="0,10" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+                <Border Classes="message" Classes.user="{Binding IsUser}" Classes.assistant="{Binding IsAssistant}">
                   <StackPanel Spacing="6">
-                    <TextBlock Text="You" FontWeight="SemiBold" IsVisible="{Binding IsUser}" />
                     <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsAssistant}">
-                      <TextBlock Text="Assistant" FontWeight="SemiBold" />
-                      <TextBlock Text="AI-generated — check the citations" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
+                      <TextBlock Text="✦ Assistant" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextBrush}" />
+                      <Border Classes="badge"><TextBlock Text="AI-generated — check the citations" /></Border>
                     </StackPanel>
 
                     <!-- While streaming: the raw text. Afterwards: plain-text Markdown blocks. -->
@@ -82,16 +113,15 @@
                             <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" IsVisible="{Binding IsParagraph}" />
                             <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" FontWeight="SemiBold" FontSize="15" IsVisible="{Binding IsHeading}" />
                             <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" Margin="12,0,0,0" IsVisible="{Binding IsBullet}" />
-                            <Border IsVisible="{Binding IsCode}" BorderThickness="1" CornerRadius="4" Padding="8"
-                                    BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
-                              <SelectableTextBlock Text="{Binding Text}" FontFamily="Cascadia Mono, Consolas, Menlo, monospace" FontSize="12" />
+                            <Border IsVisible="{Binding IsCode}" Classes="cardFlat" Padding="10">
+                              <SelectableTextBlock Text="{Binding Text}" Classes="mono" />
                             </Border>
                           </Panel>
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <TextBlock Text="{Binding Meta}" FontSize="11" Opacity="0.7" IsVisible="{Binding IsAssistant}" />
+                    <TextBlock Text="{Binding Meta}" FontSize="11" Classes="muted" IsVisible="{Binding IsAssistant}" />
                     <ItemsControl ItemsSource="{Binding Citations}" IsVisible="{Binding HasCitations}">
                       <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -128,14 +158,16 @@
           </ItemsControl>
         </ScrollViewer>
       </DockPanel>
+      </Border>
 
       <!-- Cited source lines -->
-      <StackPanel Grid.Column="4" Spacing="6">
-        <TextBlock Text="Cited source" FontWeight="SemiBold" />
-        <TextBlock Text="Click a citation to see its lines." Opacity="0.7" TextWrapping="Wrap"
+      <Border Grid.Column="4" Classes="panel" Padding="16">
+      <StackPanel Spacing="6">
+        <TextBlock Text="Cited source" Classes="sectionTitle" />
+        <TextBlock Text="Click a citation to see its lines." Classes="muted" TextWrapping="Wrap"
                    IsVisible="{Binding SnippetPath, Converter={x:Static ObjectConverters.IsNull}}" />
-        <TextBlock Text="{Binding SnippetPath}" Opacity="0.8" TextWrapping="Wrap" />
-        <TextBlock Text="{Binding SnippetMessage}" TextWrapping="Wrap" Opacity="0.8"
+        <TextBlock Text="{Binding SnippetPath}" Classes="caption mono" />
+        <TextBlock Text="{Binding SnippetMessage}" Classes="caption"
                    IsVisible="{Binding SnippetMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
         <ScrollViewer MaxHeight="520" HorizontalScrollBarVisibility="Auto" IsVisible="{Binding HasSnippet}">
           <ItemsControl ItemsSource="{Binding SnippetLines}">
@@ -144,8 +176,8 @@
                 <Border Classes.evidence="{Binding IsEvidence}" Padding="2,0">
                   <StackPanel Orientation="Horizontal" Spacing="8">
                     <TextBlock Text="{Binding NumberText}" Width="36" TextAlignment="Right" Opacity="0.5"
-                               FontFamily="Cascadia Mono, Consolas, Menlo, monospace" FontSize="12" />
-                    <SelectableTextBlock Text="{Binding Text}" FontFamily="Cascadia Mono, Consolas, Menlo, monospace" FontSize="12" />
+                               FontFamily="{StaticResource MonoFontFamily}" FontSize="12" />
+                    <SelectableTextBlock Text="{Binding Text}" FontFamily="{StaticResource MonoFontFamily}" FontSize="12" />
                   </StackPanel>
                 </Border>
               </DataTemplate>
@@ -153,6 +185,7 @@
           </ItemsControl>
         </ScrollViewer>
       </StackPanel>
+      </Border>
     </Grid>
   </DockPanel>
 </UserControl>

@@ -28,7 +28,7 @@ export const palettes: Record<ThemeMode, Palette> = {
     activity: '#c2410c',
   },
   dark: {
-    background: '#1e1e1e',
+    background: '#20232a', // = the app's dark surface (SurfaceBrush)
     text: '#e6edf3',
     ecosystems: { dotnet: '#56b4e9', node: '#3fcf9f', python: '#e0a3c8', other: '#8b949e' },
     missing: '#ff8a4c',

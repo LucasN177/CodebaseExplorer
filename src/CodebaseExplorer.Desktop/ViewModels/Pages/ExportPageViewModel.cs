@@ -57,7 +57,7 @@ public sealed partial class ExportPageViewModel : PageViewModel
 
     public override string Title => "Export";
 
-    public override string Glyph => "⇩";
+    public override string IconKey => "export";
 
     /// <summary>Name of the repository to export; null without a current repository.</summary>
     [ObservableProperty]

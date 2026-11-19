@@ -270,7 +270,7 @@ are validated against the stored model before display.
 | **Time** | `TimeProvider` injected (registered in Infrastructure) for testability. |
 | **Serialization** | `System.Text.Json` with source generation for Contracts DTOs (graph messages). |
 | **Configuration** | User settings persisted in the `UserSettings` table; no configuration is read from analyzed repositories except as analysis input. |
-| **Theming** | Fluent theme, light/dark/system; the graph web view receives theme changes via message. |
+| **Theming** | Fluent theme with an indigo accent and the app's design tokens (surfaces, borders, text levels, accent, status colors per light/dark variant) and style classes (`pageTitle`, `sectionTitle`, `caption`, `card`, `panel`, `banner*`, `badge`, `subtle`, …) in `App.axaml`; pages use the classes instead of inline colors and sizes. Navigation and section icons are own vector line icons (`Converters/AppIcons`). Light/dark/system; the graph web view receives theme changes via message and uses the dark surface color as its dark background. |
 
 ## 12. Deployment view
 

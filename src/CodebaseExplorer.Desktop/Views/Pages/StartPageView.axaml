@@ -1,50 +1,93 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:pages="using:CodebaseExplorer.Desktop.ViewModels.Pages"
+             xmlns:conv="using:CodebaseExplorer.Desktop.Converters"
              x:Class="CodebaseExplorer.Desktop.Views.Pages.StartPageView"
              x:DataType="pages:StartPageViewModel">
   <UserControl.Styles>
     <Style Selector="TextBlock.active">
       <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+    </Style>
+    <Style Selector="TextBlock.done">
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+    </Style>
+    <Style Selector="Path.icon">
+      <Setter Property="Stretch" Value="Uniform" />
+      <Setter Property="StrokeThickness" Value="1.6" />
+      <Setter Property="StrokeLineCap" Value="Round" />
+      <Setter Property="StrokeJoin" Value="Round" />
+      <Setter Property="Stroke" Value="{DynamicResource AccentTextBrush}" />
     </Style>
   </UserControl.Styles>
   <ScrollViewer>
-    <StackPanel Spacing="12" MaxWidth="720" HorizontalAlignment="Left">
-      <TextBlock Text="Welcome to Codebase Explorer" FontSize="28" FontWeight="SemiBold" />
-      <TextBlock TextWrapping="Wrap" Opacity="0.8"
-                 Text="Codebase Explorer analyzes software repositories locally and turns their structure and dependencies into an interactive architecture model. Repository code is only read, never executed." />
+    <StackPanel Spacing="20" MaxWidth="920" HorizontalAlignment="Left">
+      <StackPanel Spacing="6">
+        <TextBlock Text="Welcome to Codebase Explorer" Classes="pageTitle" FontSize="26" />
+        <TextBlock Classes="pageSubtitle" MaxWidth="760" HorizontalAlignment="Left"
+                   Text="Analyze software repositories locally and explore their structure and dependencies as an interactive, evidence-backed architecture model. Repository code is only read, never executed." />
+      </StackPanel>
 
-      <Button Content="Open local folder…" Margin="0,16,0,0"
-              Command="{Binding OpenLocalFolderCommand}"
-              Classes="accent" />
-      <TextBlock TextWrapping="Wrap" Opacity="0.7" FontSize="12"
-                 Text="Currently .NET solutions and projects are recognized; other languages follow in later milestones." />
-      <!-- Clone a remote repository (UI-008, WF-01); HTTPS only, token masked and held in memory only -->
-      <Button Content="Clone remote repository…" Command="{Binding ShowCloneFormCommand}"
-              IsVisible="{Binding !IsCloneFormOpen}" />
-      <Border IsVisible="{Binding IsCloneFormOpen}"
-              BorderThickness="1" CornerRadius="6" Padding="16"
-              BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
-        <StackPanel Spacing="8">
-          <TextBlock Text="Clone a remote repository" FontWeight="SemiBold" />
-          <TextBlock Text="HTTPS address (GitHub, GitLab or another Git host)" Opacity="0.8" FontSize="12" />
-          <TextBox Text="{Binding CloneUrl}" PlaceholderText="https://github.com/owner/repository"
-                   AutomationProperties.Name="Repository address" />
-          <TextBlock Text="Branch (optional — default branch if empty)" Opacity="0.8" FontSize="12" />
-          <TextBox Text="{Binding CloneBranch}" PlaceholderText="main" AutomationProperties.Name="Branch" />
-          <TextBlock Text="Access token for private repositories (optional; kept in memory only, never stored)"
-                     Opacity="0.8" FontSize="12" TextWrapping="Wrap" />
-          <TextBox Text="{Binding CloneToken}" PasswordChar="•" RevealPassword="False"
-                   AutomationProperties.Name="Access token" />
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="Clone and analyze" Classes="accent" Command="{Binding CloneCommand}" />
-            <Button Content="Close" Command="{Binding CloseCloneFormCommand}" />
-          </StackPanel>
-          <Border IsVisible="{Binding HasExistingClone}" BorderThickness="1" CornerRadius="6" Padding="12"
-                  BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+      <!-- Entry points -->
+      <Grid ColumnDefinitions="*,16,*">
+        <Border Grid.Column="0" Classes="card">
+          <DockPanel>
+            <Button DockPanel.Dock="Bottom" Content="Open local folder…" Classes="accent" HorizontalAlignment="Left" Margin="0,16,0,0"
+                    Command="{Binding OpenLocalFolderCommand}" />
             <StackPanel Spacing="8">
-              <TextBlock TextWrapping="Wrap" Text="This repository was cloned before:" />
-              <TextBlock TextWrapping="Wrap" Opacity="0.7" FontSize="12" Text="{Binding ExistingClonePath}" />
+              <Border Classes="badge" HorizontalAlignment="Left" Padding="8" CornerRadius="8">
+                <Path Classes="icon" Data="{Binding Source=folder, Converter={x:Static conv:AppIcons.Converter}}" Width="20" Height="20" />
+              </Border>
+              <TextBlock Text="Analyze a local folder" Classes="sectionTitle" />
+              <TextBlock Classes="caption"
+                         Text=".NET solutions and projects, Node (package.json, workspaces) and Python projects; C#, TypeScript, JavaScript and Python code." />
+            </StackPanel>
+          </DockPanel>
+        </Border>
+        <Border Grid.Column="2" Classes="card">
+          <DockPanel>
+            <Button DockPanel.Dock="Bottom" Content="Clone remote repository…" HorizontalAlignment="Left" Margin="0,16,0,0"
+                    Command="{Binding ShowCloneFormCommand}" IsEnabled="{Binding !IsCloneFormOpen}" />
+            <StackPanel Spacing="8">
+              <Border Classes="badge" HorizontalAlignment="Left" Padding="8" CornerRadius="8">
+                <Path Classes="icon" Data="{Binding Source=clone, Converter={x:Static conv:AppIcons.Converter}}" Width="20" Height="20" />
+              </Border>
+              <TextBlock Text="Clone from GitHub or GitLab" Classes="sectionTitle" />
+              <TextBlock Classes="caption"
+                         Text="HTTPS remotes are cloned into the app's data folder and analyzed. Access tokens stay in memory only." />
+            </StackPanel>
+          </DockPanel>
+        </Border>
+      </Grid>
+
+      <!-- Clone a remote repository (UI-008, WF-01); HTTPS only, token masked and held in memory only -->
+      <Border Classes="card" IsVisible="{Binding IsCloneFormOpen}">
+        <StackPanel Spacing="10">
+          <TextBlock Text="Clone a remote repository" Classes="sectionTitle" />
+          <StackPanel Spacing="4">
+            <TextBlock Text="HTTPS address (GitHub, GitLab or another Git host)" Classes="label" />
+            <TextBox Text="{Binding CloneUrl}" PlaceholderText="https://github.com/owner/repository"
+                     AutomationProperties.Name="Repository address" />
+          </StackPanel>
+          <Grid ColumnDefinitions="*,16,*">
+            <StackPanel Grid.Column="0" Spacing="4">
+              <TextBlock Text="Branch (optional — default branch if empty)" Classes="label" />
+              <TextBox Text="{Binding CloneBranch}" PlaceholderText="main" AutomationProperties.Name="Branch" />
+            </StackPanel>
+            <StackPanel Grid.Column="2" Spacing="4">
+              <TextBlock Text="Access token (optional; kept in memory only)" Classes="label" TextTrimming="CharacterEllipsis" />
+              <TextBox Text="{Binding CloneToken}" PasswordChar="•" RevealPassword="False"
+                       AutomationProperties.Name="Access token" />
+            </StackPanel>
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+            <Button Content="Clone and analyze" Classes="accent" Command="{Binding CloneCommand}" />
+            <Button Content="Close" Classes="subtle" Command="{Binding CloseCloneFormCommand}" />
+          </StackPanel>
+          <Border Classes="bannerWarning" IsVisible="{Binding HasExistingClone}">
+            <StackPanel Spacing="8">
+              <TextBlock TextWrapping="Wrap" Text="This repository was cloned before:" FontWeight="Medium" />
+              <TextBlock Classes="caption mono" Text="{Binding ExistingClonePath}" />
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Button Content="Update existing clone" Command="{Binding ResolveExistingCloneCommand}" CommandParameter="update"
                         ToolTip.Tip="Fetch the remote and check out the branch, then analyze" />
@@ -57,92 +100,102 @@
       </Border>
 
       <!-- Progress panel (WF-01 step 4) -->
-      <Border IsVisible="{Binding IsImporting}"
-              BorderThickness="1" CornerRadius="6" Padding="16"
-              BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
-        <StackPanel Spacing="10">
-          <TextBlock Text="Analyzing" FontWeight="SemiBold" />
-          <TextBlock Text="{Binding ImportPath}" TextWrapping="Wrap" Opacity="0.8" />
+      <Border Classes="card" IsVisible="{Binding IsImporting}">
+        <StackPanel Spacing="12">
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Content="Cancel" Command="{Binding CancelImportCommand}" />
+            <StackPanel Spacing="2">
+              <TextBlock Text="Analyzing" Classes="sectionTitle" />
+              <TextBlock Text="{Binding ImportPath}" Classes="caption" />
+            </StackPanel>
+          </DockPanel>
+          <ProgressBar Minimum="0" Maximum="100" Height="6" MinHeight="6" CornerRadius="3"
+                       Value="{Binding ProgressPercent}"
+                       IsIndeterminate="{Binding IsProgressIndeterminate}" />
           <ItemsControl ItemsSource="{Binding Stages}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="pages:ImportStageViewModel">
-                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2">
-                  <TextBlock Text="{Binding Glyph}" Width="16" TextAlignment="Center" />
-                  <TextBlock Text="{Binding Name}" Classes.active="{Binding IsActive}" />
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,18,2">
+                  <TextBlock Text="{Binding Glyph}" Classes.active="{Binding IsActive}" Classes.done="{Binding IsDone}" />
+                  <TextBlock Text="{Binding Name}" Classes.active="{Binding IsActive}" Classes.done="{Binding IsDone}" />
                 </StackPanel>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-          <ProgressBar Minimum="0" Maximum="100"
-                       Value="{Binding ProgressPercent}"
-                       IsIndeterminate="{Binding IsProgressIndeterminate}" />
           <StackPanel Orientation="Horizontal" Spacing="12">
-            <TextBlock Text="{Binding ProgressText}" Opacity="0.8" />
-            <TextBlock Text="{Binding CurrentItem}" Opacity="0.6" TextTrimming="CharacterEllipsis" MaxWidth="520" />
+            <TextBlock Text="{Binding ProgressText}" Classes="muted" />
+            <TextBlock Text="{Binding CurrentItem}" Classes="caption mono" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" MaxWidth="560" />
           </StackPanel>
-          <Button Content="Cancel" Command="{Binding CancelImportCommand}" />
         </StackPanel>
       </Border>
 
-      <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap"
-                 IsVisible="{Binding StatusMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
-      <Border IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
-              BorderThickness="1" CornerRadius="6" Padding="12"
-              BorderBrush="{DynamicResource ErrorBorderBrush}"
-              Background="{DynamicResource ErrorBackgroundBrush}">
+      <Border Classes="banner" IsVisible="{Binding StatusMessage, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" />
+      </Border>
+      <Border Classes="bannerError" IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}">
         <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
       </Border>
 
       <!-- Recent repositories (REPO-005, WF-01 step 1) -->
-      <TextBlock Text="Recent repositories" FontSize="18" FontWeight="SemiBold" Margin="0,16,0,0"
-                 IsVisible="{Binding HasRecentRepositories}" />
-      <ItemsControl ItemsSource="{Binding RecentRepositories}">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="pages:RecentRepositoryItemViewModel">
-            <Border BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,8"
-                    BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
-              <StackPanel Spacing="8">
-                <DockPanel>
-                  <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <Button Content="Open" IsEnabled="{Binding CanOpen}"
-                            ToolTip.Tip="Show the stored analysis result without analyzing again"
-                            Command="{Binding $parent[UserControl].((pages:StartPageViewModel)DataContext).OpenRecentCommand}"
-                            CommandParameter="{Binding}" />
-                    <Button Content="Re-analyze"
-                            Command="{Binding $parent[UserControl].((pages:StartPageViewModel)DataContext).ReanalyzeCommand}"
-                            CommandParameter="{Binding}" />
-                    <Button Content="Remove"
-                            Command="{Binding $parent[UserControl].((pages:StartPageViewModel)DataContext).RequestRemoveCommand}"
-                            CommandParameter="{Binding}" />
+      <Border Classes="panel" IsVisible="{Binding HasRecentRepositories}">
+        <StackPanel>
+          <TextBlock Text="Recent repositories" Classes="sectionTitle" Margin="20,16,20,8" />
+          <ItemsControl ItemsSource="{Binding RecentRepositories}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="pages:RecentRepositoryItemViewModel">
+                <Border BorderBrush="{DynamicResource SubtleBorderBrush}" BorderThickness="0,1,0,0" Padding="20,12">
+                  <StackPanel Spacing="10">
+                    <DockPanel>
+                      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <Button Content="Open" Classes="accent" IsEnabled="{Binding CanOpen}"
+                                ToolTip.Tip="Show the stored analysis result without analyzing again"
+                                Command="{Binding $parent[UserControl].((pages:StartPageViewModel)DataContext).OpenRecentCommand}"
+                                CommandParameter="{Binding}" />
+                        <Button Content="Re-analyze"
+                                Command="{Binding $parent[UserControl].((pages:StartPageViewModel)DataContext).ReanalyzeCommand}"
+                                CommandParameter="{Binding}" />
+                        <Button Content="Remove" Classes="subtle danger"
+                                Command="{Binding $parent[UserControl].((pages:StartPageViewModel)DataContext).RequestRemoveCommand}"
+                                CommandParameter="{Binding}" />
+                      </StackPanel>
+                      <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,0,12,0">
+                        <Border Classes="badge" Padding="7" CornerRadius="8" VerticalAlignment="Center">
+                          <Path Classes="icon" Data="{Binding Source=repository, Converter={x:Static conv:AppIcons.Converter}}" Width="18" Height="18" />
+                        </Border>
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding SourceText}" Classes="caption" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                                     ToolTip.Tip="{Binding RootPath}" />
+                          <TextBlock Text="{Binding StatusText}" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" />
+                        </StackPanel>
+                      </StackPanel>
+                    </DockPanel>
+                    <Border Classes="bannerError" IsVisible="{Binding IsConfirmingRemove}">
+                      <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                          <Button Content="Remove data"
+                                  Command="{Binding $parent[UserControl].((pages:StartPageViewModel)DataContext).ConfirmRemoveCommand}"
+                                  CommandParameter="{Binding}" />
+                          <Button Content="Keep" Classes="subtle"
+                                  Command="{Binding $parent[UserControl].((pages:StartPageViewModel)DataContext).CancelRemoveCommand}"
+                                  CommandParameter="{Binding}" />
+                        </StackPanel>
+                        <TextBlock TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"
+                                   Text="{Binding RemoveQuestion}" />
+                      </DockPanel>
+                    </Border>
                   </StackPanel>
-                  <StackPanel Spacing="2" Margin="0,0,12,0">
-                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                    <TextBlock Text="{Binding SourceText}" Opacity="0.7" FontSize="12" TextTrimming="CharacterEllipsis"
-                               ToolTip.Tip="{Binding RootPath}" />
-                    <TextBlock Text="{Binding StatusText}" Opacity="0.7" FontSize="12" />
-                  </StackPanel>
-                </DockPanel>
-                <Border IsVisible="{Binding IsConfirmingRemove}" BorderThickness="1" CornerRadius="6" Padding="12"
-                        BorderBrush="{DynamicResource ErrorBorderBrush}"
-                        Background="{DynamicResource ErrorBackgroundBrush}">
-                  <DockPanel>
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                      <Button Content="Remove data"
-                              Command="{Binding $parent[UserControl].((pages:StartPageViewModel)DataContext).ConfirmRemoveCommand}"
-                              CommandParameter="{Binding}" />
-                      <Button Content="Keep"
-                              Command="{Binding $parent[UserControl].((pages:StartPageViewModel)DataContext).CancelRemoveCommand}"
-                              CommandParameter="{Binding}" />
-                    </StackPanel>
-                    <TextBlock TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"
-                               Text="{Binding RemoveQuestion}" />
-                  </DockPanel>
                 </Border>
-              </StackPanel>
-            </Border>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

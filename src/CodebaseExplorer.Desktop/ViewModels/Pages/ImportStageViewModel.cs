@@ -11,10 +11,12 @@ public sealed partial class ImportStageViewModel(AnalysisStage stage, string nam
     public string Name { get; } = name;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Glyph), nameof(IsActive))]
+    [NotifyPropertyChangedFor(nameof(Glyph), nameof(IsActive), nameof(IsDone))]
     public partial ImportStageState State { get; set; }
 
     public bool IsActive => State == ImportStageState.Active;
+
+    public bool IsDone => State == ImportStageState.Done;
 
     public string Glyph => State switch
     {
