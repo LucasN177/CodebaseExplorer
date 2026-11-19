@@ -4,7 +4,8 @@
 > Implementation status: **in progress (M7)** — AI-001: settings (`AiSettings`, keys `ai.*`), provider gate, HTTP
 > transport and the network guard test exist; AI is disabled by default. AI-002: Ollama provider (health check,
 > model listing, `IChatClient`), tested against a stub server. AI-003: FTS5 search index, built on first AI use
-> (ADR-013). AI-004: `ContextRetriever` and `PromptBuilder` (context format below, snapshot-tested).
+> (ADR-013). AI-004: `ContextRetriever` and `PromptBuilder` (context format below, snapshot-tested). AI-005:
+> `CitationValidator`.
 > Related: [ADR-008](../decisions/ADR-008-hybrid-ai.md), [SECURITY.md](SECURITY.md).
 
 ## 1. Principles
