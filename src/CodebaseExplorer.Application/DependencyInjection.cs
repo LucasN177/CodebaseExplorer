@@ -36,6 +36,9 @@ public static class DependencyInjection
         services.AddSingleton<AI.AskRepositoryQuestion>();
         services.AddSingleton<AI.AiConversations>();
         services.AddSingleton<AI.ExplainComponent>();
+        services.AddSingleton<Settings.AnalysisSettingsStore>();
+        services.AddSingleton<Settings.PrepareEditorLaunch>();
+        services.AddSingleton<RemoveAllRepositories>();
 
         return services;
     }

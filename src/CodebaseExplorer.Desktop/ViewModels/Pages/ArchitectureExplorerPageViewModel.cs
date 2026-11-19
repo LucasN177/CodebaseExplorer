@@ -62,9 +62,13 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         IUserSettingsStore settings,
         ShellStatus shell,
         ILogger<ArchitectureExplorerPageViewModel> logger,
-        ComponentExplanationViewModel? explanation = null)
+        ComponentExplanationViewModel? explanation = null,
+        PrepareEditorLaunch? editor = null,
+        IEditorLauncher? editorLauncher = null)
     {
         Graph = graph;
+        _editor = editor;
+        _editorLauncher = editorLauncher;
         Explanation = explanation;
         if (explanation is not null)
         {
@@ -815,6 +819,8 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
                 return;
             }
 
+            _snippetLine = startLine;
+            IsEditorConfigured = _editor is not null && _editorLauncher is not null && await _editor.GetTemplateAsync(CancellationToken.None) is not null;
             _snippetAbsolutePath = snippet.AbsolutePath; // before SnippetPath: setting it re-evaluates CopyPathCommand
             SnippetPath = snippet.Path;
             foreach (var line in snippet.Lines)
@@ -847,6 +853,37 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
     }
 
     private bool CanCopyPath() => SnippetPath is not null && _snippetAbsolutePath is not null;
+
+    private readonly PrepareEditorLaunch? _editor;
+    private readonly IEditorLauncher? _editorLauncher;
+    private int _snippetLine;
+
+    /// <summary>An external editor command is configured (Settings, UI-009): "Open in editor" is shown.</summary>
+    [ObservableProperty]
+    public partial bool IsEditorConfigured { get; private set; }
+
+    /// <summary>Opens the snippet's file at its first line in the configured external editor (no shell, UI-009).</summary>
+    [RelayCommand]
+    private async Task OpenInEditorAsync()
+    {
+        if (_editor is null || _editorLauncher is null || SnippetPath is not { } path || _query is not { } query)
+        {
+            return;
+        }
+
+        var launch = await _editor.ExecuteAsync(query.RepositoryId, path, _snippetLine, CancellationToken.None);
+        if (!launch.TryGetValue(out var command, out var error))
+        {
+            SnippetMessage = error.Message;
+            return;
+        }
+
+        if (!_editorLauncher.Launch(command))
+        {
+            _logger.LogWarning("The external editor {Program} could not be started", command.FileName);
+            SnippetMessage = $"The editor '{command.FileName}' could not be started. Check the command in Settings.";
+        }
+    }
 
     private static EvidenceItem ToItem(GraphEdgeDetailsDto edge, GraphRelationshipDto relationship, GraphEvidenceDto evidence)
     {

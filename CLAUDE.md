@@ -63,8 +63,10 @@ M7 (all tasks implemented, AI off by default): AI settings, provider gate and HT
 `StubOllamaServer`), the FTS5 search index built on first AI use (AI-003, ADR-013), facts-first retrieval and prompt
 building (AI-004), citation validation (AI-005), the *Assistant* page with stored conversations (AI-006) and
 *Explain with AI* in the Component Inspector, cached per run (AI-008). User guide: `docs/user/AI_MODEL_SETUP.md`.
+M8: the Settings page is complete (UI-009: analysis limits/excludes and Git window via `AnalysisSettingsStore`, applied by
+the next import; external editor command `EditorCommandTemplate` → `EditorLauncher` without shell; *Delete all data*).
 Next: the open manual checks (M1 on macOS/Linux, M4 explorer features, M5 overlay and clone form, M6 export page,
-M7 with a real Ollama instance) in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
+M7 with a real Ollama instance, UI-009 pages), then QA-005, QA-004, QA-006 in [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md).
 
 ## Commands
 

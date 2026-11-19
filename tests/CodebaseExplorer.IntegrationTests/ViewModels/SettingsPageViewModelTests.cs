@@ -1,5 +1,7 @@
 using CodebaseExplorer.Application.Abstractions;
 using CodebaseExplorer.Application.AI;
+using CodebaseExplorer.Application.Repositories;
+using CodebaseExplorer.Application.Settings;
 using CodebaseExplorer.Desktop.Services;
 using CodebaseExplorer.Desktop.ViewModels.Pages;
 using Microsoft.Extensions.DependencyInjection;
@@ -178,5 +180,70 @@ public sealed class SettingsPageViewModelTests : IAsyncLifetime
     private SettingsPageViewModel CreateViewModel(IThemeService theme, IStorageMaintenance? storage = null) =>
         new(theme, _app.Services.GetRequiredService<IApplicationPaths>(), storage ?? _app.Services.GetRequiredService<IStorageMaintenance>(),
             _folders, _app.Services.GetRequiredService<AiSettingsStore>(), _app.Services.GetRequiredService<IAiAssistant>(),
+            _app.Services.GetRequiredService<AnalysisSettingsStore>(), _app.Services.GetRequiredService<PrepareEditorLaunch>(),
+            _app.Services.GetRequiredService<RemoveAllRepositories>(), _app.Services.GetRequiredService<RepositorySession>(),
             _shell, NullLogger<SettingsPageViewModel>.Instance);
+
+    [Fact]
+    public async Task AnalysisSettings_AreSaved_AndInvalidFolderNamesAreRejected()
+    {
+        var viewModel = CreateViewModel(Substitute.For<IThemeService>());
+        await viewModel.ActivateAsync();
+        Assert.Equal(AnalysisSettings.Default.MaxFiles, viewModel.MaxFiles);
+
+        viewModel.ExcludedFolders = "vendor\r\ngenerated";
+        viewModel.MaxFiles = 2000;
+        viewModel.HistoryDays = 0;
+        await viewModel.SaveAnalysisSettingsCommand.ExecuteAsync(null);
+        Assert.StartsWith("Saved.", viewModel.AnalysisStatusMessage, StringComparison.Ordinal);
+
+        var stored = await _app.Services.GetRequiredService<AnalysisSettingsStore>().LoadAsync(Token);
+        Assert.Equal(["vendor", "generated"], stored.ExcludedFolders);
+        Assert.Equal((2000, 0), (stored.MaxFiles, stored.HistoryDays));
+
+        viewModel.ExcludedFolders = "../secret";
+        await viewModel.SaveAnalysisSettingsCommand.ExecuteAsync(null);
+        Assert.Contains("is not a folder name", viewModel.AnalysisStatusMessage, StringComparison.Ordinal);
+
+        await viewModel.ResetAnalysisSettingsCommand.ExecuteAsync(null);
+        Assert.Equal(AnalysisSettings.Default, await _app.Services.GetRequiredService<AnalysisSettingsStore>().LoadAsync(Token)
+            with { ExcludedFolders = AnalysisSettings.Default.ExcludedFolders });
+    }
+
+    [Fact]
+    public async Task EditorCommand_IsValidatedAndSaved()
+    {
+        var viewModel = CreateViewModel(Substitute.For<IThemeService>());
+        await viewModel.ActivateAsync();
+        Assert.Null(viewModel.EditorCommand);
+
+        viewModel.EditorCommand = "code --goto";
+        await viewModel.SaveEditorCommandCommand.ExecuteAsync(null);
+        Assert.Contains("{path}", viewModel.EditorStatusMessage, StringComparison.Ordinal);
+
+        viewModel.EditorCommand = "code --goto \"{path}:{line}\"";
+        await viewModel.SaveEditorCommandCommand.ExecuteAsync(null);
+        Assert.Equal("Saved.", viewModel.EditorStatusMessage);
+        Assert.Equal("code --goto \"{path}:{line}\"", await _app.Services.GetRequiredService<PrepareEditorLaunch>().GetTemplateAsync(Token));
+    }
+
+    [Fact]
+    public async Task DeleteAllData_NeedsConfirmation_ThenDeletesEverything_AndClosesTheRepository()
+    {
+        using var copy = CodebaseExplorer.IntegrationTests.Security.ZeroExecutionHarness.CopyFixture("dotnet-layered");
+        var summary = (await _app.Services.GetRequiredService<ImportLocalRepository>().ExecuteAsync(copy.FullPath, null, Token)).Value;
+        var session = _app.Services.GetRequiredService<RepositorySession>();
+        session.SetCurrent((await _app.Services.GetRequiredService<OpenRepository>().ExecuteAsync(summary.RepositoryId, Token)).Value);
+        var viewModel = CreateViewModel(Substitute.For<IThemeService>());
+
+        Assert.False(viewModel.DeleteAllDataCommand.CanExecute(null));
+        viewModel.ConfirmDeleteAll = true;
+        await viewModel.DeleteAllDataCommand.ExecuteAsync(null);
+
+        Assert.StartsWith("Deleted 1 repositories", viewModel.DeleteAllMessage, StringComparison.Ordinal);
+        Assert.Empty(await _app.Services.GetRequiredService<ListRecentRepositories>().ExecuteAsync(Token));
+        Assert.Null(session.Current);
+        Assert.False(viewModel.ConfirmDeleteAll);
+        Assert.True(File.Exists(Path.Combine(copy.FullPath, "Shop.sln")), "The user's folder is never touched.");
+    }
 }

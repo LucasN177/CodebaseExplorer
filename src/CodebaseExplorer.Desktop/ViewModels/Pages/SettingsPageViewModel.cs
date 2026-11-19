@@ -1,5 +1,7 @@
 using CodebaseExplorer.Application.Abstractions;
 using CodebaseExplorer.Application.AI;
+using CodebaseExplorer.Application.Repositories;
+using CodebaseExplorer.Application.Settings;
 using CodebaseExplorer.Desktop.Services;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -23,6 +25,10 @@ public sealed partial class SettingsPageViewModel : PageViewModel
 
     private readonly AiSettingsStore _aiSettings;
     private readonly IAiAssistant _assistant;
+    private readonly AnalysisSettingsStore _analysisSettings;
+    private readonly PrepareEditorLaunch _editor;
+    private readonly RemoveAllRepositories _removeAll;
+    private readonly RepositorySession _session;
     private AiSettings _storedAi = AiSettings.Default;
 
     public SettingsPageViewModel(
@@ -32,6 +38,10 @@ public sealed partial class SettingsPageViewModel : PageViewModel
         IFolderLauncher folders,
         AiSettingsStore aiSettings,
         IAiAssistant assistant,
+        AnalysisSettingsStore analysisSettings,
+        PrepareEditorLaunch editor,
+        RemoveAllRepositories removeAll,
+        RepositorySession session,
         ShellStatus shell,
         ILogger<SettingsPageViewModel> logger)
     {
@@ -40,6 +50,10 @@ public sealed partial class SettingsPageViewModel : PageViewModel
         _folders = folders;
         _aiSettings = aiSettings;
         _assistant = assistant;
+        _analysisSettings = analysisSettings;
+        _editor = editor;
+        _removeAll = removeAll;
+        _session = session;
         _shell = shell;
         _logger = logger;
         SelectedTheme = themeService.CurrentTheme;
@@ -108,12 +122,179 @@ public sealed partial class SettingsPageViewModel : PageViewModel
         ? "This endpoint is not on this machine (or not a valid URL). Code and analysis facts of a repository are sent there only after you allow it for that repository."
         : null;
 
-    /// <summary>Refreshes the disk usage and the AI settings each time the page is shown.</summary>
+    // ---- Analysis and Git history (UI-009) ----
+
+    [ObservableProperty]
+    public partial decimal MaxFileSizeKilobytes { get; set; } = AnalysisSettings.Default.MaxFileSizeKilobytes;
+
+    [ObservableProperty]
+    public partial decimal MaxFiles { get; set; } = AnalysisSettings.Default.MaxFiles;
+
+    [ObservableProperty]
+    public partial decimal ParseTimeoutSeconds { get; set; } = AnalysisSettings.Default.ParseTimeoutSeconds;
+
+    /// <summary>Additional excluded folder names, one per line.</summary>
+    [ObservableProperty]
+    public partial string? ExcludedFolders { get; set; }
+
+    [ObservableProperty]
+    public partial decimal HistoryMaxCommits { get; set; } = AnalysisSettings.Default.HistoryMaxCommits;
+
+    /// <summary>0 = no date limit.</summary>
+    [ObservableProperty]
+    public partial decimal HistoryDays { get; set; } = AnalysisSettings.Default.HistoryDays;
+
+    [ObservableProperty]
+    public partial string? AnalysisStatusMessage { get; private set; }
+
+    public string BuiltInExcludes => string.Join(", ", Application.Analysis.AnalysisLimits.DefaultExcludedDirectoryNames);
+
+    public decimal MinFileSizeKilobytes => AnalysisSettings.MinFileSizeKilobytes;
+
+    public decimal MaxFileSizeKilobytesLimit => AnalysisSettings.MaxFileSizeKilobytesLimit;
+
+    public decimal MinFiles => AnalysisSettings.MinFiles;
+
+    public decimal MaxFilesLimit => AnalysisSettings.MaxFilesLimit;
+
+    public decimal MinParseSeconds => AnalysisSettings.MinParseSeconds;
+
+    public decimal MaxParseSeconds => AnalysisSettings.MaxParseSeconds;
+
+    public decimal MinHistoryCommits => AnalysisSettings.MinHistoryCommits;
+
+    public decimal MaxHistoryCommits => AnalysisSettings.MaxHistoryCommits;
+
+    public decimal MaxHistoryDays => AnalysisSettings.MaxHistoryDays;
+
+    [RelayCommand]
+    private async Task SaveAnalysisSettingsAsync()
+    {
+        try
+        {
+            var result = await _analysisSettings.SaveAsync(new AnalysisSettings
+            {
+                MaxFileSizeKilobytes = (int)MaxFileSizeKilobytes,
+                MaxFiles = (int)MaxFiles,
+                ParseTimeoutSeconds = (int)ParseTimeoutSeconds,
+                ExcludedFolders = AnalysisSettings.ParseFolders(ExcludedFolders),
+                HistoryMaxCommits = (int)HistoryMaxCommits,
+                HistoryDays = (int)HistoryDays,
+            }, CancellationToken.None);
+            AnalysisStatusMessage = result.TryGetValue(out var saved, out var error)
+                ? "Saved. The settings apply to the next import or re-analysis."
+                : error.Message;
+            if (saved is not null)
+            {
+                ShowAnalysis(saved);
+            }
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.LogError(exception, "Saving the analysis settings failed");
+            AnalysisStatusMessage = "The analysis settings could not be saved. Details are in the application log.";
+        }
+    }
+
+    [RelayCommand]
+    private Task ResetAnalysisSettingsAsync()
+    {
+        ShowAnalysis(AnalysisSettings.Default);
+        return SaveAnalysisSettingsAsync();
+    }
+
+    private void ShowAnalysis(AnalysisSettings settings)
+    {
+        MaxFileSizeKilobytes = settings.MaxFileSizeKilobytes;
+        MaxFiles = settings.MaxFiles;
+        ParseTimeoutSeconds = settings.ParseTimeoutSeconds;
+        ExcludedFolders = string.Join(Environment.NewLine, settings.ExcludedFolders);
+        HistoryMaxCommits = settings.HistoryMaxCommits;
+        HistoryDays = settings.HistoryDays;
+    }
+
+    // ---- External editor (UI-009) ----
+
+    /// <summary>E.g. <c>code --goto "{path}:{line}"</c>; empty = no editor.</summary>
+    [ObservableProperty]
+    public partial string? EditorCommand { get; set; }
+
+    [ObservableProperty]
+    public partial string? EditorStatusMessage { get; private set; }
+
+    /// <summary>Examples shown on the page.</summary>
+    public IReadOnlyList<string> EditorExamples { get; } =
+    [
+        "code --goto \"{path}:{line}\"",
+        "rider --line {line} \"{path}\"",
+        "subl \"{path}:{line}\"",
+        "notepad++ -n{line} \"{path}\"",
+    ];
+
+    [RelayCommand]
+    private async Task SaveEditorCommandAsync()
+    {
+        try
+        {
+            var result = await _editor.SaveTemplateAsync(EditorCommand, CancellationToken.None);
+            EditorStatusMessage = result.IsSuccess
+                ? string.IsNullOrWhiteSpace(EditorCommand) ? "Saved. No external editor is configured." : "Saved."
+                : result.Error.Message;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.LogError(exception, "Saving the editor command failed");
+            EditorStatusMessage = "The editor command could not be saved. Details are in the application log.";
+        }
+    }
+
+    // ---- Delete all data (UI-009) ----
+
+    /// <summary>Must be ticked before <see cref="DeleteAllDataCommand"/> runs (the deletion cannot be undone).</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(DeleteAllDataCommand))]
+    public partial bool ConfirmDeleteAll { get; set; }
+
+    [ObservableProperty]
+    public partial string? DeleteAllMessage { get; private set; }
+
+    /// <summary>Deletes every stored repository (with runs, models, Git and AI data, app-managed clones) and compacts.</summary>
+    [RelayCommand(CanExecute = nameof(ConfirmDeleteAll))]
+    private async Task DeleteAllDataAsync()
+    {
+        DeleteAllMessage = "Deleting…";
+        using var operation = _shell.BeginOperation("Deleting all stored data");
+        try
+        {
+            var result = await _removeAll.ExecuteAsync(CancellationToken.None);
+            _session.Clear();
+            var summary = result.Value;
+            DeleteAllMessage = (summary.Problems.Count == 0
+                    ? $"Deleted {summary.Removed} repositories and their data."
+                    : $"Deleted {summary.Removed} repositories; problems: {string.Join("; ", summary.Problems)}")
+                + (summary.Compaction is { } compaction ? $" The database now uses {Size(compaction.BytesAfter)}." : " The database could not be compacted.");
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.LogError(exception, "Deleting all data failed");
+            DeleteAllMessage = "Deleting the data failed. Details are in the application log.";
+        }
+        finally
+        {
+            ConfirmDeleteAll = false;
+        }
+
+        RefreshUsage();
+    }
+
+    /// <summary>Refreshes the disk usage and all settings each time the page is shown.</summary>
     public override async Task ActivateAsync()
     {
         RefreshUsage();
         try
         {
+            ShowAnalysis(await _analysisSettings.LoadAsync(CancellationToken.None));
+            EditorCommand = await _editor.GetTemplateAsync(CancellationToken.None);
             ShowAi(await _aiSettings.LoadAsync(CancellationToken.None));
         }
         catch (Exception exception) when (exception is not OperationCanceledException)

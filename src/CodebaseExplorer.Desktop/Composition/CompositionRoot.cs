@@ -59,6 +59,7 @@ public static class CompositionRoot
         services.AddSingleton<IClipboardService, ClipboardService>();
         services.AddSingleton<IFolderLauncher, FolderLauncher>();
         services.AddSingleton<IReportFileWriter, ReportFileWriter>();
+        services.AddSingleton<IEditorLauncher, EditorLauncher>();
         services.AddSingleton<RepositorySession>();
         services.AddSingleton<ShellStatus>();
         services.AddSingleton<GlobalExceptionHandler>();

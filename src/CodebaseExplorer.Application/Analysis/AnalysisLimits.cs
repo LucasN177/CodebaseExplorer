@@ -2,7 +2,7 @@ namespace CodebaseExplorer.Application.Analysis;
 
 /// <summary>
 /// Safety limits and built-in excludes for analysis runs (ANALYSIS_ENGINE.md §5). Defaults follow the
-/// documented values; the settings UI (UI-009) will make them configurable.
+/// documented values; the Settings page makes the size, file-count and time limits and additional excludes configurable (UI-009, <see cref="Settings.AnalysisSettings"/>).
 /// </summary>
 public sealed record AnalysisLimits
 {

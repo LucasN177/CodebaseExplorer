@@ -334,6 +334,8 @@
           <DockPanel>
             <Button DockPanel.Dock="Right" Content="Copy path" FontSize="12" Padding="8,2"
                     Command="{Binding CopyPathCommand}" />
+            <Button DockPanel.Dock="Right" Content="Open in editor" FontSize="12" Padding="8,2" Margin="0,0,6,0"
+                    Command="{Binding OpenInEditorCommand}" IsVisible="{Binding IsEditorConfigured}" />
             <TextBlock Text="{Binding SnippetPath}" FontWeight="SemiBold" FontSize="12"
                        TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
           </DockPanel>
