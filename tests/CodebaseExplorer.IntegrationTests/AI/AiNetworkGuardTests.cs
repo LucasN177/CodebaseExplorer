@@ -48,6 +48,22 @@ public sealed class AiNetworkGuardTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task AskingWithDefaultSettings_IndexesNothing_AndSendsNothing()
+    {
+        using var repository = new NamedFixtureCopy("dotnet-layered");
+        var stored = await repository.ImportAsync(_app.Services, Token);
+
+        var result = await _app.Services.GetRequiredService<AskRepositoryQuestion>().ExecuteAsync(
+            stored.Repository.Id.ToString(), null, "How are orders placed?", null, null, Token);
+
+        Assert.Equal(AiErrorCodes.Disabled, result.Error.Code);
+        Assert.Null(await _app.Services.GetRequiredService<ISearchIndexStore>().GetStateAsync(stored.Repository.Id, Token));
+        Assert.Equal(0, _provider.ChatClientsCreated);
+        Assert.Equal(0, _network.Created);
+        Assert.Equal(0, _network.Requests);
+    }
+
+    [Fact]
     public async Task DamagedEnabledFlag_KeepsAiOff()
     {
         await _app.Services.GetRequiredService<IUserSettingsStore>().SetAsync(UserSettingKeys.AiEnabled, "yes", Token);

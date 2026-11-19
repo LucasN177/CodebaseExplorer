@@ -5,7 +5,8 @@
 > transport and the network guard test exist; AI is disabled by default. AI-002: Ollama provider (health check,
 > model listing, `IChatClient`), tested against a stub server. AI-003: FTS5 search index, built on first AI use
 > (ADR-013). AI-004: `ContextRetriever` and `PromptBuilder` (context format below, snapshot-tested). AI-005:
-> `CitationValidator`.
+> `CitationValidator`. AI-006: `IAiAssistant.AskAsync`, use cases `AskRepositoryQuestion`/`AiConversations`,
+> conversation tables, *Assistant* page. Not yet verified against a real Ollama instance.
 > Related: [ADR-008](../decisions/ADR-008-hybrid-ai.md), [SECURITY.md](SECURITY.md).
 
 ## 1. Principles

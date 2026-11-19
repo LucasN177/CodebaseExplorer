@@ -39,6 +39,9 @@ public sealed record ElementDetailsDto
 
     /// <summary>Git activity of the element's files (GIT-005); <see langword="null"/> without Git data or for external dependencies.</summary>
     public ElementActivityDto? Activity { get; init; }
+
+    /// <summary>The element itself as reference: the graph node that shows it and the expansions needed (AI citations, AI-006).</summary>
+    public ElementReferenceDto? Reference { get; init; }
 }
 
 /// <summary>

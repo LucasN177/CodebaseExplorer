@@ -160,6 +160,7 @@ public sealed class GetElementDetails(IArchitectureModelStore store, IGitActivit
             Members = [.. members],
             Incoming = Group(model, id, incoming),
             Outgoing = Group(model, id, outgoing),
+            Reference = Reference(model, new ElementReference(kind, id)),
         };
     }
 

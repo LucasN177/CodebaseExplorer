@@ -115,17 +115,20 @@ If an expansion would exceed the budget, the app offers a filtered or neighborho
 
 ## WF-09 Ask the local AI about the codebase
 
-**Persona:** Nina · **Capabilities:** MVP-13 · **Status:** planned (M7)
+**Persona:** Nina · **Capabilities:** MVP-13 · **Status:** implemented (M7, AI-001 … AI-006; not yet verified with a real Ollama instance)
 
-1. AI is disabled by default. Nina enables it in Settings → AI, selects the *Ollama* provider; the
-   app checks the local endpoint and lists installed models.
-2. In the AI panel she asks: "Where is authentication handled and which projects depend on it?"
+1. AI is disabled by default. Nina enables it in Settings → AI assistant (provider *Ollama*); *Test connection*
+   checks the endpoint and lists installed models. A non-local endpoint is marked as remote: before the first
+   question about a repository she has to allow sending its context there.
+2. On the *Assistant* page she asks: "Where is authentication handled and which projects depend on it?" — about
+   the whole repository or, with the check box, about the element selected in the Architecture Explorer.
 3. The app retrieves relevant analysis facts and source snippets locally, builds a prompt, and
    streams the answer.
 4. Every claim that refers to code carries citations (`path:startLine-endLine`). Citations are
    validated against the stored model; invalid ones are marked as *unverified*.
-5. Clicking a citation focuses the element in the graph or opens the snippet in the inspector.
-6. The answer is labeled *AI-generated*. Nothing in the repository is changed.
+5. Clicking a citation shows the cited lines next to the answer, or focuses the cited element in the graph.
+6. The answer is labeled *AI-generated*; the context sent to the model can be expanded under it. Conversations are
+   kept per repository. Nothing in the repository is changed.
 
 ## WF-10 Re-analyze after changes
 

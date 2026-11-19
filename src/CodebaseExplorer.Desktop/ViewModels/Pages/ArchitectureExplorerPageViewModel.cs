@@ -549,6 +549,8 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
         InspectorMetrics = null;
         InspectorActivity = null;
         InspectorMessage = null;
+        InspectedElementId = null;
+        InspectedElementName = null;
     }
 
     /// <summary>Git activity of the inspected node (GIT-005), e.g. <c>12 file changes in 3 files · +120 −40 · …</c>; null without Git data.</summary>
@@ -640,6 +642,8 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             }
 
             InspectorMetrics = $"fan-in {details.FanIn} · fan-out {details.FanOut} · size {details.Size}";
+            InspectedElementId = details.Id;
+            InspectedElementName = details.Name;
             InspectorActivity = details.Activity is { } activity ? DescribeActivity(activity) : null;
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
@@ -659,14 +663,51 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
     [RelayCommand]
     private async Task ShowInGraphAsync(InspectorItem? item)
     {
-        if (item?.Reference.GraphNodeId is not { } nodeId || _query is not { } query)
+        if (item is not null)
         {
-            return;
+            await ShowReferenceAsync(item.Reference, item.Label);
+        }
+    }
+
+    /// <summary>The element whose details the inspector shows (model element id, <c>N</c> format); null otherwise.</summary>
+    [ObservableProperty]
+    public partial string? InspectedElementId { get; private set; }
+
+    /// <summary>Name of <see cref="InspectedElementId"/>.</summary>
+    [ObservableProperty]
+    public partial string? InspectedElementName { get; private set; }
+
+    /// <summary>
+    /// Shows a model element in the graph (AI citations, AI-006): expands its containers, selects and centers its node.
+    /// Returns false if the element is not part of the current model or cannot be shown.
+    /// </summary>
+    public async Task<bool> ShowElementAsync(string elementId, CancellationToken cancellationToken = default)
+    {
+        if (_query is not { } query)
+        {
+            return false;
+        }
+
+        var result = await _getDetails.ExecuteAsync(query.RepositoryId, elementId, cancellationToken);
+        if (!result.TryGetValue(out var details, out var error))
+        {
+            InspectorMessage = error.Message;
+            return false;
+        }
+
+        return details.Reference is { } reference && await ShowReferenceAsync(reference, details.Name);
+    }
+
+    private async Task<bool> ShowReferenceAsync(ElementReferenceDto reference, string label)
+    {
+        if (reference.GraphNodeId is not { } nodeId || _query is not { } query)
+        {
+            return false;
         }
 
         var expanded = query.Expanded.ToHashSet(StringComparer.Ordinal);
         var changed = false;
-        foreach (var ancestor in item.Reference.ExpandPath)
+        foreach (var ancestor in reference.ExpandPath)
         {
             changed |= expanded.Add(ancestor); // all of them, not only the first new one
         }
@@ -678,7 +719,7 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
             if (!result.TryGetValue(out var view, out var error))
             {
                 InspectorMessage = error.Message;
-                return;
+                return false;
             }
 
             Remember(query);
@@ -689,10 +730,13 @@ public sealed partial class ArchitectureExplorerPageViewModel : PageViewModel
 
         if (!await Graph.FocusAsync(nodeId, CancellationToken.None))
         {
-            InspectorMessage = item.Reference.Kind == "external-dependency"
-                ? $"{item.Label} is not shown: external dependencies are hidden in the graph."
-                : $"{item.Label} could not be shown in the graph.";
+            InspectorMessage = reference.Kind == "external-dependency"
+                ? $"{label} is not shown: external dependencies are hidden in the graph."
+                : $"{label} could not be shown in the graph.";
+            return false;
         }
+
+        return true;
     }
 
     /// <summary>The evidence record whose source snippet is shown (UI-007).</summary>

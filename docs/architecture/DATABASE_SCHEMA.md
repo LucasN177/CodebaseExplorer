@@ -320,6 +320,10 @@ replacing a model deletes the statistics of the previous snapshot — only the c
 
 Index: `IX_AIConversations_RepositoryId_UpdatedAt`.
 
+*Implemented in AI-006* (migration `AddAiConversations`, `AiConversationStore`, together with §4.15 and §4.16).
+`IsCloudProvider` is set when the conversation's context left this machine — a cloud provider **or** a non-loopback
+endpoint (both need consent, AI_ARCHITECTURE.md §5); once set it stays set.
+
 ### 4.15 AIMessages
 
 | Column | Type | Constraints |
@@ -335,6 +339,11 @@ Index: `IX_AIConversations_RepositoryId_UpdatedAt`.
 | CreatedAt | TEXT | NN |
 
 Index: `UX_AIMessages_ConversationId_Ordinal`.
+
+JSON shapes (AI-006, camelCase): `CitationsJson` = list of `{text, key, path, startLine, endLine, elementId, verified,
+problem}` (null when the message has no citations); `ContextManifestJson` = `{entries: [{key, kind, label, path,
+startLine, endLine, elementId, tokens}], budgetTokens, usedTokens, omittedEntries}` (assistant messages only). Messages
+are written only for complete answers; a failed or cancelled question stores nothing.
 
 ### 4.16 AIArtifacts
 

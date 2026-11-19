@@ -13,7 +13,9 @@ quickly — without uploading code and without executing it.
 > Its project-level dependency graph is shown in the Architecture Explorer (verified on Windows), and the analysis is
 > saved in a local SQLite database.
 > Git repositories are recognized: runs record the commit, a Git-activity overlay shows how often the files of projects,
-> namespaces and types changed, and HTTPS remotes can be cloned and analyzed (M5). **There are no AI features yet.**
+> namespaces and types changed, and HTTPS remotes can be cloned and analyzed (M5). An optional AI assistant (off by
+> default) answers questions about a repository with a local Ollama model and validated citations (M7; tested against a
+> stub server, not yet with a real Ollama instance) — setup: [docs/user/AI_MODEL_SETUP.md](docs/user/AI_MODEL_SETUP.md).
 > See [Project status](#project-status).
 
 ---
@@ -56,7 +58,7 @@ analysis. Full vision: [docs/product/VISION.md](docs/product/VISION.md).
 | Local persistence (SQLite) and analysis history | 🚧 in progress (M2: database created and migrated at startup; analysis runs and models are saved — reopening a saved repository from the UI follows with REPO-005) |
 | Git metadata and change-activity overlays | ✅ available (M5: HEAD, branch and remotes per run; per-file change statistics of the last 365 days / 5,000 commits; *Git activity* toggle in the graph and a Git line in the Component Inspector) |
 | Markdown/Mermaid architecture export | ✅ available (M6: *Export* page — whole repository or current graph view, selectable sections, target folder outside the repository by default, writing into the repository only after confirmation) |
-| Optional local AI (Ollama) with cited answers | ⏳ planned (M7) |
+| Optional local AI (Ollama) with cited answers | 🟡 implemented, off by default (M7: *Assistant* page — questions about the whole repository or the element selected in the explorer, streamed answers, citations checked against the model and clickable, context sent to the model visible, conversation history, cancel; remote endpoints only after per-repository consent). Not yet verified with a real Ollama instance. Setup: [AI_MODEL_SETUP.md](docs/user/AI_MODEL_SETUP.md) |
 
 Scope details: [docs/product/MVP_SCOPE.md](docs/product/MVP_SCOPE.md).
 
@@ -126,7 +128,8 @@ enforced by architecture tests. Details: [docs/architecture/SYSTEM_ARCHITECTURE.
 | M4 Polyglot & scale | 🚧 in progress (see [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md)) |
 | M5 Git | ✅ implemented (started in parallel to M4; manual UI checks pending, see [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md)) |
 | M6 Export | ✅ implemented (export page not yet checked manually in the running app) |
-| M7 Local AI · M8 Release | ⏳ planned |
+| M7 Local AI | 🚧 in progress (see [TASK_BREAKDOWN.md](docs/implementation/TASK_BREAKDOWN.md); manual test with a real Ollama instance pending) |
+| M8 Release | ⏳ planned |
 
 What exists today: 10 source projects and 6 test projects, central package management, module
 registration seams, a composition root, the Avalonia shell, and the language-independent domain

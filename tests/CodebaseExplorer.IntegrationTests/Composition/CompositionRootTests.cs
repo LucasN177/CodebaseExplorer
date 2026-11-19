@@ -34,7 +34,7 @@ public sealed class CompositionRootTests : IAsyncLifetime
 
         var shell = provider.GetRequiredService<MainWindowViewModel>();
 
-        Assert.Equal(["Start", "Overview", "Architecture Explorer", "Run History", "Export", "Settings"], shell.Pages.Select(p => p.Title));
+        Assert.Equal(["Start", "Overview", "Architecture Explorer", "Assistant", "Run History", "Export", "Settings"], shell.Pages.Select(p => p.Title));
         Assert.Same(shell.Pages[0], shell.CurrentPage);
     }
 
